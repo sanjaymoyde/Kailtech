@@ -31,18 +31,19 @@ import { useNavigate } from "react-router";
 const confirmMessages = {
   pending: {
     description:
-      "Are you sure you want to delete this modes? Once deleted, it cannot be restored.",
+      "Are you sure you want to delete this expense category? Once deleted, it cannot be restored.",
   },
   success: {
-    title: "modes Deleted",
+    title: "Expense Category Deleted",
   },
 };
 
 export function RowActions({ row, table }) {
-  const navigate = useNavigate(); // 👈 Hook
-   const handleEdit = () => {
-    const id = row.original.id; // 👈 your API data should return "id"
-    navigate(`/dashboards/master-data/modes/edit/${id}`);
+  const navigate = useNavigate();
+
+  const handleEdit = () => {
+    const id = row.original.id;
+    navigate(`/dashboards/accounts/expense-category/edit/${id}`);
   };
 
 
@@ -68,19 +69,14 @@ export function RowActions({ row, table }) {
   setConfirmDeleteLoading(true);
 
   try {
-    await axios.delete(`/master/mode-delete/${id}`);
-    table.options.meta?.deleteRow(row); // remove row from UI
+    await axios.delete(`/expense-categories/${id}`);
+    table.options.meta?.deleteRow(row);
     setDeleteSuccess(true);
-     toast.success("Unit type deleted successfully ✅", {
-      duration: 1000,
-      icon: "🗑️",
-    });
+    toast.success("Expense category deleted successfully.", { duration: 1000 });
   } catch (error) {
     console.error("Delete failed:", error);
     setDeleteError(true);
-     toast.error("Failed to delete unit type ❌", {
-      duration: 2000,
-    });
+    toast.error("Failed to delete expense category.", { duration: 2000 });
   } finally {
     setConfirmDeleteLoading(false);
   }

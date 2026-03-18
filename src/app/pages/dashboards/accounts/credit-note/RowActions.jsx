@@ -30,20 +30,27 @@ import { useNavigate } from "react-router";
 
 const confirmMessages = {
   pending: {
-    description:
-      "Are you sure you want to delete this modes? Once deleted, it cannot be restored.",
+    description: "Are you sure you want to delete this credit note? Once deleted, it cannot be restored.",
   },
-  success: {
-    title: "modes Deleted",
-  },
+  success: { title: "Credit Note Deleted" },
 };
 
 export function RowActions({ row, table }) {
-  const navigate = useNavigate(); // 👈 Hook
-   const handleEdit = () => {
-    const id = row.original.id; // 👈 your API data should return "id"
-    navigate(`/dashboards/master-data/modes/edit/${id}`);
+  const navigate = useNavigate();
+
+  const handleView = () => {
+    navigate(`/dashboards/accounts/credit-note/view/${row.original.id}`);
   };
+
+  const handleEdit = () => {
+    navigate(`/dashboards/accounts/credit-note/edit/${row.original.id}`);
+  };
+
+  const handleLinkInvoice = () => {
+    navigate(`/dashboards/accounts/credit-note/link-invoices/${row.original.id}`);
+  };
+
+  const status = row.original.status;
 
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -64,23 +71,17 @@ export function RowActions({ row, table }) {
   };
 
   const handleDeleteRows = useCallback(async () => {
-  const id = row.original.id; // Assuming your row contains `id`
   setConfirmDeleteLoading(true);
 
   try {
-    await axios.delete(`/master/mode-delete/${id}`);
-    table.options.meta?.deleteRow(row); // remove row from UI
+    await axios.delete(`/credit-notes/${row.original.id}`);
+    table.options.meta?.deleteRow(row);
     setDeleteSuccess(true);
-     toast.success("Unit type deleted successfully ✅", {
-      duration: 1000,
-      icon: "🗑️",
-    });
+    toast.success("Credit note deleted successfully.", { duration: 1000 });
   } catch (error) {
     console.error("Delete failed:", error);
     setDeleteError(true);
-     toast.error("Failed to delete unit type ❌", {
-      duration: 2000,
-    });
+    toast.error("Failed to delete credit note.", { duration: 2000 });
   } finally {
     setConfirmDeleteLoading(false);
   }
@@ -110,7 +111,18 @@ export function RowActions({ row, table }) {
               anchor={{ to: "bottom end", gap: 12 }}
               className="absolute z-100 w-[10rem] rounded-lg border border-gray-300 bg-white py-1 shadow-lg shadow-gray-200/50 outline-hidden focus-visible:outline-hidden dark:border-dark-500 dark:bg-dark-750 dark:shadow-none ltr:right-0 rtl:left-0"
             >
-              
+              <MenuItem>
+                {({ focus }) => (
+                  <button onClick={handleView}
+                    className={clsx(
+                      "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors",
+                      focus && "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                    )}
+                  >
+                    <span>View</span>
+                  </button>
+                )}
+              </MenuItem>
               <MenuItem>
                 {({ focus }) => (
                   <button onClick={handleEdit}
@@ -125,6 +137,21 @@ export function RowActions({ row, table }) {
                   </button>
                 )}
               </MenuItem>
+              {(status == 1 || status == 2) && (
+                <MenuItem>
+                  {({ focus }) => (
+                    <button
+                      onClick={handleLinkInvoice}
+                      className={clsx(
+                        "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors",
+                        focus && "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      )}
+                    >
+                      <span>Link Invoice</span>
+                    </button>
+                  )}
+                </MenuItem>
+              )}
               <MenuItem>
                 {({ focus }) => (
                   <button

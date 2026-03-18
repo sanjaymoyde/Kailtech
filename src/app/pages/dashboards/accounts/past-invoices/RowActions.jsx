@@ -1,164 +1,118 @@
-// Import Dependencies
-import {
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-  Transition,
-} from "@headlessui/react";
-import {
-
-  EllipsisHorizontalIcon,
-
-  PencilIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import clsx from "clsx";
-import { Fragment, useCallback, useState } from "react";
+import { useState } from "react";
 import PropTypes from "prop-types";
-
-// Local Imports
-import { ConfirmModal } from "components/shared/ConfirmModal";
+import { useNavigate } from "react-router";
+import { Dialog } from "@headlessui/react";
 import { Button } from "components/ui";
 import axios from "utils/axios";
-import { toast } from "sonner";
-import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
 
+export function RowActions({ row }) {
+  const navigate = useNavigate();
+  const { id, invoiceno } = row.original;
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-
-// ----------------------------------------------------------------------
-
-const confirmMessages = {
-  pending: {
-    description:
-      "Are you sure you want to delete this modes? Once deleted, it cannot be restored.",
-  },
-  success: {
-    title: "modes Deleted",
-  },
-};
-
-export function RowActions({ row, table }) {
-  const navigate = useNavigate(); // 👈 Hook
-   const handleEdit = () => {
-    const id = row.original.id; // 👈 your API data should return "id"
-    navigate(`/dashboards/master-data/modes/edit/${id}`);
+  const handleSave = async () => {
+    try {
+      setSubmitting(true);
+      await axios.post("/invoice-cancel-requests", { invoiceid: id, reason });
+      toast.success("Cancellation request submitted");
+      setOpen(false);
+      setReason("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to submit request");
+    } finally {
+      setSubmitting(false);
+    }
   };
-
-
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [confirmDeleteLoading, setConfirmDeleteLoading] = useState(false);
-  const [deleteSuccess, setDeleteSuccess] = useState(false);
-  const [deleteError, setDeleteError] = useState(false);
-
-
-
-  const closeModal = () => {
-    setDeleteModalOpen(false);
-  };
-
-  const openModal = () => {
-    setDeleteModalOpen(true);
-    setDeleteError(false);
-    setDeleteSuccess(false);
-  };
-
-  const handleDeleteRows = useCallback(async () => {
-  const id = row.original.id; // Assuming your row contains `id`
-  setConfirmDeleteLoading(true);
-
-  try {
-    await axios.delete(`/master/mode-delete/${id}`);
-    table.options.meta?.deleteRow(row); // remove row from UI
-    setDeleteSuccess(true);
-     toast.success("Unit type deleted successfully ✅", {
-      duration: 1000,
-      icon: "🗑️",
-    });
-  } catch (error) {
-    console.error("Delete failed:", error);
-    setDeleteError(true);
-     toast.error("Failed to delete unit type ❌", {
-      duration: 2000,
-    });
-  } finally {
-    setConfirmDeleteLoading(false);
-  }
-}, [row, table]);
-
-  const state = deleteError ? "error" : deleteSuccess ? "success" : "pending";
 
   return (
     <>
-      <div className="flex justify-center space-x-1.5 ">
-      
-
-        <Menu as="div" className="relative inline-block text-left">
-          <MenuButton as={Button} isIcon className="size-8 rounded-full">
-            <EllipsisHorizontalIcon className="size-4.5" />
-          </MenuButton>
-          <Transition
-            as={Fragment}
-            enter="transition ease-out"
-            enterFrom="opacity-0 translate-y-2"
-            enterTo="opacity-100 translate-y-0"
-            leave="transition ease-in"
-            leaveFrom="opacity-100 translate-y-0"
-            leaveTo="opacity-0 translate-y-2"
-          >
-            <MenuItems
-              anchor={{ to: "bottom end", gap: 12 }}
-              className="absolute z-100 w-[10rem] rounded-lg border border-gray-300 bg-white py-1 shadow-lg shadow-gray-200/50 outline-hidden focus-visible:outline-hidden dark:border-dark-500 dark:bg-dark-750 dark:shadow-none ltr:right-0 rtl:left-0"
-            >
-              
-              <MenuItem>
-                {({ focus }) => (
-                  <button onClick={handleEdit}
-                    className={clsx(
-                      "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors ",
-                      focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
-                    )}
-                  >
-                    <PencilIcon className="size-4.5 stroke-1" />
-                    <span>Edit</span>
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    onClick={openModal}
-                    className={clsx(
-                      "this:error flex h-9 w-full items-center space-x-3 px-3 tracking-wide text-this outline-hidden transition-colors dark:text-this-light ",
-                      focus && "bg-this/10 dark:bg-this-light/10",
-                    )}
-                  >
-                    <TrashIcon className="size-4.5 stroke-1" />
-                    <span>Delete</span>
-                  </button>
-                )}
-              </MenuItem>
-            </MenuItems>
-          </Transition>
-        </Menu>
+      <div className="flex flex-col gap-1">
+        <Button
+          size="sm"
+          color="warning"
+          className="h-7 rounded px-3 text-xs"
+          onClick={() => navigate(`/dashboards/accounts/past-invoices/edit/${id}`)}
+        >
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          color="warning"
+          className="h-7 rounded px-3 text-xs"
+          onClick={() => setOpen(true)}
+        >
+          Request Cancel
+        </Button>
       </div>
 
-      <ConfirmModal
-        show={deleteModalOpen}
-        onClose={closeModal}
-        messages={confirmMessages}
-        onOk={handleDeleteRows}
-        confirmLoading={confirmDeleteLoading}
-        state={state}
-      />
+      <Dialog open={open} onClose={() => setOpen(false)} className="relative z-50">
+        {/* Backdrop */}
+        <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
 
-    
+        {/* Panel */}
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-lg rounded bg-white shadow-xl dark:bg-dark-800">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3 dark:border-dark-500">
+              <Dialog.Title className="text-base font-medium text-gray-800 dark:text-dark-50">
+                Request For Cancelation
+              </Dialog.Title>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-dark-200"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4">
+              <p className="mb-4 text-lg font-semibold text-gray-800 dark:text-dark-50">
+                Invoice Cancel Request Of {invoiceno}
+              </p>
+              <div className="flex items-start gap-4">
+                <label className="mt-2 w-44 shrink-0 text-sm text-gray-700 dark:text-dark-200">
+                  Reason For Cancelation
+                </label>
+                <textarea
+                  rows={3}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Enter reason..."
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-dark-500 dark:bg-dark-700 dark:text-dark-100"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 border-t border-gray-200 px-5 py-3 dark:border-dark-500">
+              <Button
+                color="primary"
+                className="h-9 rounded-md px-4 text-sm font-medium"
+                onClick={handleSave}
+                disabled={submitting}
+              >
+                {submitting ? "Saving..." : "Save changes"}
+              </Button>
+              <Button
+                color="info"
+                className="h-9 rounded-md px-4 text-sm font-medium"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </>
   );
 }
 
 RowActions.propTypes = {
   row: PropTypes.object,
-  table: PropTypes.object,
 };

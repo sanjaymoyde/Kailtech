@@ -21,7 +21,7 @@ import { useLockScrollbar, useDidUpdate, useLocalStorage } from "hooks";
 import { fuzzyFilter } from "utils/react-table/fuzzyFilter";
 import { useSkipper } from "utils/react-table/useSkipper";
 import { Toolbar } from "./Toolbar";
-import { columns } from "./columns";
+import { columns } from "./columns.jsx";
 import { PaginationSection } from "components/shared/table/PaginationSection";
 import { SelectedRowsActions } from "./SelectedRowsActions";
 import { useThemeContext } from "app/contexts/theme/context";
@@ -43,25 +43,16 @@ export default function OrdersDatatableV1() {
   }, []);
 
   const fetchModes = async () => {
-  try {
-    setLoading(true); // start loader
-    const response = await axios.get("/master/mode-list");
-    
-    // console.log("API response:", response.data); // debug
-
-    if (response.data.status && Array.isArray(response.data.data)) {
-      setOrders(response.data.data); // ✅ correct assignment
-    } else {
-      console.warn("Unexpected response structure:", response.data);
-      setOrders([]); // fallback
+    try {
+      setLoading(true);
+      const res = await axios.get("/expense-categories");
+      setOrders(Array.isArray(res.data) ? res.data : res.data?.data || []);
+    } catch (err) {
+      console.error("Error fetching expense categories:", err);
+    } finally {
+      setLoading(false);
     }
-
-  } catch (err) {
-    console.error("Error fetching mode list:", err);
-  } finally {
-    setLoading(false); // stop loader
-  }
-};
+  };
 
 
 
@@ -72,7 +63,7 @@ export default function OrdersDatatableV1() {
 
   const [globalFilter, setGlobalFilter] = useState("");
 
-  const [sorting, setSorting] = useState([]);
+  const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
 
   const [columnVisibility, setColumnVisibility] = useLocalStorage(
     "column-visibility-orders-1",
@@ -152,20 +143,20 @@ export default function OrdersDatatableV1() {
   // ✅ Loading UI
   if (loading) {
     return (
-      <Page title="Modes List">
+      <Page title="Expense Category List">
         <div className="flex h-[60vh] items-center justify-center text-gray-600">
           <svg className="animate-spin h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"></path>
           </svg>
-          Loading Modes...
+          Loading...
         </div>
       </Page>
     );
   }
 
   return (
-    <Page title="Modes List">
+    <Page title="Expense Category List">
       <div className="transition-content w-full pb-5">
         <div
           className={clsx(

@@ -1,47 +1,108 @@
 // Import Dependencies
 import { createColumnHelper } from "@tanstack/react-table";
 
-// Local Imports
-import { RowActions } from "./RowActions";
-import {
-  SelectCell,
-  SelectHeader,
-} from "components/shared/table/SelectCheckbox";
-
 const columnHelper = createColumnHelper();
+
+const formatStatus = (status) => {
+  if (status === 99 || status === "99") return "Canceled";
+  if (status === 0 || status === "0") return "Pending";
+  return "Active";
+};
 
 export const columns = [
   columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
-
-  // ✅ Serial Number
-  columnHelper.accessor((_row, index) => index + 1, {
     id: "s_no",
-    header: "S No",
+    header: "Sr. no",
     cell: (info) => info.row.index + 1,
   }),
-
-  // ✅ Mode Name (from API)
-  columnHelper.accessor("name", {
-    id: "name",
-    header: "Mode Name",
-    cell: (info) => info.getValue(),
+  columnHelper.accessor("custname", {
+    id: "custname",
+    header: "Customer Name",
+    cell: (info) => info.getValue() ?? "-",
   }),
-
-  // ✅ Description (from API)
-  columnHelper.accessor("description", {
-    id: "description",
-    header: "Description",
-    cell: (info) => info.getValue(),
+  columnHelper.accessor("ponumber", {
+    id: "ponumber",
+    header: "Po Number",
+    cell: (info) => info.getValue() ?? "-",
   }),
-
-  // ✅ Actions
-  columnHelper.display({
-    id: "actions",
-    header: "Actions",
-    cell: RowActions,
+  columnHelper.accessor("invoiceno", {
+    id: "invoiceno",
+    header: "Invoice No",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("subtotal", {
+    id: "subtotal",
+    header: "Item Total",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("discount", {
+    id: "discount",
+    header: "Discount",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("witnesscharges", {
+    id: "witnesscharges",
+    header: "Witness",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("samplehandling", {
+    id: "samplehandling",
+    header: "Sample Handling",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("sampleprep", {
+    id: "sampleprep",
+    header: "Sample Preparation",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("freight", {
+    id: "freight",
+    header: "Freight Charges",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("mobilisation", {
+    id: "mobilisation",
+    header: "Mobilization",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("subtotal2", {
+    id: "subtotal2",
+    header: "Total Taxable",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("sgstamount", {
+    id: "sgstamount",
+    header: "Sgst",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("cgstamount", {
+    id: "cgstamount",
+    header: "Cgst",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("igstamount", {
+    id: "igstamount",
+    header: "Igst",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("finaltotal", {
+    id: "finaltotal",
+    header: "Invoice Amount",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("remaining", {
+    id: "remaining",
+    header: "Remaining Amount",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("typeofinvoice", {
+    id: "typeofinvoice",
+    header: "Invoice Type",
+    cell: (info) => info.getValue() ?? "-",
+  }),
+  columnHelper.accessor("status", {
+    id: "status",
+    header: "Status",
+    cell: (info) => formatStatus(info.getValue()),
   }),
 ];

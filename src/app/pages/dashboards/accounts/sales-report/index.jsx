@@ -1,317 +1,166 @@
-// Import Dependencies
-import {
-  flexRender,
-  getCoreRowModel,
-  getFacetedMinMaxValues,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import axios from "utils/axios";
 
-// Local Imports
-import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
-import { TableSortIcon } from "components/shared/table/TableSortIcon";
-import { Page } from "components/shared/Page";
-import { useLockScrollbar, useDidUpdate, useLocalStorage } from "hooks";
-import { fuzzyFilter } from "utils/react-table/fuzzyFilter";
-import { useSkipper } from "utils/react-table/useSkipper";
-import { Toolbar } from "./Toolbar";
-import { columns } from "./columns";
-import { PaginationSection } from "components/shared/table/PaginationSection";
-import { SelectedRowsActions } from "./SelectedRowsActions";
-import { useThemeContext } from "app/contexts/theme/context";
-import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
+const SalesReport = () => {
+  const [filters, setFilters] = useState({
+    startdate: "",
+    enddate: "",
+    ctype: "",
+    customerid: "",
+    bd: "",
+    specificpurpose: "",
+  });
 
-// ----------------------------------------------------------------------
+  const [data, setData] = useState([]);
 
-const isSafari = getUserAgentBrowser() === "Safari";
-
-export default function OrdersDatatableV1() {
-  const { cardSkin } = useThemeContext();
-
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // ✅ Fetch from API
-  useEffect(() => {
-    fetchModes();
-  }, []);
-
-  const fetchModes = async () => {
-  try {
-    setLoading(true); // start loader
-    const response = await axios.get("/master/mode-list");
-    
-    // console.log("API response:", response.data); // debug
-
-    if (response.data.status && Array.isArray(response.data.data)) {
-      setOrders(response.data.data); // ✅ correct assignment
-    } else {
-      console.warn("Unexpected response structure:", response.data);
-      setOrders([]); // fallback
+  const fetchReport = async () => {
+    try {
+      const res = await axios.get("/sales-report", {
+        params: filters,
+      });
+      const rows = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      setData(rows);
+    } catch (err) {
+      console.error(err);
     }
+  };
 
-  } catch (err) {
-    console.error("Error fetching mode list:", err);
-  } finally {
-    setLoading(false); // stop loader
-  }
-};
+  const handleChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+  };
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchReport();
+  };
 
-
-  const [tableSettings, setTableSettings] = useState({
-    enableFullScreen: false,
-    enableRowDense: false,
-  });
-
-  const [globalFilter, setGlobalFilter] = useState("");
-
-  const [sorting, setSorting] = useState([]);
-
-  const [columnVisibility, setColumnVisibility] = useLocalStorage(
-    "column-visibility-orders-1",
-    {},
+  const totalAmount = data.reduce(
+    (sum, row) => sum + Number(row.subtotal || 0),
+    0,
   );
-
-  const [columnPinning, setColumnPinning] = useLocalStorage(
-    "column-pinning-orders-1",
-    {},
-  );
-
-  const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
-
-  const table = useReactTable({
-    data: orders,
-    columns: columns,
-    state: {
-      globalFilter,
-      sorting,
-      columnVisibility,
-      columnPinning,
-      tableSettings,
-    },
-        meta: {
-  updateData: (rowIndex, columnId, value) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.map((row, index) => {
-        if (index === rowIndex) {
-          return {
-            ...old[rowIndex],
-            [columnId]: value,
-          };
-        }
-        return row;
-      })
-    );
-  },
-  deleteRow: (row) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.filter((oldRow) => oldRow.id !== row.original.id)
-    );
-  },
-  deleteRows: (rows) => {
-    skipAutoResetPageIndex();
-    const rowIds = rows.map((row) => row.original.id);
-    setOrders((old) => old.filter((row) => !rowIds.includes(row.id)));
-  },
-  setTableSettings
-},
-    filterFns: {
-      fuzzy: fuzzyFilter,
-    },
-    enableSorting: tableSettings.enableSorting,
-    enableColumnFilters: tableSettings.enableColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    onGlobalFilterChange: setGlobalFilter,
-    getFilteredRowModel: getFilteredRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues(),
-    globalFilterFn: fuzzyFilter,
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-
-    getPaginationRowModel: getPaginationRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onColumnPinningChange: setColumnPinning,
-
-    autoResetPageIndex,
-  });
-
-  useDidUpdate(() => table.resetRowSelection(), [orders]);
-
-  useLockScrollbar(tableSettings.enableFullScreen);
-
-  // ✅ Loading UI
-  if (loading) {
-    return (
-      <Page title="Modes List">
-        <div className="flex h-[60vh] items-center justify-center text-gray-600">
-          <svg className="animate-spin h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"></path>
-          </svg>
-          Loading Modes...
-        </div>
-      </Page>
-    );
-  }
 
   return (
-    <Page title="Modes List">
-      <div className="transition-content w-full pb-5">
-        <div
-          className={clsx(
-            "flex h-full w-full flex-col",
-            tableSettings.enableFullScreen &&
-              "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
-          )}
-        >
-          <Toolbar table={table} />
-          <div
-            className={clsx(
-              "transition-content flex grow flex-col pt-3",
-              tableSettings.enableFullScreen
-                ? "overflow-hidden"
-                : "px-(--margin-x)",
-            )}
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="rounded-2xl bg-white p-6 shadow-md">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Sales Report</h2>
+          <button
+            onClick={() => window.history.back()}
+            className="rounded-lg border px-4 py-2 hover:bg-gray-100"
           >
-            <Card
-              className={clsx(
-                "relative flex grow flex-col",
-                tableSettings.enableFullScreen && "overflow-hidden",
-              )}
-            >
-              <div className="table-wrapper min-w-full grow overflow-x-auto">
-                <Table
-                  hoverable
-                  dense={tableSettings.enableRowDense}
-                  sticky={tableSettings.enableFullScreen}
-                  className="w-full text-left rtl:text-right"
-                >
-                  <THead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <Tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <Th
-                            key={header.id}
-                            className={clsx(
-                              "bg-gray-200 font-semibold uppercase text-gray-800 dark:bg-dark-800 dark:text-dark-100 first:ltr:rounded-tl-lg last:ltr:rounded-tr-lg first:rtl:rounded-tr-lg last:rtl:rounded-tl-lg",
-                              header.column.getCanPin() && [
-                                header.column.getIsPinned() === "left" &&
-                                  "sticky z-2 ltr:left-0 rtl:right-0",
-                                header.column.getIsPinned() === "right" &&
-                                  "sticky z-2 ltr:right-0 rtl:left-0",
-                              ],
-                            )}
-                          >
-                            {header.column.getCanSort() ? (
-                              <div
-                                className="flex cursor-pointer select-none items-center space-x-3 "
-                                onClick={header.column.getToggleSortingHandler()}
-                              >
-                                <span className="flex-1">
-                                  {header.isPlaceholder
-                                    ? null
-                                    : flexRender(
-                                        header.column.columnDef.header,
-                                        header.getContext(),
-                                      )}
-                                </span>
-                                <TableSortIcon
-                                  sorted={header.column.getIsSorted()}
-                                />
-                              </div>
-                            ) : header.isPlaceholder ? null : (
-                              flexRender(
-                                header.column.columnDef.header,
-                                header.getContext(),
-                              )
-                            )}
-                          </Th>
-                        ))}
-                      </Tr>
-                    ))}
-                  </THead>
-                  <TBody>
-                    {table.getRowModel().rows.map((row) => {
-                      return (
-                        <Tr
-                          key={row.id}
-                          className={clsx(
-                            "relative border-y border-transparent border-b-gray-200 dark:border-b-dark-500",
-                            row.getIsSelected() && !isSafari &&
-                              "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
-                          )}
-                        >
-                          {/* first row is a normal row */}
-                          {row.getVisibleCells().map((cell) => {
-                            return (
-                              <Td
-                                key={cell.id}
-                                className={clsx(
-                                  "relative bg-white",
-                                  cardSkin === "shadow"
-                                    ? "dark:bg-dark-700"
-                                    : "dark:bg-dark-900",
-                                  cell.column.getCanPin() && [
-                                    cell.column.getIsPinned() === "left" &&
-                                      "sticky z-2 ltr:left-0 rtl:right-0",
-                                    cell.column.getIsPinned() === "right" &&
-                                      "sticky z-2 ltr:right-0 rtl:left-0",
-                                  ],
-                                )}
-                              >
-                                {cell.column.getIsPinned() && (
-                                  <div
-                                    className={clsx(
-                                      "pointer-events-none absolute inset-0 border-gray-200 dark:border-dark-500",
-                                      cell.column.getIsPinned() === "left"
-                                        ? "ltr:border-r rtl:border-l"
-                                        : "ltr:border-l rtl:border-r",
-                                    )}
-                                  ></div>
-                                )}
-                                {flexRender(
-                                  cell.column.columnDef.cell,
-                                  cell.getContext(),
-                                )}
-                              </Td>
-                            );
-                          })}
-                        </Tr>
-                      );
-                    })}
-                  </TBody>
-                </Table>
-              </div>
-              <SelectedRowsActions table={table} />
-              {table.getCoreRowModel().rows.length && (
-                <div
-                  className={clsx(
-                    "px-4 pb-4 sm:px-5 sm:pt-4",
-                    tableSettings.enableFullScreen &&
-                      "bg-gray-50 dark:bg-dark-800",
-                    !(
-                      table.getIsSomeRowsSelected() ||
-                      table.getIsAllRowsSelected()
-                    ) && "pt-4",
-                  )}
-                >
-                  <PaginationSection table={table} />
-                </div>
-              )}
-            </Card>
-          </div>
+             Back
+          </button>
+        </div>
+
+        <form
+          onSubmit={handleSearch}
+          className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4"
+        >
+          <input
+            type="date"
+            name="startdate"
+            value={filters.startdate}
+            onChange={handleChange}
+            className="rounded-lg border p-2"
+          />
+
+          <input
+            type="date"
+            name="enddate"
+            value={filters.enddate}
+            onChange={handleChange}
+            className="rounded-lg border p-2"
+          />
+
+          <input
+            type="text"
+            name="ctype"
+            placeholder="Customer Type"
+            value={filters.ctype}
+            onChange={handleChange}
+            className="rounded-lg border p-2"
+          />
+
+          <input
+            type="text"
+            name="customerid"
+            placeholder="Customer ID"
+            value={filters.customerid}
+            onChange={handleChange}
+            className="rounded-lg border p-2"
+          />
+
+          <input
+            type="text"
+            name="bd"
+            placeholder="BD"
+            value={filters.bd}
+            onChange={handleChange}
+            className="rounded-lg border p-2"
+          />
+
+          <input
+            type="text"
+            name="specificpurpose"
+            placeholder="Specific Purpose"
+            value={filters.specificpurpose}
+            onChange={handleChange}
+            className="rounded-lg border p-2"
+          />
+
+          <button
+            type="submit"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
+            Search
+          </button>
+        </form>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full overflow-hidden rounded-lg border border-gray-200">
+            <thead className="bg-gray-100 text-sm">
+              <tr>
+                <th className="p-3 text-left">Sr No</th>
+                <th className="p-3 text-left">Customer</th>
+                <th className="p-3 text-left">Verticle</th>
+                <th className="p-3 text-left">Specific Purpose</th>
+                <th className="p-3 text-left">TRF/CRF</th>
+                <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">BD</th>
+                <th className="p-3 text-left">Item Total</th>
+              </tr>
+            </thead>
+
+            <tbody className="text-sm">
+              {data.map((row, index) => (
+                <tr key={index} className="border-t transition hover:bg-gray-50">
+                  <td className="p-3">{index + 1}</td>
+                  <td className="p-3">{row.customername}</td>
+                  <td className="p-3">{row.department}</td>
+                  <td className="p-3">{row.spname}</td>
+                  <td className="p-3">{row.id}</td>
+                  <td className="p-3">
+                    {row.date
+                      ? new Date(row.date).toLocaleDateString("en-GB")
+                      : ""}
+                  </td>
+                  <td className="p-3">{row.name}</td>
+                  <td className="p-3 font-medium">{row.subtotal}</td>
+                </tr>
+              ))}
+
+              <tr className="bg-gray-100 font-semibold">
+                <td colSpan="7" className="p-3 text-right">
+                  Total Amount
+                </td>
+                <td className="p-3">{totalAmount}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-    </Page>
+    </div>
   );
-}
+};
+
+export default SalesReport;

@@ -1,5 +1,5 @@
 // Import Dependencies
-import {MagnifyingGlassIcon} from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 // import { TbUpload } from "react-icons/tb";
 import clsx from "clsx";
 import {
@@ -23,34 +23,21 @@ import { useBreakpointsContext } from "app/contexts/breakpoint/context";
 export function Toolbar({ table }) {
   const { isXs } = useBreakpointsContext();
   const isFullScreenEnabled = table.getState().tableSettings.enableFullScreen;
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   return (
     <div className="table-toolbar">
       <div
         className={clsx(
-          "transition-content flex items-center justify-between gap-4",
+          "transition-content flex w-full items-center justify-between gap-4",
           isFullScreenEnabled ? "px-4 sm:px-5" : "px-(--margin-x) pt-4",
         )}
       >
           {/*  */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          {/* Heading */}
-          <div className="min-w-0">
-            <h2 className="text-xl font-semibold tracking-wide text-gray-800 dark:text-dark-50">
-            Modes List
-            </h2>
-          </div>
-
-          {/* Button */}
-          <div>
-          <Button
-              onClick={() => navigate("/dashboards/master-data/modes/create")}
-              className="h-9 rounded-md px-4 text-sm font-medium"
-              color="primary"
-            >+ Add New Modes </Button>
-          
-          </div>
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold tracking-wide text-gray-800 dark:text-dark-50">
+            Consent Letter List
+          </h2>
         </div>
         
         {isXs ? (
@@ -75,104 +62,27 @@ export function Toolbar({ table }) {
               <MenuItem>
                 {({ focus }) => (
                   <button
+                    onClick={() => navigate("/dashboards/accounts/consent-letter/add")}
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
                         "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
-                    <span>+ Add New Unittype/ Parameter</span>
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    className={clsx(
-                      "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
-                      focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
-                    )}
-                  >
-                    <span>Share</span>
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    className={clsx(
-                      "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
-                      focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
-                    )}
-                  >
-                    <span>Print</span>
-                  </button>
-                )}
-              </MenuItem>
-              <hr className="mx-3 my-1.5 h-px border-gray-150 dark:border-dark-500" />
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    className={clsx(
-                      "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
-                      focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
-                    )}
-                  >
-                    <span>Import Orders</span>
-                  </button>
-                )}
-              </MenuItem>
-              <hr className="mx-3 my-1.5 h-px border-gray-150 dark:border-dark-500" />
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    className={clsx(
-                      "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
-                      focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
-                    )}
-                  >
-                    <span>Export as PDF</span>
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    className={clsx(
-                      "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
-                      focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
-                    )}
-                  >
-                    <span>Export as CSV</span>
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    className={clsx(
-                      "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
-                      focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
-                    )}
-                  >
-                    <span>Save Table as View</span>
+                    + Add Consent letter
                   </button>
                 )}
               </MenuItem>
             </Transition>
           </Menu>
         ) : (
-          <div className="flex space-x-2 ">
-          
-
-          
-            
+          <div className="shrink-0">
+            <button
+              onClick={() => navigate("/dashboards/accounts/consent-letter/add")}
+              className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              + Add Consent letter
+            </button>
           </div>
         )}
       </div>

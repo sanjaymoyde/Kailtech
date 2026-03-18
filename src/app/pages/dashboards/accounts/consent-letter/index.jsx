@@ -11,7 +11,6 @@ import {
 } from "@tanstack/react-table";
 import clsx from "clsx";
 import { useState, useEffect } from "react";
-import axios from "utils/axios";
 
 // Local Imports
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -26,6 +25,7 @@ import { PaginationSection } from "components/shared/table/PaginationSection";
 import { SelectedRowsActions } from "./SelectedRowsActions";
 import { useThemeContext } from "app/contexts/theme/context";
 import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
+import axios from "utils/axios";
 
 // ----------------------------------------------------------------------
 
@@ -37,31 +37,15 @@ export default function OrdersDatatableV1() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch from API
   useEffect(() => {
-    fetchModes();
+    axios
+      .get("/consent-letters")
+      .then((res) => {
+        setOrders(Array.isArray(res.data) ? res.data : res.data?.data || []);
+      })
+      .catch((err) => console.error("Failed to load consent letters:", err))
+      .finally(() => setLoading(false));
   }, []);
-
-  const fetchModes = async () => {
-  try {
-    setLoading(true); // start loader
-    const response = await axios.get("/master/mode-list");
-    
-    // console.log("API response:", response.data); // debug
-
-    if (response.data.status && Array.isArray(response.data.data)) {
-      setOrders(response.data.data); // ✅ correct assignment
-    } else {
-      console.warn("Unexpected response structure:", response.data);
-      setOrders([]); // fallback
-    }
-
-  } catch (err) {
-    console.error("Error fetching mode list:", err);
-  } finally {
-    setLoading(false); // stop loader
-  }
-};
 
 
 
@@ -152,20 +136,34 @@ export default function OrdersDatatableV1() {
   // ✅ Loading UI
   if (loading) {
     return (
-      <Page title="Modes List">
+      <Page title="Consent Letter List">
         <div className="flex h-[60vh] items-center justify-center text-gray-600">
-          <svg className="animate-spin h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"></path>
+          <svg
+            className="mr-2 h-6 w-6 animate-spin text-blue-600"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"
+            ></path>
           </svg>
-          Loading Modes...
+          Loading Consent Letters...
         </div>
       </Page>
     );
   }
 
   return (
-    <Page title="Modes List">
+    <Page title="Consent Letter List">
       <div className="transition-content w-full pb-5">
         <div
           className={clsx(
@@ -189,6 +187,23 @@ export default function OrdersDatatableV1() {
                 tableSettings.enableFullScreen && "overflow-hidden",
               )}
             >
+              <div className="flex items-center justify-between px-4 py-2 text-sm text-gray-600">
+                <span>
+                  Showing{" "}
+                  {table.getFilteredRowModel().rows.length === 0
+                    ? 0
+                    : table.getState().pagination.pageIndex *
+                        table.getState().pagination.pageSize +
+                      1}{" "}
+                  to{" "}
+                  {Math.min(
+                    (table.getState().pagination.pageIndex + 1) *
+                      table.getState().pagination.pageSize,
+                    table.getFilteredRowModel().rows.length,
+                  )}{" "}
+                  of {table.getFilteredRowModel().rows.length} entries
+                </span>
+              </div>
               <div className="table-wrapper min-w-full grow overflow-x-auto">
                 <Table
                   hoverable

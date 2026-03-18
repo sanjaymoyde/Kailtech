@@ -2822,33 +2822,108 @@ const protectedRoutes = {
                 },
                 {
                   path: "testing-invoices",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices"
-                      )
-                    ).default,
-                  }),
+                  children: [
+                    {
+                      path: "",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/GenerateInvoiceTesting"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add-advance",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/GenerateDirectInvoiceTesting"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add-foc",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/CreateFocBill"
+                          )
+                        ).default,
+                      }),
+                    },
+                  ],
                 },
                 {
                   path: "past-invoices",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/past-invoices"
-                      )
-                    ).default,
-                  }),
+                  children: [
+                    {
+                      path: "",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/past-invoices"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "edit/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/past-invoices/EditPastInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add-opening-balance",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/past-invoices/AddOpeningBalance"
+                          )
+                        ).default,
+                      }),
+                    },
+                  ],
                 },
                 {
                   path: "canceled-invoices",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/canceled-invoices"
-                      )
-                    ).default,
-                  }),
+                  children: [
+                    {
+                      path: "",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/canceled-invoices"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "view/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/canceled-invoices/ViewInvoiceCalibration"
+                          )
+                        ).default,
+                      }),
+                    },
+                  ],
                 },
                 {
                   path: "invoice-cancelation-request",
@@ -2862,11 +2937,58 @@ const protectedRoutes = {
                 },
                 {
                   path: "credit-note",
-                  lazy: async () => ({
-                    Component: (
-                      await import("app/pages/dashboards/accounts/credit-note")
-                    ).default,
-                  }),
+                  children: [
+                    {
+                      path: "",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/credit-note"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/credit-note/AddCreditNote"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "view/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/credit-note/ViewCreditNote"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "edit/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/credit-note/AddCreditNote"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "link-invoices/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/credit-note/LinkInvoicesToCreditNote"
+                          )
+                        ).default,
+                      }),
+                    },
+                  ],
                 },
                 {
                   path: "invoice-report",
@@ -2905,6 +3027,16 @@ const protectedRoutes = {
                   }),
                 },
                 {
+                  path: "igst",
+                  lazy: async () => ({
+                    Component: (
+                      await import(
+                        "app/pages/dashboards/accounts/gstr-1/Igst"
+                      )
+                    ).default,
+                  }),
+                },
+                {
                   path: "consent-letter",
                   lazy: async () => ({
                     Component: (
@@ -2915,20 +3047,75 @@ const protectedRoutes = {
                   }),
                 },
                 {
-                  path: "expense-category",
+                  path: "consent-letter/add",
                   lazy: async () => ({
                     Component: (
                       await import(
-                        "app/pages/dashboards/accounts/expense-category"
+                        "app/pages/dashboards/accounts/consent-letter/AddConsentLetter"
                       )
                     ).default,
                   }),
+                },
+                {
+                  path: "consent-letter/view/:id",
+                  lazy: async () => ({
+                    Component: (
+                      await import(
+                        "app/pages/dashboards/accounts/consent-letter/ViewConsentLetter"
+                      )
+                    ).default,
+                  }),
+                },
+                {
+                  path: "expense-category",
+                  children: [
+                    {
+                      path: "",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/expense-category"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/expense-category/AddExpenseCategory"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "edit/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/expense-category/EditExpenseCategory"
+                          )
+                        ).default,
+                      }),
+                    },
+                  ],
                 },
                 {
                   path: "expenses",
                   lazy: async () => ({
                     Component: (
                       await import("app/pages/dashboards/accounts/expenses")
+                    ).default,
+                  }),
+                },
+                {
+                  path: "expenses/add",
+                  lazy: async () => ({
+                    Component: (
+                      await import(
+                        "app/pages/dashboards/accounts/expenses/AddExpense"
+                      )
                     ).default,
                   }),
                 },

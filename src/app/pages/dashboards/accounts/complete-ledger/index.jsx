@@ -36,32 +36,57 @@ export default function OrdersDatatableV1() {
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    startdate: "",
+    enddate: "",
+    customerid: "",
+    type: "",
+    bd: "",
+  });
 
-  // ✅ Fetch from API
+  const fetchLedger = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get("/ledger", { params: filters });
+      const rows = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      const mapped = rows.map((row) => {
+        const date = row.transactiondate
+          ? new Date(row.transactiondate).toLocaleDateString("en-GB")
+          : "";
+        const vchNo =
+          row.source === "payment" && row.refid
+            ? `${row.refno}\nReceipt No:${row.refid}`
+            : row.refno;
+        return {
+          date,
+          party: row.name || "Suspense",
+          particulars: row.transactiontype,
+          vch_type: row.source,
+          vch_no: vchNo,
+          debit: row.debit,
+          credit: row.credit,
+        };
+      });
+      setOrders(mapped);
+    } catch (err) {
+      console.error("Error fetching ledger:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchModes();
+    fetchLedger();
   }, []);
 
-  const fetchModes = async () => {
-  try {
-    setLoading(true); // start loader
-    const response = await axios.get("/master/mode-list");
-    
-    // console.log("API response:", response.data); // debug
+  const handleFilterChange = (name, value) => {
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
 
-    if (response.data.status && Array.isArray(response.data.data)) {
-      setOrders(response.data.data); // ✅ correct assignment
-    } else {
-      console.warn("Unexpected response structure:", response.data);
-      setOrders([]); // fallback
-    }
-
-  } catch (err) {
-    console.error("Error fetching mode list:", err);
-  } finally {
-    setLoading(false); // stop loader
-  }
-};
+  const handleSearch = (e) => {
+    e?.preventDefault?.();
+    fetchLedger();
+  };
 
 
 
@@ -149,10 +174,27 @@ export default function OrdersDatatableV1() {
 
   useLockScrollbar(tableSettings.enableFullScreen);
 
+  const visibleColumns = table.getVisibleLeafColumns();
+  const debitColumnIndex = visibleColumns.findIndex(
+    (col) => col.id === "debit",
+  );
+  const creditColumnIndex = visibleColumns.findIndex(
+    (col) => col.id === "credit",
+  );
+  const rowsForTotal = table.getFilteredRowModel().rows;
+  const totalDebit = rowsForTotal.reduce((sum, row) => {
+    const value = Number(row.original?.debit ?? 0);
+    return Number.isNaN(value) ? sum : sum + value;
+  }, 0);
+  const totalCredit = rowsForTotal.reduce((sum, row) => {
+    const value = Number(row.original?.credit ?? 0);
+    return Number.isNaN(value) ? sum : sum + value;
+  }, 0);
+
   // ✅ Loading UI
   if (loading) {
     return (
-      <Page title="Modes List">
+      <Page title="Ledger">
         <div className="flex h-[60vh] items-center justify-center text-gray-600">
           <svg className="animate-spin h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -165,7 +207,7 @@ export default function OrdersDatatableV1() {
   }
 
   return (
-    <Page title="Modes List">
+    <Page title="Ledger">
       <div className="transition-content w-full pb-5">
         <div
           className={clsx(
@@ -174,7 +216,11 @@ export default function OrdersDatatableV1() {
               "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
           )}
         >
-          <Toolbar table={table} />
+          <Toolbar
+            filters={filters}
+            onChange={handleFilterChange}
+            onSearch={handleSearch}
+          />
           <div
             className={clsx(
               "transition-content flex grow flex-col pt-3",
@@ -289,6 +335,36 @@ export default function OrdersDatatableV1() {
                         </Tr>
                       );
                     })}
+                    {rowsForTotal.length > 0 && debitColumnIndex !== -1 && creditColumnIndex !== -1 && (
+                      <Tr className="border-t border-gray-200 dark:border-dark-500">
+                        {visibleColumns.map((col, idx) => {
+                          if (idx < debitColumnIndex) {
+                            return idx === debitColumnIndex - 1 ? (
+                              <Td key={col.id} className="text-right font-semibold">
+                                Total
+                              </Td>
+                            ) : (
+                              <Td key={col.id}></Td>
+                            );
+                          }
+                          if (idx === debitColumnIndex) {
+                            return (
+                              <Td key={col.id} className="font-semibold">
+                                {totalDebit}
+                              </Td>
+                            );
+                          }
+                          if (idx === creditColumnIndex) {
+                            return (
+                              <Td key={col.id} className="font-semibold">
+                                {totalCredit}
+                              </Td>
+                            );
+                          }
+                          return <Td key={col.id}></Td>;
+                        })}
+                      </Tr>
+                    )}
                   </TBody>
                 </Table>
               </div>

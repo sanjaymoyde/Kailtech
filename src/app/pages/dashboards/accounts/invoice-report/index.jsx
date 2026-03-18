@@ -36,32 +36,38 @@ export default function OrdersDatatableV1() {
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    startdate: "",
+    enddate: "",
+    customerid: "",
+    bd: "",
+    typeofinvoice: "",
+  });
 
-  // ✅ Fetch from API
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get("/invoices", { params: filters });
+      setOrders(Array.isArray(res.data) ? res.data : res.data?.data || []);
+    } catch (err) {
+      console.error("Error fetching invoices:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchModes();
+    fetchInvoices();
   }, []);
 
-  const fetchModes = async () => {
-  try {
-    setLoading(true); // start loader
-    const response = await axios.get("/master/mode-list");
-    
-    // console.log("API response:", response.data); // debug
+  const handleFilterChange = (name, value) => {
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
 
-    if (response.data.status && Array.isArray(response.data.data)) {
-      setOrders(response.data.data); // ✅ correct assignment
-    } else {
-      console.warn("Unexpected response structure:", response.data);
-      setOrders([]); // fallback
-    }
-
-  } catch (err) {
-    console.error("Error fetching mode list:", err);
-  } finally {
-    setLoading(false); // stop loader
-  }
-};
+  const handleSearch = (e) => {
+    e?.preventDefault?.();
+    fetchInvoices();
+  };
 
 
 
@@ -152,7 +158,7 @@ export default function OrdersDatatableV1() {
   // ✅ Loading UI
   if (loading) {
     return (
-      <Page title="Modes List">
+      <Page title="Invoice List">
         <div className="flex h-[60vh] items-center justify-center text-gray-600">
           <svg className="animate-spin h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -165,7 +171,7 @@ export default function OrdersDatatableV1() {
   }
 
   return (
-    <Page title="Modes List">
+    <Page title="Invoice List">
       <div className="transition-content w-full pb-5">
         <div
           className={clsx(
@@ -174,7 +180,11 @@ export default function OrdersDatatableV1() {
               "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
           )}
         >
-          <Toolbar table={table} />
+          <Toolbar
+            filters={filters}
+            onChange={handleFilterChange}
+            onSearch={handleSearch}
+          />
           <div
             className={clsx(
               "transition-content flex grow flex-col pt-3",
@@ -289,6 +299,64 @@ export default function OrdersDatatableV1() {
                         </Tr>
                       );
                     })}
+                    {table.getFilteredRowModel().rows.length > 0 && (
+                      <Tr className="border-t border-gray-200 dark:border-dark-500">
+                        {table.getVisibleLeafColumns().map((col) => {
+                          const id = col.id;
+                          const rows = table.getFilteredRowModel().rows;
+                          const sum = (field) =>
+                            rows.reduce((acc, r) => acc + Number(r.original?.[field] || 0), 0);
+
+                          if (id === "invoiceno") {
+                            return (
+                              <Td key={id} className="text-right font-semibold">
+                                Total
+                              </Td>
+                            );
+                          }
+                          if (id === "subtotal") {
+                            return <Td key={id} className="font-semibold">{sum("subtotal")}</Td>;
+                          }
+                          if (id === "discount") {
+                            return <Td key={id} className="font-semibold">{sum("discount")}</Td>;
+                          }
+                          if (id === "witnesscharges") {
+                            return <Td key={id} className="font-semibold">{sum("witnesscharges")}</Td>;
+                          }
+                          if (id === "samplehandling") {
+                            return <Td key={id} className="font-semibold">{sum("samplehandling")}</Td>;
+                          }
+                          if (id === "sampleprep") {
+                            return <Td key={id} className="font-semibold">{sum("sampleprep")}</Td>;
+                          }
+                          if (id === "freight") {
+                            return <Td key={id} className="font-semibold">{sum("freight")}</Td>;
+                          }
+                          if (id === "mobilisation") {
+                            return <Td key={id} className="font-semibold">{sum("mobilisation")}</Td>;
+                          }
+                          if (id === "subtotal2") {
+                            return <Td key={id} className="font-semibold">{sum("subtotal2")}</Td>;
+                          }
+                          if (id === "sgstamount") {
+                            return <Td key={id} className="font-semibold">{sum("sgstamount")}</Td>;
+                          }
+                          if (id === "cgstamount") {
+                            return <Td key={id} className="font-semibold">{sum("cgstamount")}</Td>;
+                          }
+                          if (id === "igstamount") {
+                            return <Td key={id} className="font-semibold">{sum("igstamount")}</Td>;
+                          }
+                          if (id === "finaltotal") {
+                            return <Td key={id} className="font-semibold">{sum("finaltotal")}</Td>;
+                          }
+                          if (id === "remaining") {
+                            return <Td key={id} className="font-semibold">{sum("remaining")}</Td>;
+                          }
+                          return <Td key={id}></Td>;
+                        })}
+                      </Tr>
+                    )}
                   </TBody>
                 </Table>
               </div>

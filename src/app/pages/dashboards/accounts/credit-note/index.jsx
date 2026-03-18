@@ -43,25 +43,16 @@ export default function OrdersDatatableV1() {
   }, []);
 
   const fetchModes = async () => {
-  try {
-    setLoading(true); // start loader
-    const response = await axios.get("/master/mode-list");
-    
-    // console.log("API response:", response.data); // debug
-
-    if (response.data.status && Array.isArray(response.data.data)) {
-      setOrders(response.data.data); // ✅ correct assignment
-    } else {
-      console.warn("Unexpected response structure:", response.data);
-      setOrders([]); // fallback
+    try {
+      setLoading(true);
+      const res = await axios.get("/credit-notes");
+      setOrders(Array.isArray(res.data) ? res.data : res.data?.data || []);
+    } catch (err) {
+      console.error("Error fetching credit notes:", err);
+    } finally {
+      setLoading(false);
     }
-
-  } catch (err) {
-    console.error("Error fetching mode list:", err);
-  } finally {
-    setLoading(false); // stop loader
-  }
-};
+  };
 
 
 
@@ -149,23 +140,22 @@ export default function OrdersDatatableV1() {
 
   useLockScrollbar(tableSettings.enableFullScreen);
 
-  // ✅ Loading UI
   if (loading) {
     return (
-      <Page title="Modes List">
+      <Page title="Credit Note List">
         <div className="flex h-[60vh] items-center justify-center text-gray-600">
           <svg className="animate-spin h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"></path>
           </svg>
-          Loading Modes...
+          Loading...
         </div>
       </Page>
     );
   }
 
   return (
-    <Page title="Modes List">
+    <Page title="Credit Note List">
       <div className="transition-content w-full pb-5">
         <div
           className={clsx(
@@ -241,23 +231,28 @@ export default function OrdersDatatableV1() {
                     ))}
                   </THead>
                   <TBody>
-                    {table.getRowModel().rows.map((row) => {
-                      return (
-                        <Tr
-                          key={row.id}
-                          className={clsx(
-                            "relative border-y border-transparent border-b-gray-200 dark:border-b-dark-500",
-                            row.getIsSelected() && !isSafari &&
-                              "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
-                          )}
-                        >
-                          {/* first row is a normal row */}
+                        {table.getRowModel().rows.map((row) => {
+                          // PHP: highlight row if customername != billingcustomer
+                          const isMismatch =
+                            row.original.customername?.trim() !==
+                            row.original.billingcustomer?.trim();
+                          return (
+                            <Tr
+                              key={row.id}
+                              className={clsx(
+                                "relative border-y border-transparent border-b-gray-200 dark:border-b-dark-500",
+                                isMismatch && "bg-red-100 dark:bg-red-900/20",
+                                row.getIsSelected() && !isSafari &&
+                                  "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
+                              )}
+                            >
                           {row.getVisibleCells().map((cell) => {
                             return (
                               <Td
                                 key={cell.id}
                                 className={clsx(
                                   "relative bg-white",
+                                  isMismatch && "!bg-red-100 dark:!bg-red-900/20",
                                   cardSkin === "shadow"
                                     ? "dark:bg-dark-700"
                                     : "dark:bg-dark-900",
@@ -287,8 +282,8 @@ export default function OrdersDatatableV1() {
                             );
                           })}
                         </Tr>
-                      );
-                    })}
+                          );
+                        })}
                   </TBody>
                 </Table>
               </div>
