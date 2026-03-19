@@ -145,7 +145,7 @@ export default function ViewCreditNote() {
                 <tr>
                   <th className="border border-gray-300 p-2 text-center dark:border-dark-500">S.No.</th>
                   <th className="border border-gray-300 p-2 text-center dark:border-dark-500">Description</th>
-                  <th className="border border-gray-300 p-2 text-center dark:border-dark-500">No's</th>
+                  <th className="border border-gray-300 p-2 text-center dark:border-dark-500">No&apos;s</th>
                   {data.potype === "Normal" && (
                     <>
                       <th className="border border-gray-300 p-2 text-center dark:border-dark-500">Rate</th>
