@@ -497,29 +497,16 @@ export default function AddTestingInvoice() {
         const res = await axios.get(
           `/accounts/get-testing-inwarddetail?customerid=${customerid}&potype=${potype}&ponumber=${encodeURIComponent(po)}`,
         );
+        // Response: { status, data: { inwards: [{id, display}], gstno, statecode } }
         const d = res.data?.data ?? res.data ?? {};
-        // Normalize: could be array (just inwards) or object with inwards + customer
-        if (Array.isArray(d)) {
-          setInwardOptions(d);
-        } else {
-          setInwardOptions(Array.isArray(d.inwards) ? d.inwards : []);
-          if (d.customer) {
-            setBillingInfo(d.customer);
-            if (d.customer.discount) {
-              setCharge("discnumber", d.customer.discount);
-              setCharge("disctype", "%");
-            }
-          } else if (d.statecode || d.gstno) {
-            // statecode/gstno at top level (no nested customer object)
-            setBillingInfo({
-              statecode: d.statecode ?? "",
-              gstno: d.gstno ?? "",
-              name: d.name ?? "",
-              address: d.address ?? "",
-              pan: d.pan ?? "",
-              addressid: d.addressid ?? "",
-            });
-          }
+        setInwardOptions(Array.isArray(d.inwards) ? d.inwards : []);
+        // statecode/gstno are at top level of data (no nested customer object)
+        if (d.statecode || d.gstno) {
+          setBillingInfo((prev) => ({
+            ...(prev ?? {}),
+            statecode: d.statecode ?? "",
+            gstno: d.gstno ?? "",
+          }));
         }
       } catch {
         toast.error("Failed to load inward entries");
@@ -563,31 +550,31 @@ export default function AddTestingInvoice() {
           axios.get(`/accounts/get-testing-brnnumber?${inwardParams}`),
         ]);
 
-        // Normalize itemsRes
+        // Response: { status, data: { customer, invoice_meta, charges, items } }
         const itemsData = itemsRes.data?.data ?? itemsRes.data ?? {};
 
-        const customerInfo =
-          itemsData.customer ?? itemsData.billing_customer ?? null;
+        // customer: { id, name, address, statecode, gstno, pan }
+        const customerInfo = itemsData.customer ?? null;
         if (customerInfo) {
-          setBillingInfo(customerInfo);
-          if (customerInfo.discount && !charges.discnumber) {
-            setCharge("discnumber", customerInfo.discount);
-            setCharge("disctype", "%");
-          }
-          if (customerInfo.freight) setCharge("freight", customerInfo.freight);
-          if (customerInfo.mobilisation)
-            setCharge("mobilisation", customerInfo.mobilisation);
-          if (customerInfo.wcharges)
-            setCharge("witnessnumber", customerInfo.wcharges);
-          if (customerInfo.wchargestype) {
-            setCharge(
-              "witnesstype",
-              customerInfo.wchargestype === "2" ? "%" : "amount",
-            );
-          }
+          setBillingInfo((prev) => ({
+            ...(prev ?? {}),
+            ...customerInfo,
+          }));
         }
 
-        const rawItems = itemsData.items ?? itemsData.data ?? [];
+        // charges: { freight, mobilisation, witness, witness_type }
+        const ch = itemsData.charges ?? {};
+        if (ch.freight)      setCharge("freight",       ch.freight);
+        if (ch.mobilisation) setCharge("mobilisation",  ch.mobilisation);
+        if (ch.witness)      setCharge("witnessnumber", ch.witness);
+        if (ch.witness_type) {
+          setCharge("witnesstype", ch.witness_type === 2 || ch.witness_type === "2" ? "%" : "amount");
+        }
+
+        // invoice_meta: { invoice_date, sgst_applicable }
+        // (sgst is derived from statecode === "23", no override needed)
+
+        const rawItems = itemsData.items ?? [];
         const mapped = (Array.isArray(rawItems) ? rawItems : []).map(
           (item, idx) => ({
             ...item,
@@ -604,46 +591,10 @@ export default function AddTestingInvoice() {
         setItems(mapped);
         setHasMeterGlobal(mapped.some((i) => i.hasMeter));
 
-        // ─── FIX: Parse BRN response correctly ───────────────────────────
-        // PHP getTestingInvoiceBrnNos.php echoes a plain comma-separated string.
-        // The API wrapper may return:
-        //   { status: true, data: { brn_list: "X,Y", brn_array: [...] } }
-        //   { brn_list: "X,Y", brn_array: [...] }
-        //   "X,Y"  (plain string, unlikely via axios but possible)
-        const brnRaw = brnRes.data;
-        let brnString = "";
-
-        if (typeof brnRaw === "string") {
-          // Plain echo from PHP (no JSON wrapper)
-          brnString = brnRaw;
-        } else if (brnRaw && typeof brnRaw === "object") {
-          // Unwrap API envelope if present: { status, data: {...} }
-          const inner =
-            brnRaw.data && typeof brnRaw.data === "object"
-              ? brnRaw.data
-              : brnRaw;
-
-          // Try keys in priority order
-          brnString =
-            inner.brn_list ?? // ← actual key returned by backend
-            inner.brn_numbers ??
-            inner.brnnos ??
-            inner.brn ??
-            "";
-
-          // Fallback: join brn_array if brn_list is missing/empty
-          if (!brnString && Array.isArray(inner.brn_array)) {
-            brnString = inner.brn_array.join(",");
-          }
-
-          // Safety: ensure it's always a string, never JSON-stringify
-          if (typeof brnString !== "string") {
-            brnString = Array.isArray(brnString) ? brnString.join(",") : "";
-          }
-        }
-
-        setBrnnos(brnString);
-        // ─────────────────────────────────────────────────────────────────
+        // Response: { status, data: { brn_list: "X,Y", brn_array: [...] } }
+        const brnData = brnRes.data?.data ?? brnRes.data ?? {};
+        const brnString = brnData.brn_list ?? (Array.isArray(brnData.brn_array) ? brnData.brn_array.join(",") : "");
+        setBrnnos(typeof brnString === "string" ? brnString : "");
       } catch {
         toast.error("Failed to load invoice items");
       } finally {
@@ -688,56 +639,48 @@ export default function AddTestingInvoice() {
     setSaving(true);
     try {
       const payload = {
-        customerid: Number(customerid),
-        addressid: Number(billingInfo?.addressid ?? 0),
-        customername: billingInfo?.name ?? "",
-        address: billingInfo?.address ?? "",
-        statecode: billingInfo?.statecode ?? "",
-        pan: billingInfo?.pan ?? "",
-        gstno: billingInfo?.gstno ?? "",
+        customerid:   Number(customerid),
         potype,
-        ponumber: selectedPo,
-        inwardid: selectedInwards.map(Number),
-        typeofinvoice: "Testing",
-        invoicedate: toSlashDate(invoicedate),
+        ponumber:     selectedPo,
+        inwardid:     selectedInwards.map(Number),
+        customername: billingInfo?.name ?? "",
+        addressid:    Number(billingInfo?.addressid ?? 0),
+        address:      billingInfo?.address ?? "",
+        invoicedate:  toSlashDate(invoicedate),
+        statecode:    Number(billingInfo?.statecode ?? 0),
+        pan:          billingInfo?.pan ?? "",
+        gstno:        billingInfo?.gstno ?? "",
 
-        itemid: items.map((i) => Number(i.id)),
-        itemrate: items.map((i) =>
-          potype === "Normal" ? parseFloat(i.rate) || 0 : 0,
-        ),
-        itemmeter: items.map((i) =>
-          i.hasMeter ? parseFloat(i.meter) || 0 : null,
-        ),
+        itemid:    items.map((i) => Number(i.id)),
+        itemrate:  items.map((i) => potype === "Normal" ? parseFloat(i.rate) || 0 : 0),
+        itemmeter: items.map((i) => parseFloat(i.meter) || 1),
 
-        subtotal: totals.subtotal,
-        disctype: charges.disctype,
-        discnumber: parseFloat(charges.discnumber) || 0,
-        discount: totals.discount,
-        subtotal2: totals.subtotal2,
+        subtotal:        totals.subtotal,
+        discnumber:      parseFloat(charges.discnumber) || 0,
+        disctype:        charges.disctype,
+        discount:        totals.discount,
+        freight:         parseFloat(charges.freight) || 0,
+        mobilisation:    parseFloat(charges.mobilisation) || 0,
+        witnessnumber:   parseFloat(charges.witnessnumber) || 0,
+        witnesstype:     charges.witnesstype,
+        witnesscharges:  totals.witnesscharges,
+        samplehandling:  parseFloat(charges.samplehandling) || 0,
+        sampleprep:      parseFloat(charges.sampleprep) || 0,
+        subtotal2:       totals.subtotal2,
 
-        cgstper: isSgst ? parseFloat(charges.cgstper) || 0 : 0,
+        cgstper:    isSgst ? parseFloat(charges.cgstper) || 0 : 0,
         cgstamount: totals.cgstamount,
-        sgstper: isSgst ? parseFloat(charges.sgstper) || 0 : 0,
+        sgstper:    isSgst ? parseFloat(charges.sgstper) || 0 : 0,
         sgstamount: totals.sgstamount,
-        igstper: !isSgst ? parseFloat(charges.igstper) || 0 : 0,
+        igstper:    !isSgst ? parseFloat(charges.igstper) || 0 : 0,
         igstamount: totals.igstamount,
 
-        freight: parseFloat(charges.freight) || 0,
-        mobilisation: parseFloat(charges.mobilisation) || 0,
-        witnessnumber: parseFloat(charges.witnessnumber) || 0,
-        witnesstype: charges.witnesstype,
-        witnesscharges: totals.witnesscharges,
-        samplehandling: parseFloat(charges.samplehandling) || 0,
-        sampleprep: parseFloat(charges.sampleprep) || 0,
-
-        total: totals.total,
-        roundoff: totals.roundoff,
+        total:      totals.total,
+        roundoff:   totals.roundoff,
         finaltotal: totals.finaltotal,
-        remaining: totals.finaltotal,
 
         remark,
         brnnos,
-        status: 0,
       };
 
       const res = await axios.post("/accounts/create-testing-invoice", payload);

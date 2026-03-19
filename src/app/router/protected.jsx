@@ -2780,7 +2780,8 @@ const protectedRoutes = {
                     ).default,
                   }),
                 },
-                {
+                
+                 {
                   path: "calibration-invoice-list",
                   lazy: async () => ({
                     Component: (
@@ -2842,48 +2843,13 @@ const protectedRoutes = {
                 },
                 {
                   path: "testing-invoices",
-                  children: [
-                    {
-                      path: "",
-                      lazy: async () => ({
-                        Component: (
-                          await import(
-                            "app/pages/dashboards/accounts/testing-invoices"
-                          )
-                        ).default,
-                      }),
-                    },
-                    {
-                      path: "add",
-                      lazy: async () => ({
-                        Component: (
-                          await import(
-                            "app/pages/dashboards/accounts/testing-invoices/GenerateInvoiceTesting"
-                          )
-                        ).default,
-                      }),
-                    },
-                    {
-                      path: "add-advance",
-                      lazy: async () => ({
-                        Component: (
-                          await import(
-                            "app/pages/dashboards/accounts/testing-invoices/GenerateDirectInvoiceTesting"
-                          )
-                        ).default,
-                      }),
-                    },
-                    {
-                      path: "add-foc",
-                      lazy: async () => ({
-                        Component: (
-                          await import(
-                            "app/pages/dashboards/accounts/testing-invoices/CreateFocBill"
-                          )
-                        ).default,
-                      }),
-                    },
-                  ],
+                  lazy: async () => ({
+                    Component: (
+                      await import(
+                        "app/pages/dashboards/accounts/testing-invoices"
+                      )
+                    ).default,
+                  }),
                 },
                 {
                   path: "testing-invoices/create",
@@ -2906,6 +2872,16 @@ const protectedRoutes = {
                   }),
                 },
                 {
+                  path: "testing-invoices/view/:id",
+                  lazy: async () => ({
+                    Component: (
+                      await import(
+                        "app/pages/dashboards/accounts/testing-invoices/ViewInvoiceCalibration"
+                      )
+                    ).default,
+                  }),
+                },
+                {
                   path: "testing-invoices/create-foc",
                   lazy: async () => ({
                     Component: (
@@ -2915,6 +2891,7 @@ const protectedRoutes = {
                     ).default,
                   }),
                 },
+
                 {
                   path: "past-invoices",
                   children: [

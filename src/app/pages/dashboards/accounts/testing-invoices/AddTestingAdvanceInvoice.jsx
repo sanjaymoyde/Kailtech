@@ -534,7 +534,7 @@ export default function AddDirectTestingInvoice() {
   };
 
   // ── 4. PHP: insertDirectTestingInvoice.php ─────────────────────────────────
-  // POST /accounts/create-testing-invoice
+  // POST /api/accounts/add-direct-testing-invoice
   const handleSubmit = async () => {
     if (!customerid) return toast.error("Please select a customer");
     if (!ponumber.trim()) return toast.error("Please enter PO Number");
@@ -597,7 +597,7 @@ export default function AddDirectTestingInvoice() {
         status: 0,
       };
 
-      const res = await axios.post("/accounts/create-testing-invoice", payload);
+      const res = await axios.post("/accounts/add-direct-testing-invoice", payload);
       const ok =
         res.data.success === true ||
         res.data.status === true ||

@@ -41,7 +41,6 @@ const selectCls =
   "focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition";
 
 // ----------------------------------------------------------------------
-
 export default function QAReview() {
   const { cardSkin } = useThemeContext();
   const permissions  = usePermissions();
