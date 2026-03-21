@@ -5,6 +5,33 @@ import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
 import toast from "react-hot-toast";
 
+const toInputDate = (value) => {
+  if (!value || value === "0000-00-00") return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+    const [day, month, year] = value.split("/");
+    return `${year}-${month}-${day}`;
+  }
+  return value;
+};
+
+const toSlashDate = (value) => {
+  if (!value) return "";
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return value;
+  const [year, month, day] = String(value).split("-");
+  if (!year || !month || !day) return value;
+  return `${day}/${month}/${year}`;
+};
+
+const getStoredUser = () => {
+  try {
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function EditPastInvoice() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,37 +62,44 @@ export default function EditPastInvoice() {
     finaltotal: "0",
   });
 
+  const totalAmount = parseFloat(form.finaltotal) || 0;
+
   useEffect(() => {
     axios
-      .get(`/invoices/${id}`)
+      .get(`/accounts/get-past-invoice-byid/${id}`)
       .then((res) => {
-        const d = res.data?.data ?? res.data;
+        const d = res.data?.invoice ?? res.data?.data ?? res.data;
         const isSgst = d.statecode == 23 ? 1 : 0;
         setSgst(isSgst);
         setForm({
-          invoicedate: d.invoicedate?.split("T")[0] ?? d.invoicedate ?? "",
+          invoicedate: toInputDate(
+            d.invoicedate ?? d.invoicedate_formatted ?? "",
+          ),
           invoiceno: d.invoiceno ?? "",
           statecode: d.statecode ?? "",
-          subtotal: d.subtotal ?? "0",
-          discount: d.discount ?? "0",
-          freight: d.freight ?? "0",
-          mobilisation: d.mobilisation ?? "0",
-          witnesscharges: d.witnesscharges ?? "0",
-          samplehandling: d.samplehandling ?? "0",
-          sampleprep: d.sampleprep ?? "0",
-          subtotal2: d.subtotal2 ?? "0",
-          cgstper: d.cgstper ?? "9",
-          cgstamount: d.cgstamount ?? "0",
-          sgstper: d.sgstper ?? "9",
-          sgstamount: d.sgstamount ?? "0",
-          igstper: d.igstper ?? "18",
-          igstamount: d.igstamount ?? "0",
-          total: d.total ?? "0",
-          roundoff: d.roundoff ?? "0",
-          finaltotal: d.finaltotal ?? "0",
+          subtotal: String(d.subtotal ?? "0"),
+          discount: String(d.discount ?? "0"),
+          freight: String(d.freight ?? "0"),
+          mobilisation: String(d.mobilisation ?? "0"),
+          witnesscharges: String(d.witnesscharges ?? "0"),
+          samplehandling: String(d.samplehandling ?? "0"),
+          sampleprep: String(d.sampleprep ?? "0"),
+          subtotal2: String(d.subtotal2 ?? "0"),
+          cgstper: String(d.cgstper ?? "9"),
+          cgstamount: String(d.cgstamount ?? "0"),
+          sgstper: String(d.sgstper ?? "9"),
+          sgstamount: String(d.sgstamount ?? "0"),
+          igstper: String(d.igstper ?? "18"),
+          igstamount: String(d.igstamount ?? "0"),
+          total: String(d.total ?? "0"),
+          roundoff: String(d.roundoff ?? "0"),
+          finaltotal: String(d.finaltotal ?? "0"),
         });
       })
-      .catch((err) => console.error("Failed to load invoice:", err))
+      .catch((err) => {
+        console.error("Failed to load invoice:", err);
+        toast.error("Failed to load invoice");
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -116,14 +150,62 @@ export default function EditPastInvoice() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const storedUser = getStoredUser();
+    const payload = {
+      id: Number(id),
+      statecode: Number(form.statecode || 0),
+      invoicedate: [toSlashDate(form.invoicedate)],
+      invoiceno: [form.invoiceno ?? ""],
+      subtotal: [parseFloat(form.subtotal) || 0],
+      discount: [parseFloat(form.discount) || 0],
+      freight: [parseFloat(form.freight) || 0],
+      mobilisation: [parseFloat(form.mobilisation) || 0],
+      witnesscharges: [parseFloat(form.witnesscharges) || 0],
+      samplehandling: [parseFloat(form.samplehandling) || 0],
+      sampleprep: [parseFloat(form.sampleprep) || 0],
+      subtotal2: [parseFloat(form.subtotal2) || 0],
+      igstper: [parseFloat(form.igstper) || 0],
+      igstamount: [parseFloat(form.igstamount) || 0],
+      cgstper: [parseFloat(form.cgstper) || 0],
+      cgstamount: [parseFloat(form.cgstamount) || 0],
+      sgstper: [parseFloat(form.sgstper) || 0],
+      sgstamount: [parseFloat(form.sgstamount) || 0],
+      total: [parseFloat(form.total) || 0],
+      roundoff: [parseFloat(form.roundoff) || 0],
+      finaltotal: [parseFloat(form.finaltotal) || 0],
+      totalamount: totalAmount,
+      username: storedUser?.username ?? "Ruby",
+      password: storedUser?.password ?? "Ruby@123!@#",
+      finyear:
+        storedUser?.finyear ??
+        storedUser?.fiscalYear ??
+        localStorage.getItem("finyear") ??
+        "2025-26",
+      latitude: "",
+      longitude: "",
+    };
+
     try {
       setSubmitting(true);
-      await axios.put(`/invoices/${id}`, form);
-      toast.success("Invoice updated successfully");
-      navigate("/dashboards/accounts/past-invoices");
+      const res = await axios.post("/accounts/update-past-invoices", payload);
+      const ok =
+        res.data?.success === true ||
+        res.data?.status === true ||
+        res.data?.status === "true";
+      if (!ok) {
+        toast.error(res.data?.message ?? "Failed to update invoice");
+        return;
+      }
+      navigate("/dashboards/accounts/past-invoices", {
+        state: {
+          successMessage:
+            res.data?.message ?? "Past Invoice has been updated successfully.",
+        },
+      });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to update invoice");
+      toast.error(err?.response?.data?.message ?? "Failed to update invoice");
     } finally {
       setSubmitting(false);
     }
@@ -132,7 +214,28 @@ export default function EditPastInvoice() {
   if (loading)
     return (
       <Page title="Edit Past Invoice">
-        <div className="p-6 text-sm text-gray-500">Loading...</div>
+        <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-600">
+          <svg
+            className="h-6 w-6 animate-spin text-blue-600"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"
+            />
+          </svg>
+          Loading...
+        </div>
       </Page>
     );
 
@@ -182,16 +285,15 @@ export default function EditPastInvoice() {
                   <tr>
                     {/* Date */}
                     <td className="border border-gray-300 p-2 dark:border-dark-500">
+                      <input type="hidden" name="statecode" value={form.statecode} />
                       <input
-                        type="text"
+                        type="date"
                         name="invoicedate"
                         value={form.invoicedate}
                         onChange={handleChange}
-                        onFocus={(e) => (e.target.type = "date")}
-                        onBlur={(e) => (e.target.type = "text")}
-                        placeholder="Date"
                         className={inputCls}
                         style={{ minWidth: 110 }}
+                        max="2030-12-31"
                       />
                     </td>
                     {/* Bill No */}
@@ -289,7 +391,7 @@ export default function EditPastInvoice() {
                       <input
                         type="text"
                         readOnly
-                        value={form.finaltotal}
+                        value={totalAmount.toFixed(2)}
                         className={readonlyCls}
                       />
                     </td>

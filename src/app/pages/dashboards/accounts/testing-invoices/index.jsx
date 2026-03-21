@@ -19,9 +19,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import { parseUserPermissions } from "utils/permissions";
 
 import { ColumnFilter } from "components/shared/table/ColumnFilter";
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -35,16 +36,12 @@ import { useThemeContext } from "app/contexts/theme/context";
 import { Toolbar } from "./Toolbar";
 import { columns } from "./columns";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PHP permission IDs — adjust via your auth context if needed
-// perm(143): page access | perm(165): add | perm(292): foc add
-// perm(269/270): approve | perm(273/383): edit | perm(271): cancel | perm(314): edit window
-const PERMISSIONS = [143, 165, 269, 270, 271, 273, 292, 314, 383];
-
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function TestingInvoiceList() {
   const { cardSkin } = useThemeContext();
+  const permissions = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    return parseUserPermissions(localStorage.getItem("userPermissions"));
+  }, []);
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +98,7 @@ export default function TestingInvoiceList() {
       tableSettings,
     },
     meta: {
-      permissions: PERMISSIONS,
+      permissions,
       setTableSettings,
       // Optimistic row update (used by RowActions after approve)
       updateRow: (rowIndex, updates) => {

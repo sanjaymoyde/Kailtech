@@ -12,6 +12,7 @@ import {
 import clsx from "clsx";
 import { useState, useEffect } from "react";
 import axios from "utils/axios";
+import { Navigate } from "react-router";
 
 // Local Imports
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -31,7 +32,18 @@ import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
 const isSafari = getUserAgentBrowser() === "Safari";
 
-export default function OrdersDatatableV1() {
+export default function OrdersDatatableV1Guard() {
+  const permissions =
+    localStorage.getItem("userPermissions")?.split(",").map(Number) || [];
+
+  if (!permissions.includes(334)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <OrdersDatatableV1 />;
+}
+
+function OrdersDatatableV1() {
   const { cardSkin } = useThemeContext();
 
   const [orders, setOrders] = useState([]);
@@ -45,7 +57,7 @@ export default function OrdersDatatableV1() {
   const fetchModes = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/credit-notes");
+      const res = await axios.get("/accounts/get-credit-not-list");
       setOrders(Array.isArray(res.data) ? res.data : res.data?.data || []);
     } catch (err) {
       console.error("Error fetching credit notes:", err);
@@ -59,6 +71,8 @@ export default function OrdersDatatableV1() {
   const [tableSettings, setTableSettings] = useState({
     enableFullScreen: false,
     enableRowDense: false,
+    enableSorting: true,
+    enableColumnFilters: true,
   });
 
   const [globalFilter, setGlobalFilter] = useState("");
@@ -87,34 +101,34 @@ export default function OrdersDatatableV1() {
       columnPinning,
       tableSettings,
     },
-        meta: {
-  updateData: (rowIndex, columnId, value) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.map((row, index) => {
-        if (index === rowIndex) {
-          return {
-            ...old[rowIndex],
-            [columnId]: value,
-          };
-        }
-        return row;
-      })
-    );
-  },
-  deleteRow: (row) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.filter((oldRow) => oldRow.id !== row.original.id)
-    );
-  },
-  deleteRows: (rows) => {
-    skipAutoResetPageIndex();
-    const rowIds = rows.map((row) => row.original.id);
-    setOrders((old) => old.filter((row) => !rowIds.includes(row.id)));
-  },
-  setTableSettings
-},
+    meta: {
+      updateData: (rowIndex, columnId, value) => {
+        skipAutoResetPageIndex();
+        setOrders((old) =>
+          old.map((row, index) => {
+            if (index === rowIndex) {
+              return {
+                ...old[rowIndex],
+                [columnId]: value,
+              };
+            }
+            return row;
+          })
+        );
+      },
+      deleteRow: (row) => {
+        skipAutoResetPageIndex();
+        setOrders((old) =>
+          old.filter((oldRow) => oldRow.id !== row.original.id)
+        );
+      },
+      deleteRows: (rows) => {
+        skipAutoResetPageIndex();
+        const rowIds = rows.map((row) => row.original.id);
+        setOrders((old) => old.filter((row) => !rowIds.includes(row.id)));
+      },
+      setTableSettings
+    },
     filterFns: {
       fuzzy: fuzzyFilter,
     },
@@ -161,7 +175,7 @@ export default function OrdersDatatableV1() {
           className={clsx(
             "flex h-full w-full flex-col",
             tableSettings.enableFullScreen &&
-              "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
+            "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
           )}
         >
           <Toolbar table={table} />
@@ -196,9 +210,9 @@ export default function OrdersDatatableV1() {
                               "bg-gray-200 font-semibold uppercase text-gray-800 dark:bg-dark-800 dark:text-dark-100 first:ltr:rounded-tl-lg last:ltr:rounded-tr-lg first:rtl:rounded-tr-lg last:rtl:rounded-tl-lg",
                               header.column.getCanPin() && [
                                 header.column.getIsPinned() === "left" &&
-                                  "sticky z-2 ltr:left-0 rtl:right-0",
+                                "sticky z-2 ltr:left-0 rtl:right-0",
                                 header.column.getIsPinned() === "right" &&
-                                  "sticky z-2 ltr:right-0 rtl:left-0",
+                                "sticky z-2 ltr:right-0 rtl:left-0",
                               ],
                             )}
                           >
@@ -211,9 +225,9 @@ export default function OrdersDatatableV1() {
                                   {header.isPlaceholder
                                     ? null
                                     : flexRender(
-                                        header.column.columnDef.header,
-                                        header.getContext(),
-                                      )}
+                                      header.column.columnDef.header,
+                                      header.getContext(),
+                                    )}
                                 </span>
                                 <TableSortIcon
                                   sorted={header.column.getIsSorted()}
@@ -225,27 +239,71 @@ export default function OrdersDatatableV1() {
                                 header.getContext(),
                               )
                             )}
+
+                            {header.column.getCanFilter() ? (
+                              header.column.columnDef.meta?.filterType === "select" ? (
+                                <select
+                                  className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-500 dark:bg-dark-900 dark:text-dark-100"
+                                  value={header.column.getFilterValue() ?? ""}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue(
+                                      e.target.value || undefined,
+                                    )
+                                  }
+                                >
+                                  <option value="">All</option>
+                                  <option value="0">Pending</option>
+                                  <option value="1">Approved</option>
+                                  <option value="2">Einvoice</option>
+                                </select>
+                              ) : header.column.columnDef.meta?.filterType === "date" ? (
+                                <input
+                                  type="date"
+                                  value={header.column.getFilterValue() ?? ""}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue(
+                                      e.target.value || undefined,
+                                    )
+                                  }
+                                  className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-500 dark:bg-dark-900 dark:text-dark-100"
+                                />
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={header.column.getFilterValue() ?? ""}
+                                  onChange={(e) =>
+                                    header.column.setFilterValue(
+                                      e.target.value || undefined,
+                                    )
+                                  }
+                                  placeholder={String(
+                                    header.column.columnDef.header ?? "",
+                                  )}
+                                  className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-dark-500 dark:bg-dark-900 dark:text-dark-100"
+                                />
+                              )
+                            ) : null}
                           </Th>
                         ))}
                       </Tr>
                     ))}
                   </THead>
                   <TBody>
-                        {table.getRowModel().rows.map((row) => {
-                          // PHP: highlight row if customername != billingcustomer
-                          const isMismatch =
-                            row.original.customername?.trim() !==
-                            row.original.billingcustomer?.trim();
-                          return (
-                            <Tr
-                              key={row.id}
-                              className={clsx(
-                                "relative border-y border-transparent border-b-gray-200 dark:border-b-dark-500",
-                                isMismatch && "bg-red-100 dark:bg-red-900/20",
-                                row.getIsSelected() && !isSafari &&
-                                  "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
-                              )}
-                            >
+                    {table.getRowModel().rows.map((row) => {
+                      // PHP: highlight row if customername != cname (billing customer)
+                      const isMismatch =
+                        row.original.customername?.trim() !==
+                        row.original.cname?.trim();
+                      return (
+                        <Tr
+                          key={row.id}
+                          className={clsx(
+                            "relative border-y border-transparent border-b-gray-200 dark:border-b-dark-500",
+                            isMismatch && "bg-red-100 dark:bg-red-900/20",
+                            row.getIsSelected() && !isSafari &&
+                            "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
+                          )}
+                        >
                           {row.getVisibleCells().map((cell) => {
                             return (
                               <Td
@@ -258,9 +316,9 @@ export default function OrdersDatatableV1() {
                                     : "dark:bg-dark-900",
                                   cell.column.getCanPin() && [
                                     cell.column.getIsPinned() === "left" &&
-                                      "sticky z-2 ltr:left-0 rtl:right-0",
+                                    "sticky z-2 ltr:left-0 rtl:right-0",
                                     cell.column.getIsPinned() === "right" &&
-                                      "sticky z-2 ltr:right-0 rtl:left-0",
+                                    "sticky z-2 ltr:right-0 rtl:left-0",
                                   ],
                                 )}
                               >
@@ -282,8 +340,8 @@ export default function OrdersDatatableV1() {
                             );
                           })}
                         </Tr>
-                          );
-                        })}
+                      );
+                    })}
                   </TBody>
                 </Table>
               </div>
@@ -293,7 +351,7 @@ export default function OrdersDatatableV1() {
                   className={clsx(
                     "px-4 pb-4 sm:px-5 sm:pt-4",
                     tableSettings.enableFullScreen &&
-                      "bg-gray-50 dark:bg-dark-800",
+                    "bg-gray-50 dark:bg-dark-800",
                     !(
                       table.getIsSomeRowsSelected() ||
                       table.getIsAllRowsSelected()

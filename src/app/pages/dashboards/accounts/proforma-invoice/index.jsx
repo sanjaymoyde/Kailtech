@@ -14,9 +14,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import { parseUserPermissions } from "utils/permissions";
 
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
 import { TableSortIcon } from "components/shared/table/TableSortIcon";
@@ -35,10 +36,12 @@ import { columns } from "./columns";
 const isSafari = getUserAgentBrowser() === "Safari";
 
 // PHP permission IDs — adjust to your auth system
-const PERMISSIONS = [41, 62, 300];
-
 export default function ProformaInvoiceList() {
   const { cardSkin } = useThemeContext();
+  const permissions = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    return parseUserPermissions(localStorage.getItem("userPermissions"));
+  }, []);
 
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +102,7 @@ export default function ProformaInvoiceList() {
       tableSettings,
     },
     meta: {
-      permissions: PERMISSIONS,
+      permissions,
       setTableSettings,
       // Update a single row field (used after approve)
       updateRow: (rowIndex, updates) => {

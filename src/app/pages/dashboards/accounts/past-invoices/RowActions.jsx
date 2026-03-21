@@ -14,15 +14,37 @@ export function RowActions({ row }) {
   const [submitting, setSubmitting] = useState(false);
 
   const handleSave = async () => {
+    if (!reason.trim()) {
+      toast.error("Please enter a reason");
+      return;
+    }
+
     try {
       setSubmitting(true);
-      await axios.post("/invoice-cancel-requests", { invoiceid: id, reason });
-      toast.success("Cancellation request submitted");
+      const res = await axios.post("/accounts/cancel-request", {
+        invoiceid: id,
+        reason: reason.trim(),
+      });
+
+      const ok =
+        res.data?.success === true ||
+        res.data?.status === true ||
+        res.data?.status === "true";
+
+      if (!ok) {
+        toast.error(
+          res.data?.message ??
+            "A request already pending. Please complete that first",
+        );
+        return;
+      }
+
+      toast.success(res.data?.message ?? "Cancellation request submitted");
       setOpen(false);
       setReason("");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to submit request");
+      toast.error(err?.message ?? "Failed to submit request");
     } finally {
       setSubmitting(false);
     }

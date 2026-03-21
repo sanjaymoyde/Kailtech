@@ -2882,6 +2882,36 @@ const protectedRoutes = {
                   }),
                 },
                 {
+                  path: "testing-invoices/view-detailed/:id",
+                  lazy: async () => ({
+                    Component: (
+                      await import(
+                        "app/pages/dashboards/accounts/testing-invoices/ViewDetailedInvoice"
+                      )
+                    ).default,
+                  }),
+                },
+                {
+                  path: "testing-invoices/view-itemized/:id",
+                  lazy: async () => ({
+                    Component: (
+                      await import(
+                        "app/pages/dashboards/accounts/testing-invoices/ViewItemizedBill"
+                      )
+                    ).default,
+                  }),
+                },
+                {
+                  path: "testing-invoices/edit/:id",
+                  lazy: async () => ({
+                    Component: (
+                      await import(
+                        "app/pages/dashboards/accounts/testing-invoices/EditTestingInvoice"
+                      )
+                    ).default,
+                  }),
+                },
+                {
                   path: "testing-invoices/create-foc",
                   lazy: async () => ({
                     Component: (

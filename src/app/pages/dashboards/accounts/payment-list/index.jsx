@@ -10,8 +10,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "utils/axios";
+import { parseUserPermissions } from "utils/permissions";
 
 // Local Imports
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -32,10 +33,12 @@ import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 const isSafari = getUserAgentBrowser() === "Safari";
 
 // PHP permission IDs replicated — adjust to your auth system
-const PERMISSIONS = [274, 275, 276]; // Replace with real permission check from auth context
-
 export default function PaymentList() {
   const { cardSkin } = useThemeContext();
+  const permissions = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    return parseUserPermissions(localStorage.getItem("userPermissions"));
+  }, []);
 
   const [payments, setPayments] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -143,7 +146,7 @@ export default function PaymentList() {
       tableSettings,
     },
     meta: {
-      permissions: PERMISSIONS, // passed to RowActions for button visibility
+      permissions,
       updateData: (rowIndex, columnId, value) => {
         skipAutoResetPageIndex();
         setPayments((old) =>

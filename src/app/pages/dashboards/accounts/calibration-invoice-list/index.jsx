@@ -16,9 +16,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import { parseUserPermissions } from "utils/permissions";
 
 import { ColumnFilter } from "components/shared/table/ColumnFilter";
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -35,10 +36,12 @@ import { columns } from "./columns";
 // ----------------------------------------------------------------------
 
 // PHP permission IDs — adjust to your auth system
-const PERMISSIONS = [146, 61, 269, 270, 271, 273, 292, 314, 383];
-
 export default function CalibrationInvoiceList() {
   const { cardSkin } = useThemeContext();
+  const permissions = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    return parseUserPermissions(localStorage.getItem("userPermissions"));
+  }, []);
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +96,7 @@ export default function CalibrationInvoiceList() {
       tableSettings,
     },
     meta: {
-      permissions: PERMISSIONS,
+      permissions,
       setTableSettings,
       updateRow: (rowIndex, updates) => {
         skipAutoResetPageIndex();

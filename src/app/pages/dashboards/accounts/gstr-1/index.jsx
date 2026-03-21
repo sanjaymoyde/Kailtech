@@ -19,6 +19,19 @@ import { useThemeContext } from "app/contexts/theme/context";
 import { Toolbar } from "./Toolbar";
 import { columns } from "./columns";
 
+// ─── Shared UI components ──────────────────────────────────────────────────
+function PageSpinner() {
+  return (
+    <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">
+      <svg className="h-7 w-7 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
+      </svg>
+      Loading...
+    </div>
+  );
+}
+
 // ----------------------------------------------------------------------
 
 export default function GSTR1() {
@@ -90,27 +103,7 @@ export default function GSTR1() {
           <div className="transition-content flex grow flex-col px-(--margin-x) pt-3">
             <Card className="relative flex grow flex-col">
               {loading ? (
-                <div className="flex h-40 items-center justify-center text-gray-500 text-sm">
-                  <svg
-                    className="animate-spin h-5 w-5 mr-2 text-blue-600"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"
-                    />
-                  </svg>
-                  Loading...
-                </div>
+                <PageSpinner />
               ) : (
                 <>
                   <div className="table-wrapper min-w-full grow overflow-x-auto">

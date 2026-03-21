@@ -171,6 +171,11 @@ export const columns = [
   columnHelper.accessor("status", {
     id: "status",
     header: "Status",
+    // PHP: exact match — "0" = Pending, "1" = Approved, "2" = Einvoice
+    filterFn: (row, columnId, filterValue) => {
+      if (filterValue === "" || filterValue === undefined) return true;
+      return String(row.getValue(columnId)) === String(filterValue);
+    },
     meta: { filterType: "select" }, // triggers <select> filter in THead
     cell: (info) => <StatusBadge value={info.getValue()} />,
   }),

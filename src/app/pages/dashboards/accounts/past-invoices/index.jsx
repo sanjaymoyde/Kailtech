@@ -9,8 +9,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router";
 import axios from "utils/axios";
+import toast from "react-hot-toast";
+import { parseUserPermissions } from "utils/permissions";
 
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
 import { TableSortIcon } from "components/shared/table/TableSortIcon";
@@ -25,17 +28,36 @@ import { useThemeContext } from "app/contexts/theme/context";
 
 export default function PastInvoices() {
   const { cardSkin } = useThemeContext();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const permissions = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    return parseUserPermissions(localStorage.getItem("userPermissions"));
+  }, []);
+  const canAccess = permissions.includes(299);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!canAccess) {
+      setLoading(false);
+      return;
+    }
     fetchInvoices();
-  }, []);
+  }, [canAccess]);
+
+  useEffect(() => {
+    const successMessage = location.state?.successMessage;
+    if (!successMessage) return;
+
+    toast.success(successMessage);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate]);
 
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/past-invoices");
+      const res = await axios.get("/accounts/get-past-invoice-list");
       setInvoices(Array.isArray(res.data) ? res.data : res.data?.data || []);
     } catch (err) {
       console.error("Error fetching past invoices:", err);
@@ -51,7 +73,8 @@ export default function PastInvoices() {
   });
 
   const [globalFilter, setGlobalFilter] = useState("");
-  const [sorting, setSorting] = useState([{ id: "id", desc: true }]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [sorting, setSorting] = useState([{ id: "s_no", desc: true }]);
 
   const [columnVisibility, setColumnVisibility] = useLocalStorage(
     "column-visibility-past-invoices",
@@ -67,8 +90,16 @@ export default function PastInvoices() {
   const table = useReactTable({
     data: invoices,
     columns,
-    state: { globalFilter, sorting, columnVisibility, columnPinning, tableSettings },
+    state: {
+      globalFilter,
+      columnFilters,
+      sorting,
+      columnVisibility,
+      columnPinning,
+      tableSettings,
+    },
     meta: {
+      permissions,
       deleteRow: (row) => {
         skipAutoResetPageIndex();
         setInvoices((old) => old.filter((r) => r.id !== row.original.id));
@@ -79,6 +110,7 @@ export default function PastInvoices() {
     enableSorting: true,
     getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
@@ -94,13 +126,40 @@ export default function PastInvoices() {
   useDidUpdate(() => table.resetRowSelection(), [invoices]);
   useLockScrollbar(tableSettings.enableFullScreen);
 
+  if (!canAccess) {
+    return (
+      <Page title="Invoice List">
+        <div className="flex h-60 items-center justify-center rounded-xl border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+          <p className="text-sm text-red-500">
+            Access Denied - Permission 299 required.
+          </p>
+        </div>
+      </Page>
+    );
+  }
+
   if (loading) {
     return (
       <Page title="Invoice List">
-        <div className="flex h-[60vh] items-center justify-center text-gray-600">
-          <svg className="mr-2 h-6 w-6 animate-spin text-blue-600" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
+        <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-600">
+          <svg
+            className="h-6 w-6 animate-spin text-blue-600"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"
+            />
           </svg>
           Loading...
         </div>
@@ -159,6 +218,21 @@ export default function PastInvoices() {
                               </div>
                             ) : header.isPlaceholder ? null : (
                               flexRender(header.column.columnDef.header, header.getContext())
+                            )}
+                            {header.column.columnDef.meta?.filterType === "select" && (
+                              <select
+                                value={(header.column.getFilterValue() ?? "")}
+                                onChange={(e) =>
+                                  header.column.setFilterValue(
+                                    e.target.value || undefined,
+                                  )
+                                }
+                                className="dark:bg-dark-900 dark:border-dark-500 dark:text-dark-200 mt-1 w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs text-gray-700 focus:outline-none"
+                              >
+                                <option value="">All</option>
+                                <option value="0">Pending</option>
+                                <option value="1">Approved</option>
+                              </select>
                             )}
                           </Th>
                         ))}

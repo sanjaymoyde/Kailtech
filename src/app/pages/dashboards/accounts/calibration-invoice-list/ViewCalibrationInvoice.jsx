@@ -8,12 +8,13 @@
 // is rendered off-screen. html2canvas captures THAT div, never touching
 // any Tailwind oklch color.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import axios from "utils/axios";
+import { parseUserPermissions } from "utils/permissions";
 import logo from "assets/krtc.jpg";
 
 // ─── Cross-origin image → base64 data URL ────────────────────────────────────
@@ -55,8 +56,6 @@ async function toBase64(url) {
 }
 
 // ─── Permissions ─────────────────────────────────────────────────────────────
-const PERMISSIONS = [146, 61, 269, 270, 271, 273, 292, 314, 383, 466];
-const hasPerm = (p) => PERMISSIONS.includes(p);
 
 // ─── Indian number → words ───────────────────────────────────────────────────
 function toWords(num) {
@@ -835,6 +834,13 @@ function InvoicePrintTemplate({
 export default function ViewCalibrationInvoice() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const permissions = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    return parseUserPermissions(localStorage.getItem("userPermissions"));
+  }, []);
+  const hasPerm = useCallback((permission) => permissions.includes(permission), [
+    permissions,
+  ]);
 
   // Two separate print refs: one WITH letterhead, one WITHOUT
   const printWithLH = useRef(null);
