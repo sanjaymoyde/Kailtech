@@ -14,8 +14,8 @@ export const columns = [
     header: "GSTIN NO",
     cell: (info) => info.getValue() ?? "-",
   }),
-  columnHelper.accessor("custname", {
-    id: "custname",
+  columnHelper.accessor("customer_name", {
+    id: "customer_name",
     header: "RECEIVER NAME",
     cell: (info) => info.getValue() ?? "-",
   }),
@@ -39,8 +39,8 @@ export const columns = [
     header: "TOTAL INVOICE VALUE",
     cell: (info) => info.getValue() ?? "-",
   }),
-  columnHelper.accessor("subtotal2", {
-    id: "subtotal2",
+  columnHelper.accessor("taxable_value", {
+    id: "taxable_value",
     header: "TAXABLE VALUE",
     cell: (info) => info.getValue() ?? "-",
   }),

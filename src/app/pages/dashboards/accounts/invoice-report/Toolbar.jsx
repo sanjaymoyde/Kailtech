@@ -2,42 +2,45 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { useNavigate } from "react-router";
+import Select from "react-select";
 
-export function Toolbar({ filters, onChange, onSearch }) {
+export function Toolbar({ filters, onChange, onSearch, customers = [], bdList = [] }) {
   const navigate = useNavigate();
   const [startDate, setStartDate] = useState(filters.startdate || "");
   const [endDate, setEndDate] = useState(filters.enddate || "");
   const [customer, setCustomer] = useState(filters.customerid || "");
   const [bd, setBd] = useState(filters.bd || "");
-  const [selectFilter, setSelectFilter] = useState(filters.typeofinvoice || "");
+  const [typeOfInvoice, setTypeOfInvoice] = useState(filters.typeofinvoice || "");
 
   const handleInput = (name, value) => {
     if (name === "startdate") setStartDate(value);
     if (name === "enddate") setEndDate(value);
     if (name === "customerid") setCustomer(value);
     if (name === "bd") setBd(value);
-    if (name === "typeofinvoice") setSelectFilter(value);
+    if (name === "typeofinvoice") setTypeOfInvoice(value);
     onChange(name, value);
   };
 
   return (
     <div className="px-(--margin-x) pt-4">
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-semibold tracking-wide text-gray-800 dark:text-dark-50">
           Invoice List
         </h2>
-      </div>
-
-      <div className="mb-4 flex items-center gap-3 text-sm">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          className="inline-flex w-fit items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
           &laquo; Back
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_1fr_1fr]">
+      {/* Filter row — matches PHP form layout */}
+      <form
+        onSubmit={onSearch}
+        className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto]"
+      >
+        {/* Start Date */}
         <input
           type="text"
           value={startDate}
@@ -48,10 +51,12 @@ export function Toolbar({ filters, onChange, onSearch }) {
           }}
           placeholder="Start Date"
           className={clsx(
-            "h-10 w-full rounded border border-blue-500 px-3 text-sm outline-none",
-            "focus:ring-2 focus:ring-blue-500/40",
+            "h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none dark:border-dark-500 dark:bg-dark-800 dark:text-dark-100",
+            "focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30",
           )}
         />
+
+        {/* End Date */}
         <input
           type="text"
           value={endDate}
@@ -62,52 +67,131 @@ export function Toolbar({ filters, onChange, onSearch }) {
           }}
           placeholder="End Date"
           className={clsx(
-            "h-10 w-full rounded border border-blue-500 px-3 text-sm outline-none",
-            "focus:ring-2 focus:ring-blue-500/40",
+            "h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none dark:border-dark-500 dark:bg-dark-800 dark:text-dark-100",
+            "focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30",
           )}
         />
-        <select
-          value={customer}
-          onChange={(e) => handleInput("customerid", e.target.value)}
-          className={clsx(
-            "h-10 w-full rounded border border-gray-300 px-3 text-sm text-gray-700",
-            "focus:border-blue-500 focus:outline-none",
-          )}
-        >
-          <option value="">Select Customer</option>
-        </select>
-        <select
-          value={bd}
-          onChange={(e) => handleInput("bd", e.target.value)}
-          className={clsx(
-            "h-10 w-full rounded border border-gray-300 px-3 text-sm text-gray-700",
-            "focus:border-blue-500 focus:outline-none",
-          )}
-        >
-          <option value="">Select BD</option>
-        </select>
-      </div>
 
-      <div className="mt-2 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
-        <select
-          value={selectFilter}
-          onChange={(e) => handleInput("typeofinvoice", e.target.value)}
-          className={clsx(
-            "h-10 w-full rounded border border-gray-300 px-3 text-sm text-gray-700",
-            "focus:border-blue-500 focus:outline-none",
-          )}
-        >
-          <option value="">Select</option>
-          <option value="Calibration">Calibration</option>
-          <option value="Testing">Testing</option>
-        </select>
+        {/* Customer — using react-select to match AddCreditNote.jsx */}
+        <Select
+          options={customers.map((c) => ({
+            value: String(c.id || c.customerid || c.customer_id),
+            label: c.name || c.customername || c.customer_name || String(c.id || c.customerid || c.customer_id),
+          }))}
+          value={
+            customer
+              ? {
+                value: String(customer),
+                label: (() => {
+                  const found = customers.find(
+                    (c) => String(c.id || c.customerid || c.customer_id) === String(customer)
+                  );
+                  return found
+                    ? found.name || found.customername || found.customer_name || String(found.id || found.customerid || found.customer_id)
+                    : String(customer);
+                })(),
+              }
+              : null
+          }
+          onChange={(option) => {
+            handleInput("customerid", option ? option.value : "");
+          }}
+          isClearable
+          isSearchable
+          placeholder="Customer"
+          classNamePrefix="react-select"
+          className="w-full text-sm"
+          styles={{
+            control: (base, state) => ({
+              ...base,
+              minHeight: "40px",
+              borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+              boxShadow: state.isFocused ? "0 0 0 2px rgba(59, 130, 246, 0.3)" : "none",
+              "&:hover": {
+                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
+              },
+            }),
+          }}
+        />
+
+        {/* BD — using react-select for consistency */}
+        <Select
+          options={bdList.map((b) => ({
+            value: String(b.id),
+            label: `${b.firstname} ${b.lastname}`,
+          }))}
+          value={
+            bd
+              ? {
+                value: String(bd),
+                label: (() => {
+                  const found = bdList.find((b) => String(b.id) === String(bd));
+                  return found ? `${found.firstname} ${found.lastname}` : String(bd);
+                })(),
+              }
+              : null
+          }
+          onChange={(option) => {
+            handleInput("bd", option ? option.value : "");
+          }}
+          isClearable
+          isSearchable
+          placeholder="BD"
+          classNamePrefix="react-select"
+          className="w-full text-sm"
+          styles={{
+            control: (base, state) => ({
+              ...base,
+              minHeight: "40px",
+              borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+              boxShadow: state.isFocused ? "0 0 0 2px rgba(59, 130, 246, 0.3)" : "none",
+              "&:hover": {
+                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
+              },
+            }),
+          }}
+        />
+
+        {/* Invoice Type — using react-select for consistency */}
+        <Select
+          options={[
+            { value: "Calibration", label: "Calibration" },
+            { value: "Testing", label: "Testing" },
+          ]}
+          value={
+            typeOfInvoice
+              ? { value: typeOfInvoice, label: typeOfInvoice }
+              : null
+          }
+          onChange={(option) => {
+            handleInput("typeofinvoice", option ? option.value : "");
+          }}
+          isClearable
+          isSearchable
+          placeholder="Type"
+          classNamePrefix="react-select"
+          className="w-full text-sm"
+          styles={{
+            control: (base, state) => ({
+              ...base,
+              minHeight: "40px",
+              borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+              boxShadow: state.isFocused ? "0 0 0 2px rgba(59, 130, 246, 0.3)" : "none",
+              "&:hover": {
+                borderColor: state.isFocused ? "#3b82f6" : "#9ca3af",
+              },
+            }),
+          }}
+        />
+
+        {/* Search button */}
         <button
-          onClick={onSearch}
-          className="h-10 rounded bg-gray-100 px-4 text-sm font-medium text-gray-800 hover:bg-gray-200"
+          type="submit"
+          className="h-10 rounded bg-blue-600 px-5 text-sm font-medium text-white hover:bg-blue-700"
         >
           Search
         </button>
-      </div>
+      </form>
     </div>
   );
 }

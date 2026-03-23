@@ -60,7 +60,7 @@ export default function GSTR1() {
 
     try {
       setLoading(true);
-      const res = await axios.get("/gstr1", { params: filters });
+      const res = await axios.get("/accounts/get-gstr1-report", { params: filters });
       setData(Array.isArray(res.data) ? res.data : res.data?.data || []);
     } catch (err) {
       console.error("Error fetching GSTR-1 data:", err);
@@ -82,12 +82,13 @@ export default function GSTR1() {
   const totals = data.reduce(
     (acc, row) => {
       acc.finaltotal += Number(row.finaltotal || 0);
-      acc.subtotal2 += Number(row.subtotal2 || 0);
+      acc.taxable_value += Number(row.taxable_value || 0);
       acc.cgstamount += Number(row.cgstamount || 0);
       acc.sgstamount += Number(row.sgstamount || 0);
+      acc.roundoff += Number(row.roundoff || 0);
       return acc;
     },
-    { finaltotal: 0, subtotal2: 0, cgstamount: 0, sgstamount: 0 },
+    { finaltotal: 0, taxable_value: 0, cgstamount: 0, sgstamount: 0, roundoff: 0 },
   );
 
   return (
@@ -167,49 +168,55 @@ export default function GSTR1() {
                                 ))}
                               </Tr>
                             ))}
-
-                            {/* Totals row — matches PHP accumulated totals */}
+ 
+                             {/* Totals row — matches PHP accumulated totals */}
                             <Tr className="border-t border-gray-200 font-semibold dark:border-dark-500">
-                              {table
-                                .getVisibleLeafColumns()
-                                .map((col, idx) => {
-                                  if (idx === 0)
-                                    return (
-                                      <Td
-                                        key={col.id}
-                                        colSpan={5}
-                                        className="text-right"
-                                      >
-                                        Total
-                                      </Td>
-                                    );
-                                  if (idx < 5) return null;
-                                  if (col.id === "finaltotal")
-                                    return (
-                                      <Td key={col.id}>
-                                        {totals.finaltotal.toFixed(2)}
-                                      </Td>
-                                    );
-                                  if (col.id === "subtotal2")
-                                    return (
-                                      <Td key={col.id}>
-                                        {totals.subtotal2.toFixed(2)}
-                                      </Td>
-                                    );
-                                  if (col.id === "cgstamount")
-                                    return (
-                                      <Td key={col.id}>
-                                        {totals.cgstamount.toFixed(2)}
-                                      </Td>
-                                    );
-                                  if (col.id === "sgstamount")
-                                    return (
-                                      <Td key={col.id}>
-                                        {totals.sgstamount.toFixed(2)}
-                                      </Td>
-                                    );
-                                  return <Td key={col.id} />;
-                                })}
+                               {table
+                                 .getVisibleLeafColumns()
+                                 .map((col, idx) => {
+                                   if (idx === 0)
+                                     return (
+                                       <Td
+                                         key={col.id}
+                                         colSpan={5}
+                                         className="text-right"
+                                       >
+                                         Total
+                                       </Td>
+                                     );
+                                   if (idx < 5) return null;
+                                   if (col.id === "finaltotal")
+                                     return (
+                                       <Td key={col.id}>
+                                         {totals.finaltotal.toFixed(2)}
+                                       </Td>
+                                     );
+                                   if (col.id === "taxable_value")
+                                     return (
+                                       <Td key={col.id}>
+                                         {totals.taxable_value.toFixed(2)}
+                                       </Td>
+                                     );
+                                   if (col.id === "cgstamount")
+                                     return (
+                                       <Td key={col.id}>
+                                         {totals.cgstamount.toFixed(2)}
+                                       </Td>
+                                     );
+                                   if (col.id === "sgstamount")
+                                     return (
+                                       <Td key={col.id}>
+                                         {totals.sgstamount.toFixed(2)}
+                                       </Td>
+                                     );
+                                   if (col.id === "roundoff")
+                                     return (
+                                       <Td key={col.id}>
+                                         {totals.roundoff.toFixed(2)}
+                                       </Td>
+                                     );
+                                   return <Td key={col.id} />;
+                                 })}
                             </Tr>
                           </>
                         )}

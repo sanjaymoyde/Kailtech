@@ -2566,6 +2566,14 @@ const protectedRoutes = {
                   }),
                 },
                 {
+                  path: "website-enquiry",
+                  lazy: async () => ({
+                    Component: (
+                      await import("app/pages/dashboards/sales/website-enquiry")
+                    ).default,
+                  }),
+                },
+                {
                   path: "test-packages/add",
                   lazy: async () => ({
                     Component: (

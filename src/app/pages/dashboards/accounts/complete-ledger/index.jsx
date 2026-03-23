@@ -31,43 +31,48 @@ import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
 const isSafari = getUserAgentBrowser() === "Safari";
 
-export default function OrdersDatatableV1() {
+export default function CompleteLedgerReport() {
   const { cardSkin } = useThemeContext();
 
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [ledgerData, setLedgerData] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     startdate: "",
     enddate: "",
     customerid: "",
-    type: "",
+    typeofinvoice: "",
     bd: "",
   });
+  const [searched, setSearched] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [bdList, setBdList] = useState([]);
 
   const fetchLedger = async () => {
+    if (!filters.startdate || !filters.enddate) return;
     try {
       setLoading(true);
-      const res = await axios.get("/ledger", { params: filters });
-      const rows = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      setSearched(true);
+      const res = await axios.get("/accounts/get-ledger-report", { params: filters });
+      const rows = res.data?.data || [];
+      let runningBalance = 0;
       const mapped = rows.map((row) => {
-        const date = row.transactiondate
-          ? new Date(row.transactiondate).toLocaleDateString("en-GB")
-          : "";
-        const vchNo =
-          row.source === "payment" && row.refid
-            ? `${row.refno}\nReceipt No:${row.refid}`
-            : row.refno;
+        const debit = Number(row.debit || 0);
+        const credit = Number(row.credit || 0);
+        runningBalance += (debit - credit);
         return {
-          date,
-          party: row.name || "Suspense",
-          particulars: row.transactiontype,
-          vch_type: row.source,
-          vch_no: vchNo,
-          debit: row.debit,
-          credit: row.credit,
+          date: row.transactiondate || "-",
+          party: row.customer_name || "Suspense",
+          particulars: row.transactiontype || "-",
+          vch_type: row.source || "-",
+          vch_no: row.source === "payment" && row.refid
+            ? `${row.refno} (Receipt: ${row.refid})`
+            : row.refno || "-",
+          debit,
+          credit,
+          balance: runningBalance,
         };
       });
-      setOrders(mapped);
+      setLedgerData(mapped);
     } catch (err) {
       console.error("Error fetching ledger:", err);
     } finally {
@@ -75,8 +80,21 @@ export default function OrdersDatatableV1() {
     }
   };
 
+  const fetchMetadata = async () => {
+    try {
+      const [custRes, bdRes] = await Promise.all([
+        axios.get("/people/get-all-customers"),
+        axios.get("/people/get-customer-bd"),
+      ]);
+      setCustomers(custRes.data?.data || []);
+      setBdList(bdRes.data?.data || []);
+    } catch (err) {
+      console.error("Error fetching metadata:", err);
+    }
+  };
+
   useEffect(() => {
-    fetchLedger();
+    fetchMetadata();
   }, []);
 
   const handleFilterChange = (name, value) => {
@@ -100,19 +118,19 @@ export default function OrdersDatatableV1() {
   const [sorting, setSorting] = useState([]);
 
   const [columnVisibility, setColumnVisibility] = useLocalStorage(
-    "column-visibility-orders-1",
+    "column-visibility-ledger-1",
     {},
   );
 
   const [columnPinning, setColumnPinning] = useLocalStorage(
-    "column-pinning-orders-1",
+    "column-pinning-ledger-1",
     {},
   );
 
-  const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
+  const [autoResetPageIndex] = useSkipper();
 
   const table = useReactTable({
-    data: orders,
+    data: ledgerData,
     columns: columns,
     state: {
       globalFilter,
@@ -121,34 +139,9 @@ export default function OrdersDatatableV1() {
       columnPinning,
       tableSettings,
     },
-        meta: {
-  updateData: (rowIndex, columnId, value) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.map((row, index) => {
-        if (index === rowIndex) {
-          return {
-            ...old[rowIndex],
-            [columnId]: value,
-          };
-        }
-        return row;
-      })
-    );
-  },
-  deleteRow: (row) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.filter((oldRow) => oldRow.id !== row.original.id)
-    );
-  },
-  deleteRows: (rows) => {
-    skipAutoResetPageIndex();
-    const rowIds = rows.map((row) => row.original.id);
-    setOrders((old) => old.filter((row) => !rowIds.includes(row.id)));
-  },
-  setTableSettings
-},
+    meta: {
+      setTableSettings
+    },
     filterFns: {
       fuzzy: fuzzyFilter,
     },
@@ -170,7 +163,7 @@ export default function OrdersDatatableV1() {
     autoResetPageIndex,
   });
 
-  useDidUpdate(() => table.resetRowSelection(), [orders]);
+  useDidUpdate(() => table.resetRowSelection(), [ledgerData]);
 
   useLockScrollbar(tableSettings.enableFullScreen);
 
@@ -182,14 +175,8 @@ export default function OrdersDatatableV1() {
     (col) => col.id === "credit",
   );
   const rowsForTotal = table.getFilteredRowModel().rows;
-  const totalDebit = rowsForTotal.reduce((sum, row) => {
-    const value = Number(row.original?.debit ?? 0);
-    return Number.isNaN(value) ? sum : sum + value;
-  }, 0);
-  const totalCredit = rowsForTotal.reduce((sum, row) => {
-    const value = Number(row.original?.credit ?? 0);
-    return Number.isNaN(value) ? sum : sum + value;
-  }, 0);
+  const totalDebit = rowsForTotal.reduce((sum, row) => sum + Number(row.original?.debit || 0), 0);
+  const totalCredit = rowsForTotal.reduce((sum, row) => sum + Number(row.original?.credit || 0), 0);
 
 // ─── Shared UI components ──────────────────────────────────────────────────
 function PageSpinner() {
@@ -227,6 +214,8 @@ function PageSpinner() {
             filters={filters}
             onChange={handleFilterChange}
             onSearch={handleSearch}
+            customers={customers}
+            bdList={bdList}
           />
           <div
             className={clsx(
@@ -342,31 +331,61 @@ function PageSpinner() {
                         </Tr>
                       );
                     })}
-                    {rowsForTotal.length > 0 && debitColumnIndex !== -1 && creditColumnIndex !== -1 && (
-                      <Tr className="border-t border-gray-200 dark:border-dark-500">
+                    {searched && ledgerData.length === 0 && !loading && (
+                      <Tr>
+                        <Td colSpan={visibleColumns.length} className="py-10 text-center text-gray-500">
+                          No transactions found for the selected criteria.
+                        </Td>
+                      </Tr>
+                    )}
+                    {!searched && (
+                      <Tr>
+                        <Td colSpan={visibleColumns.length} className="py-10 text-center text-gray-500">
+                          Select a date range and click Search to view the ledger.
+                        </Td>
+                      </Tr>
+                    )}
+                    {searched && ledgerData.length > 0 && debitColumnIndex !== -1 && creditColumnIndex !== -1 && (
+                      <Tr className="bg-gray-50 font-bold dark:bg-dark-800">
                         {visibleColumns.map((col, idx) => {
-                          if (idx < debitColumnIndex) {
-                            return idx === debitColumnIndex - 1 ? (
-                              <Td key={col.id} className="text-right font-semibold">
-                                Total
+                          if (idx === debitColumnIndex - 1) {
+                            return (
+                              <Td key={col.id} className="text-right">
+                                TOTAL
                               </Td>
-                            ) : (
-                              <Td key={col.id}></Td>
                             );
                           }
                           if (idx === debitColumnIndex) {
                             return (
-                              <Td key={col.id} className="font-semibold">
-                                {totalDebit}
+                              <Td key={col.id}>
+                                {new Intl.NumberFormat("en-IN", {
+                                  style: "currency",
+                                  currency: "INR",
+                                }).format(totalDebit)}
                               </Td>
                             );
                           }
                           if (idx === creditColumnIndex) {
                             return (
-                              <Td key={col.id} className="font-semibold">
-                                {totalCredit}
+                              <Td key={col.id}>
+                                {new Intl.NumberFormat("en-IN", {
+                                  style: "currency",
+                                  currency: "INR",
+                                }).format(totalCredit)}
                               </Td>
                             );
+                          }
+                          if (idx === creditColumnIndex + 1 && idx < visibleColumns.length) {
+                             const balance = totalDebit - totalCredit;
+                             return (
+                               <Td key={col.id} className={clsx(balance >= 0 ? "text-green-600" : "text-red-600")}>
+                                 {new Intl.NumberFormat("en-IN", {
+                                  style: "currency",
+                                  currency: "INR",
+                                }).format(Math.abs(balance))}
+                                 {balance >= 0 ? " Dr" : " Cr"}
+                               </Td>
+                             );
                           }
                           return <Td key={col.id}></Td>;
                         })}

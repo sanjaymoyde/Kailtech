@@ -1,7 +1,17 @@
 // Import Dependencies
 import { createColumnHelper } from "@tanstack/react-table";
 
+// ----------------------------------------------------------------------
+
 const columnHelper = createColumnHelper();
+
+const fmt = (val) => {
+  if (val === undefined || val === null || isNaN(val)) return "-";
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+  }).format(val);
+};
 
 export const columns = [
   columnHelper.display({
@@ -32,16 +42,19 @@ export const columns = [
   columnHelper.accessor("date", {
     id: "date",
     header: "Date",
-    cell: (info) => info.getValue() ?? "-",
+    cell: (info) => {
+      const date = info.getValue();
+      return date ? new Date(date).toLocaleDateString("en-GB") : "-";
+    },
   }),
-  columnHelper.accessor("name", {
-    id: "name",
+  columnHelper.accessor("bd_name", {
+    id: "bd_name",
     header: "BD",
     cell: (info) => info.getValue() ?? "-",
   }),
   columnHelper.accessor("subtotal", {
     id: "subtotal",
     header: "Item Total",
-    cell: (info) => info.getValue() ?? "-",
+    cell: (info) => fmt(Number(info.getValue())),
   }),
 ];

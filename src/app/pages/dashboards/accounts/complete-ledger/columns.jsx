@@ -3,6 +3,14 @@ import { createColumnHelper } from "@tanstack/react-table";
 
 const columnHelper = createColumnHelper();
 
+const fmt = (val) => {
+  if (val === undefined || val === null || val === "" || isNaN(val)) return "-";
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+  }).format(val);
+};
+
 export const columns = [
   columnHelper.accessor("date", {
     id: "date",
@@ -32,11 +40,23 @@ export const columns = [
   columnHelper.accessor("debit", {
     id: "debit",
     header: "Debit",
-    cell: (info) => info.getValue() ?? "-",
+    cell: (info) => fmt(info.getValue()),
   }),
   columnHelper.accessor("credit", {
     id: "credit",
     header: "Credit",
-    cell: (info) => info.getValue() ?? "-",
+    cell: (info) => fmt(info.getValue()),
+  }),
+  columnHelper.accessor("balance", {
+    id: "balance",
+    header: "Balance",
+    cell: (info) => {
+      const val = info.getValue() || 0;
+      return (
+        <span className={val >= 0 ? "text-green-600" : "text-red-600"}>
+          {fmt(Math.abs(val))} {val >= 0 ? "Dr" : "Cr"}
+        </span>
+      );
+    },
   }),
 ];

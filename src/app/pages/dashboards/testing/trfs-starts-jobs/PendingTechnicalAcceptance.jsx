@@ -11,21 +11,21 @@ function usePermissions() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PendingTechnicalAcceptance() {
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
   const permissions = usePermissions();
 
   // PHP: if(!in_array(126, $permissions)) → redirect
   const canAccess = permissions.includes(126);
 
-  const [data,           setData]           = useState([]);
-  const [loading,        setLoading]        = useState(true);
-  const [customerTypes,  setCustomerTypes]  = useState([]);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [customerTypes, setCustomerTypes] = useState([]);
   const [specificPurposes, setSpecificPurposes] = useState([]);
 
   // Filters — PHP: ctype (perm 389), specificpurpose (perm 390)
-  const [ctype,           setCtype]           = useState("");
+  const [ctype, setCtype] = useState("");
   const [specificpurpose, setSpecificpurpose] = useState("");
-  const [search,          setSearch]          = useState("");
+  const [search, setSearch] = useState("");
 
   // ── Fetch dropdown options ────────────────────────────────────────────────
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function PendingTechnicalAcceptance() {
       if (permissions.includes(389)) {
         try {
           const res = await axios.get("/people/get-customer-type-list");
-          const d   = res.data?.Data ?? res.data?.data ?? res.data ?? [];
+          const d = res.data?.Data ?? res.data?.data ?? res.data ?? [];
           setCustomerTypes(Array.isArray(d) ? d : []);
         } catch { setCustomerTypes([]); }
       }
@@ -43,13 +43,13 @@ export default function PendingTechnicalAcceptance() {
       if (permissions.includes(390)) {
         try {
           const res = await axios.get("/people/get-specific-purpose-list");
-          const d   = res.data?.data ?? res.data?.Data ?? res.data ?? [];
+          const d = res.data?.data ?? res.data?.Data ?? res.data ?? [];
           setSpecificPurposes(Array.isArray(d) ? d : []);
         } catch { setSpecificPurposes([]); }
       }
     };
     fetchDropdowns();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Fetch list — PHP: trfProducts.status=2 ───────────────────────────────
@@ -58,10 +58,10 @@ export default function PendingTechnicalAcceptance() {
     try {
       const params = new URLSearchParams();
       params.append("status", 2); // PHP: trfProducts.status=2
-      if (ctype)           params.append("ctype",           ctype);
+      if (ctype) params.append("ctype", ctype);
       if (specificpurpose) params.append("specificpurpose", specificpurpose);
 
-      const res  = await axios.get(
+      const res = await axios.get(
         `/actionitem/get-pending-technical-acceptance?${params.toString()}`
       );
       const list = res.data?.data ?? res.data?.trf_products ?? res.data ?? [];
@@ -207,7 +207,7 @@ export default function PendingTechnicalAcceptance() {
                   {[
                     "S.No.", "Product", "Package", "TRF No", "LRN",
                     "Grade/Size",
-                    ...(permissions.includes(389) ? ["Customer Type"]  : []),
+                    ...(permissions.includes(389) ? ["Customer Type"] : []),
                     ...(permissions.includes(390) ? ["Specific Purpose"] : []),
                     "Action",
                   ].map((h) => (

@@ -33,6 +33,14 @@ function fmtDate(d) {
   } catch { return d; }
 }
 
+function renderVal(v) {
+  if (v && typeof v === "object") {
+    // Handle the specific object structure from API: {value, display_value, ...}
+    return v.display_value ?? v.value ?? "—";
+  }
+  return v ?? "—";
+}
+
 // PHP: $sflag inline style string → React style object
 // API gives: "background:#008d4c!important;color:#ffffff;text-align:center"
 function parseComplianceStyle(styleStr) {
@@ -91,7 +99,7 @@ function InfoRow({ label, value }) {
       <td className="p-2 text-xs font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap border-r border-gray-200 dark:border-gray-700">
         {label}
       </td>
-      <td className="p-2 text-xs text-gray-800 dark:text-gray-200">{value ?? "—"}</td>
+      <td className="p-2 text-xs text-gray-800 dark:text-gray-200">{renderVal(value)}</td>
     </tr>
   );
 }
@@ -175,11 +183,11 @@ function HodApproveSection({ hid, allottedItems, disposable, onSuccess }) {
             <tbody>
               {activeItems.map((item, i) => (
                 <tr key={item.id ?? i} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
-                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.id}</td>
-                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.quantity_name}</td>
-                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.alloted}</td>
-                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.qleft}</td>
-                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.department_name}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.id)}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.quantity_name)}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.alloted)}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.qleft)}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.department_name)}</td>
                   {/* PHP: <input name="remnant[]" type="text" data-bvalidator="number,required,min[0],max[qleft]"> */}
                   <td className="px-2 py-1.5">
                     <input
@@ -559,11 +567,11 @@ export default function ReviewByHodDetail() {
                         // PHP: $sflag inline style
                         const cellStyle     = parseComplianceStyle(row.compliance_style);
                         // PHP: BDL/ADL display_value
-                        const displayResult = row.result?.display_value ?? row.result?.value ?? "—";
+                        const displayResult = renderVal(row.result);
                         // PHP: units.description
-                        const unitDisplay   = row.unit?.description ?? row.unit?.name ?? "—";
+                        const unitDisplay   = row.unit?.description ?? row.unit?.name ?? renderVal(row.unit);
                         // PHP: methods.name
-                        const methodName    = row.method?.name ?? "—";
+                        const methodName    = row.method?.name ?? renderVal(row.method);
 
                         return (
                           <tr key={row.id ?? idx} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
@@ -585,7 +593,7 @@ export default function ReviewByHodDetail() {
                             </td>
                             {hasSpecs && (
                               <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">
-                                {row.specification ?? "—"}
+                                {renderVal(row.specification)}
                               </td>
                             )}
                             {showActionsColumn && (
