@@ -1,5 +1,5 @@
 // Import Dependencies
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import dayjs from "dayjs";
@@ -10,15 +10,114 @@ import { Page } from "components/shared/Page";
 
 // ----------------------------------------------------------------------
 
+function CustomerSearch({ customers, value, onChange, disabled, error }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const selectedName = useMemo(
+    () => customers.find((c) => String(c.id) === String(value))?.name ?? "",
+    [customers, value],
+  );
+
+  const filteredCustomers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (
+      q
+        ? customers.filter((c) => (c.name ?? "").toLowerCase().includes(q))
+        : customers
+    ).slice(0, 80);
+  }, [customers, query]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const inputClass = [
+    "w-full rounded border px-3 py-2 text-sm outline-none transition",
+    "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
+    "dark:bg-dark-700 dark:text-dark-100",
+    error
+      ? "border-red-400 dark:border-red-500"
+      : "border-gray-300 dark:border-dark-500",
+    disabled ? "cursor-not-allowed opacity-60" : ""
+  ].join(" ");
+
+  return (
+    <div ref={ref} className="relative">
+      <input
+        type="text"
+        value={open ? query : selectedName}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+          if (!e.target.value) onChange("");
+        }}
+        onFocus={() => {
+          if (!disabled) setOpen(true);
+        }}
+        placeholder={disabled ? "Loading customers..." : "Search and select customer..."}
+        className={inputClass}
+        autoComplete="off"
+        disabled={disabled}
+      />
+
+      {disabled && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <svg className="h-4 w-4 animate-spin text-primary-500" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
+          </svg>
+        </div>
+      )}
+
+      {open && !disabled && (
+        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-xl dark:border-dark-600 dark:bg-dark-800">
+          {filteredCustomers.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-gray-400">No customers found</div>
+          ) : (
+            filteredCustomers.map((customer) => (
+              <div
+                key={customer.id}
+                onMouseDown={() => {
+                  onChange(String(customer.id));
+                  setQuery("");
+                  setOpen(false);
+                }}
+                className={`cursor-pointer px-3 py-2 text-sm transition-colors hover:bg-primary-50 dark:hover:bg-dark-700 ${String(customer.id) === String(value)
+                    ? "bg-primary-50 font-semibold text-primary-700 dark:bg-dark-700 dark:text-primary-400"
+                    : "text-gray-700 dark:text-dark-200"
+                  }`}
+              >
+                {customer.name}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+
 export default function AddConsentLetter() {
   const navigate = useNavigate();
 
   // ── Form State ──
   const [formData, setFormData] = useState({
-    consentletterdate: dayjs().format("YYYY-MM-DD"), // mirrors date("d/m/Y")
-    iscode: "",       // Standard
-    customerid: "",   // Customer
-    cusr: "",         // Customer Address
+    consentletterdate: dayjs().format("YYYY-MM-DD"),
+    iscode: "",
+    customerid: "",
+    addressid: "", // updated from cusr
     remark: "",
     remark2: "",
   });
@@ -39,10 +138,10 @@ export default function AddConsentLetter() {
   // ── Validation errors ──
   const [errors, setErrors] = useState({});
 
-  // ── Fetch Standards (mirrors selecttable("standards")) ──
+  // ── Fetch Standards ──
   useEffect(() => {
     axios
-      .get("/standards")
+      .get("/testing/get-standards")
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setStandards(list);
@@ -55,10 +154,10 @@ export default function AddConsentLetter() {
       .finally(() => setStandardsLoading(false));
   }, []);
 
-  // ── Fetch Customers (mirrors selectextrawhere("customers", "status=1")) ──
+  // ── Fetch Customers ──
   useEffect(() => {
     axios
-      .get("/customers", { params: { status: 1 } })
+      .get("/people/get-all-customers")
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setCustomers(list);
@@ -68,22 +167,26 @@ export default function AddConsentLetter() {
   }, []);
 
   // ── Fetch Customer Addresses when customer changes ──
-  // Mirrors: onchange="search(..., 'fetchcustomeraddressforconsent.php', ...)"
   useEffect(() => {
     if (!formData.customerid) {
       setCustomerAddresses([]);
-      setFormData((prev) => ({ ...prev, cusr: "" }));
+      setFormData((prev) => ({ ...prev, addressid: "" }));
       return;
     }
     setAddressLoading(true);
+
+    // Fetch addresses using the details API that we know works in other modules
     axios
-      .get("/customer-addresses", { params: { customer_id: formData.customerid } })
+      .get(`/accounts/get-po-detailfor-directinvoice-testing?customerid=${formData.customerid}`)
       .then((res) => {
-        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const list = res.data?.data?.addresses || res.data?.addresses || [];
         setCustomerAddresses(list);
-        setFormData((prev) => ({ ...prev, cusr: "" }));
+        setFormData((prev) => ({ ...prev, addressid: "" }));
       })
-      .catch((err) => console.error("Failed to load addresses:", err))
+      .catch((err) => {
+        console.error("Failed to load addresses:", err);
+        toast.error("Failed to load customer addresses.");
+      })
       .finally(() => setAddressLoading(false));
   }, [formData.customerid]);
 
@@ -96,13 +199,21 @@ export default function AddConsentLetter() {
     }
   };
 
+  // ── Handle Customer Selection from Search ──
+  const handleCustomerChange = (cid) => {
+    setFormData((prev) => ({ ...prev, customerid: cid, addressid: "" }));
+    if (errors.customerid) {
+      setErrors((prev) => ({ ...prev, customerid: "" }));
+    }
+  };
+
   // ── Validation ──
   const validate = () => {
     const newErrors = {};
     if (!formData.consentletterdate) newErrors.consentletterdate = "Date is required.";
     if (!formData.iscode) newErrors.iscode = "Standard is required.";
     if (!formData.customerid) newErrors.customerid = "Customer is required.";
-    if (!formData.cusr) newErrors.cusr = "Customer address is required.";
+    if (!formData.addressid) newErrors.addressid = "Customer address is required.";
     return newErrors;
   };
 
@@ -117,16 +228,31 @@ export default function AddConsentLetter() {
 
     try {
       setSubmitting(true);
-      const response = await axios.post("/consent-letters", formData);
-      if (response.data.status) {
-        toast.success("Consent letter added successfully ✅");
+
+      // Find selected customer name
+      const selectedCustomer = customers.find(c => String(c.id) === String(formData.customerid));
+
+      // Prepare payload to match requirement exactly
+      const payload = {
+        consentletterdate: dayjs(formData.consentletterdate).format("DD/MM/YYYY"),
+        iscode: Number(formData.iscode),
+        customerid: Number(formData.customerid),
+        customername: selectedCustomer?.name || "",
+        addressid: Number(formData.addressid),
+        remark: formData.remark,
+        remark2: formData.remark2,
+      };
+
+      const response = await axios.post("/accounts/add-consentletter", payload);
+      if (response.data.status === true || response.data.status === "true") {
+        toast.success(response.data.message || "Consent letter added successfully ✅");
         navigate("/dashboards/accounts/consent-letter");
       } else {
         toast.error(response.data.message ?? "Failed to add consent letter.");
       }
     } catch (err) {
       console.error("Submit error:", err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(err.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -185,35 +311,25 @@ export default function AddConsentLetter() {
               </select>
             </FormRow>
 
-            {/* Customer Name — mirrors name + pnumber display */}
+            {/* Customer Name — implemented with Searchable Dropdown */}
             <FormRow label="Customer Name" required error={errors.customerid}>
-              <select
-                name="customerid"
+              <CustomerSearch
+                customers={customers}
                 value={formData.customerid}
-                onChange={handleChange}
+                onChange={handleCustomerChange}
                 disabled={customersLoading}
-                className={inputClass(errors.customerid)}
-              >
-                <option value="">
-                  {customersLoading ? "Loading..." : "Select Customer"}
-                </option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.pnumber})
-                  </option>
-                ))}
-              </select>
+                error={errors.customerid}
+              />
             </FormRow>
 
             {/* Customer Address — dependent on Customer selection */}
-            {/* Mirrors: div#readd which is populated via fetchcustomeraddressforconsent.php */}
-            <FormRow label="Customer Address" required error={errors.cusr}>
+            <FormRow label="Customer Address" required error={errors.addressid}>
               <select
-                name="cusr"
-                value={formData.cusr}
+                name="addressid"
+                value={formData.addressid}
                 onChange={handleChange}
                 disabled={!formData.customerid || addressLoading}
-                className={inputClass(errors.cusr)}
+                className={inputClass(errors.addressid)}
               >
                 <option value="">
                   {!formData.customerid
@@ -226,7 +342,7 @@ export default function AddConsentLetter() {
                 </option>
                 {customerAddresses.map((addr) => (
                   <option key={addr.id} value={addr.id}>
-                    {addr.address}
+                    {addr.display || addr.full_address || addr.address}
                   </option>
                 ))}
               </select>

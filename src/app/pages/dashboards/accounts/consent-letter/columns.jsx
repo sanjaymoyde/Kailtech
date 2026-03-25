@@ -7,13 +7,13 @@ import { RowActions } from "./RowActions";
 const columnHelper = createColumnHelper();
 
 export const columns = [
-  columnHelper.accessor("consentno", {
+  columnHelper.accessor("conosentletterno", {
     id: "consentno",
     header: "Consent No.",
     cell: (info) => info.getValue() ?? "-",
   }),
 
-  columnHelper.accessor("date", {
+  columnHelper.accessor("consentletterdate", {
     id: "date",
     header: "Date",
     cell: (info) => {
@@ -24,13 +24,13 @@ export const columns = [
     },
   }),
 
-  columnHelper.accessor("custname", {
+  columnHelper.accessor("customername", {
     id: "custname",
     header: "Customer Name",
     cell: (info) => info.getValue() ?? "-",
   }),
 
-  columnHelper.accessor("iscode", {
+  columnHelper.accessor("name", {
     id: "iscode",
     header: "IS Code",
     cell: (info) => info.getValue() ?? "-",
@@ -39,7 +39,10 @@ export const columns = [
   columnHelper.accessor("status", {
     id: "status",
     header: "Status",
-    cell: (info) => info.getValue() ?? "-",
+    cell: (info) => {
+      const val = info.getValue();
+      return val === 1 ? "Approved" : val === 0 ? "Pending" : val;
+    },
   }),
 
   columnHelper.display({

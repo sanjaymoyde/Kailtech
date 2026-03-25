@@ -31,7 +31,7 @@ import axios from "utils/axios";
 
 const isSafari = getUserAgentBrowser() === "Safari";
 
-export default function OrdersDatatableV1() {
+export default function ConsentLetterList() {
   const { cardSkin } = useThemeContext();
 
   const [orders, setOrders] = useState([]);
@@ -39,7 +39,7 @@ export default function OrdersDatatableV1() {
 
   useEffect(() => {
     axios
-      .get("/consent-letters")
+      .get("/accounts/get-consentletter-list")
       .then((res) => {
         setOrders(Array.isArray(res.data) ? res.data : res.data?.data || []);
       })
@@ -80,34 +80,34 @@ export default function OrdersDatatableV1() {
       columnPinning,
       tableSettings,
     },
-        meta: {
-  updateData: (rowIndex, columnId, value) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.map((row, index) => {
-        if (index === rowIndex) {
-          return {
-            ...old[rowIndex],
-            [columnId]: value,
-          };
-        }
-        return row;
-      })
-    );
-  },
-  deleteRow: (row) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.filter((oldRow) => oldRow.id !== row.original.id)
-    );
-  },
-  deleteRows: (rows) => {
-    skipAutoResetPageIndex();
-    const rowIds = rows.map((row) => row.original.id);
-    setOrders((old) => old.filter((row) => !rowIds.includes(row.id)));
-  },
-  setTableSettings
-},
+    meta: {
+      updateData: (rowIndex, columnId, value) => {
+        skipAutoResetPageIndex();
+        setOrders((old) =>
+          old.map((row, index) => {
+            if (index === rowIndex) {
+              return {
+                ...old[rowIndex],
+                [columnId]: value,
+              };
+            }
+            return row;
+          })
+        );
+      },
+      deleteRow: (row) => {
+        skipAutoResetPageIndex();
+        setOrders((old) =>
+          old.filter((oldRow) => oldRow.id !== row.original.id)
+        );
+      },
+      deleteRows: (rows) => {
+        skipAutoResetPageIndex();
+        const rowIds = rows.map((row) => row.original.id);
+        setOrders((old) => old.filter((row) => !rowIds.includes(row.id)));
+      },
+      setTableSettings
+    },
     filterFns: {
       fuzzy: fuzzyFilter,
     },
@@ -133,18 +133,18 @@ export default function OrdersDatatableV1() {
 
   useLockScrollbar(tableSettings.enableFullScreen);
 
-// ─── Shared UI components ──────────────────────────────────────────────────
-function PageSpinner() {
-  return (
-    <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">
-      <svg className="h-7 w-7 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
-      </svg>
-      Loading...
-    </div>
-  );
-}
+  // ─── Shared UI components ──────────────────────────────────────────────────
+  function PageSpinner() {
+    return (
+      <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">
+        <svg className="h-7 w-7 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
+        </svg>
+        Loading...
+      </div>
+    );
+  }
 
   // ✅ Loading UI
   if (loading) {
@@ -162,7 +162,7 @@ function PageSpinner() {
           className={clsx(
             "flex h-full w-full flex-col",
             tableSettings.enableFullScreen &&
-              "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
+            "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
           )}
         >
           <Toolbar table={table} />
@@ -186,12 +186,12 @@ function PageSpinner() {
                   {table.getFilteredRowModel().rows.length === 0
                     ? 0
                     : table.getState().pagination.pageIndex *
-                        table.getState().pagination.pageSize +
-                      1}{" "}
+                    table.getState().pagination.pageSize +
+                    1}{" "}
                   to{" "}
                   {Math.min(
                     (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
+                    table.getState().pagination.pageSize,
                     table.getFilteredRowModel().rows.length,
                   )}{" "}
                   of {table.getFilteredRowModel().rows.length} entries
@@ -214,9 +214,9 @@ function PageSpinner() {
                               "bg-gray-200 font-semibold uppercase text-gray-800 dark:bg-dark-800 dark:text-dark-100 first:ltr:rounded-tl-lg last:ltr:rounded-tr-lg first:rtl:rounded-tr-lg last:rtl:rounded-tl-lg",
                               header.column.getCanPin() && [
                                 header.column.getIsPinned() === "left" &&
-                                  "sticky z-2 ltr:left-0 rtl:right-0",
+                                "sticky z-2 ltr:left-0 rtl:right-0",
                                 header.column.getIsPinned() === "right" &&
-                                  "sticky z-2 ltr:right-0 rtl:left-0",
+                                "sticky z-2 ltr:right-0 rtl:left-0",
                               ],
                             )}
                           >
@@ -229,9 +229,9 @@ function PageSpinner() {
                                   {header.isPlaceholder
                                     ? null
                                     : flexRender(
-                                        header.column.columnDef.header,
-                                        header.getContext(),
-                                      )}
+                                      header.column.columnDef.header,
+                                      header.getContext(),
+                                    )}
                                 </span>
                                 <TableSortIcon
                                   sorted={header.column.getIsSorted()}
@@ -256,7 +256,7 @@ function PageSpinner() {
                           className={clsx(
                             "relative border-y border-transparent border-b-gray-200 dark:border-b-dark-500",
                             row.getIsSelected() && !isSafari &&
-                              "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
+                            "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
                           )}
                         >
                           {/* first row is a normal row */}
@@ -271,9 +271,9 @@ function PageSpinner() {
                                     : "dark:bg-dark-900",
                                   cell.column.getCanPin() && [
                                     cell.column.getIsPinned() === "left" &&
-                                      "sticky z-2 ltr:left-0 rtl:right-0",
+                                    "sticky z-2 ltr:left-0 rtl:right-0",
                                     cell.column.getIsPinned() === "right" &&
-                                      "sticky z-2 ltr:right-0 rtl:left-0",
+                                    "sticky z-2 ltr:right-0 rtl:left-0",
                                   ],
                                 )}
                               >
@@ -306,7 +306,7 @@ function PageSpinner() {
                   className={clsx(
                     "px-4 pb-4 sm:px-5 sm:pt-4",
                     tableSettings.enableFullScreen &&
-                      "bg-gray-50 dark:bg-dark-800",
+                    "bg-gray-50 dark:bg-dark-800",
                     !(
                       table.getIsSomeRowsSelected() ||
                       table.getIsAllRowsSelected()

@@ -15,12 +15,16 @@ export default function AddExpenseCategory() {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await axios.post("/expense-categories", { name, description });
-      toast.success("Expense category added");
-      navigate("/dashboards/accounts/expense-category");
+      const res = await axios.post("/accounts/add-expense-category", { name, description });
+      if (res.data?.status || res.data?.success) {
+        toast.success(res.data?.message || "Expense category added");
+        navigate("/dashboards/accounts/expense-category");
+      } else {
+        toast.error(res.data?.message || "Failed to add expense category");
+      }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to add expense category");
+      toast.error(err?.response?.data?.message || "Failed to add expense category");
     } finally {
       setSubmitting(false);
     }

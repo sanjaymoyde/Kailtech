@@ -45,7 +45,7 @@ export default function OrdersDatatableV1() {
   const fetchModes = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/expense-categories");
+      const res = await axios.get("/accounts/get-expense-category-list");
       setOrders(Array.isArray(res.data) ? res.data : res.data?.data || []);
     } catch (err) {
       console.error("Error fetching expense categories:", err);

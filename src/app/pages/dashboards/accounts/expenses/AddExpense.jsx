@@ -35,7 +35,7 @@ export default function AddExpense() {
   // ── Fetch categories on mount (mirrors PHP selecttable("expensecategory")) ──
   useEffect(() => {
     axios
-      .get("/expense-categories")
+      .get("/accounts/get-expense-category-list")
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setCategories(list);
@@ -81,12 +81,30 @@ export default function AddExpense() {
 
     try {
       setSubmitting(true);
-      await axios.post("/expenses", formData);
-      toast.success("Expense added successfully.");
-      navigate("/dashboards/accounts/expenses");
+      // Format date to DD/MM/YYYY if it's in YYYY-MM-DD
+      let formattedDate = formData.expensedate;
+      if (formattedDate.includes("-")) {
+        const [y, m, d] = formattedDate.split("-");
+        formattedDate = `${d}/${m}/${y}`;
+      }
+
+      const payload = {
+        ...formData,
+        expensedate: formattedDate,
+        category: Number(formData.category),
+        amount: Number(formData.amount),
+      };
+
+      const res = await axios.post("/accounts/add-expense", payload);
+      if (res.data?.status || res.data?.success) {
+        toast.success(res.data?.message || "Expense added successfully.");
+        navigate("/dashboards/accounts/expenses");
+      } else {
+        toast.error(res.data?.message || "Failed to add expense.");
+      }
     } catch (err) {
       console.error("Submit error:", err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(err?.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }

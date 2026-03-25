@@ -140,7 +140,7 @@ function numberToWords(n) {
 
 // ─── Print template — ALL inline styles, zero Tailwind, zero oklch ───────────
 // This is the div captured by html2canvas for PDF generation.
-function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl, withLH }) {
+function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl, withLH, companyInfo }) {
   const statecode = !isNaN(inv.statecode) ? String(inv.statecode).padStart(2, "0") : inv.statecode;
   const isSGST = String(statecode) === "23";
   const stateLabel = inv.statename ?? statecode ?? "";
@@ -162,15 +162,18 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
       {/* Letterhead */}
       {withLH && (
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
-          <img src={logo} alt="Logo" style={{ height: 60, width: "auto" }} crossOrigin="anonymous" />
+          <img src={companyInfo?.branding?.logo || logo} alt="Logo" style={{ height: 60, width: "auto" }} crossOrigin="anonymous" />
           <div style={{ flex: 1, textAlign: "right" }}>
             <p style={{ fontFamily: "monospace", fontSize: 10, fontStyle: "italic", color: "#555", margin: 0 }}>
               NABL Accredited as per IS/ISO/IEC 17025 (Certificate Nos. TC-7832 &amp; CC-2348),<br />
               BIS Recognized &amp; ISO 9001 Certified Test &amp; Calibration Laboratory
             </p>
             <div style={{ fontSize: 18, fontWeight: "bold", color: "navy", marginTop: 4 }}>
-              Kailtech Test And Research Centre Pvt. Ltd.
+              {companyInfo?.company?.name || "Kailtech Test And Research Centre Pvt. Ltd."}
             </div>
+            {companyInfo?.address?.top_address && (
+              <p style={{ fontSize: 8, color: "#777", margin: "2px 0 0 0" }}>{companyInfo.address.top_address}</p>
+            )}
           </div>
         </div>
       )}
@@ -276,11 +279,11 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
               </div>)}
               {inv.brnnos?.trim() && <div><strong>BRN No :</strong> {inv.brnnos}</div>}
               {inv.remark?.trim() && <div><strong>Remark :</strong> {inv.remark}</div>}
-              <div>PAN : AADCK0799A</div>
-              <div>GSTIN : 23AADCK0799A1ZV</div>
-              <div>SAC Code : 998394 Category : Scientific and Technical Consultancy Services</div>
+              <div>PAN : {companyInfo?.company?.pan_no || "AADCK0799A"}</div>
+              <div>GSTIN : {companyInfo?.company?.gst_no || "23AADCK0799A1ZV"}</div>
+              <div>SAC Code : {companyInfo?.company?.sac_code || "998394"} Category : Scientific and Technical Consultancy Services</div>
               <div>Udhyam Registeration No. Type of MSME : 230262102537</div>
-              <div>CIN NO.U73100MP2006PTC019006</div>
+              <div>CIN NO. {companyInfo?.company?.cin_no || "U73100MP2006PTC019006"}</div>
             </td>
             <td style={S.td}>Subtotal</td>
             <td style={S.tdR}>{f2(inv.subtotal)}</td>
@@ -345,10 +348,10 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
         <tbody>
           <tr>
             <td style={{ ...S.td, width: "60%", borderRight: "none" }}>
-              <div>For online payments — {inv.bankaccountname ?? ""}</div>
-              <div>Bank Name : {inv.bankname ?? ""}, Branch Name : {inv.bankbranch ?? ""}</div>
-              <div>Bank Account No. : {inv.bankaccountno ?? ""}, A/c Type : {inv.bankactype ?? ""}</div>
-              <div>IFSC CODE: {inv.bankifsccode ?? ""}, MICR CODE: {inv.bankmicr ?? ""}</div>
+              <div>For online payments — {inv.bankaccountname || companyInfo?.bank?.account_name || ""}</div>
+              <div>Bank Name : {inv.bankname || companyInfo?.bank?.bank_name || ""}, Branch Name : {inv.bankbranch || companyInfo?.bank?.branch || ""}</div>
+              <div>Bank Account No. : {inv.bankaccountno || companyInfo?.bank?.account_no || ""}, A/c Type : {inv.bankactype || companyInfo?.bank?.account_type || ""}</div>
+              <div>IFSC CODE: {inv.bankifsccode || companyInfo?.bank?.ifsc || ""}, MICR CODE: {inv.bankmicr || companyInfo?.bank?.micr || ""}</div>
               <div style={{ marginTop: 6, fontSize: 10 }}>
                 Certified that the particulars given above are true and correct.
                 The commercial values in this document are as per contract/Agreement/Purchase order terms with the customer.
@@ -356,7 +359,7 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
               </div>
             </td>
             <td style={{ ...S.td, borderLeft: "none", textAlign: "right" }}>
-              <div>For Kailtech Test And Research Centre Pvt. Ltd.</div>
+              <div>For {companyInfo?.company?.name || "Kailtech Test And Research Centre Pvt. Ltd."}</div>
               {(status === 1 || status === 2) && (<div style={{ marginTop: 8 }}>
                 {signUrl && <img src={signUrl} alt="Sign" crossOrigin="anonymous" style={{ width: 100, height: 40, objectFit: "contain" }} />}
                 {digitalSignUrl && <img src={digitalSignUrl} alt="DigSign" crossOrigin="anonymous" style={{ maxHeight: 50, objectFit: "contain" }} />}
@@ -368,7 +371,7 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
             <td style={{ ...S.td, fontSize: 10 }} colSpan={2}>
               <strong><u>Terms &amp; Conditions:</u></strong>
               <ol style={{ paddingLeft: 18, marginTop: 4, lineHeight: 1.6 }}>
-                <li>Cross Cheque/DD should be drawn in favour of Kailtech Test And Research Centre Pvt. Ltd. Payable at Indore</li>
+                <li>Cross Cheque/DD should be drawn in favour of {companyInfo?.company?.name || "Kailtech Test And Research Centre Pvt. Ltd."} Payable at Indore</li>
                 <li>Please attached bill details indicating Invoice No. Quotation no &amp; TDS deductions if any along with your payment.</li>
                 <li>As per existing GST rules. the GSTR-1 has to be filed in the immediate next month of billing. So if you have any issue in this tax invoice viz customer Name, Address, GST No., Amount etc, please inform positively in writing before 5th of next month, otherwise no such request will be entertained.</li>
                 <li>Payment not made with in 15 days from the date of issued bill will attract interest @ 24% P.A.</li>
@@ -426,6 +429,7 @@ export default function ViewInvoiceCalibration() {
   const [invoice, setInvoice] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [companyInfo, setCompanyInfo] = useState(null);
   const [imgBase64, setImgBase64] = useState({ qr: "", sign: "", dSign: "" });
   const [pdfBusy, setPdfBusy] = useState(false);
 
@@ -453,6 +457,10 @@ export default function ViewInvoiceCalibration() {
 
   useEffect(() => {
     load();
+    // Fetch central company info
+    axios.get("/get-company-info")
+      .then(res => setCompanyInfo(res.data?.data))
+      .catch(err => console.error("Failed to load company info:", err));
   }, [load]);
 
   if (loading) return <Page title="View Invoice"><Spinner /></Page>;
@@ -556,6 +564,7 @@ export default function ViewInvoiceCalibration() {
     qrUrl: imgBase64.qr || invoice._qr_image,
     signUrl: imgBase64.sign || invoice._signature_image,
     digitalSignUrl: imgBase64.dSign || invoice._digital_signature,
+    companyInfo,
   };
 
   return (
@@ -629,7 +638,7 @@ export default function ViewInvoiceCalibration() {
           {/* ── Header ── */}
           <div className="mb-4 grid grid-cols-12 gap-2">
             <div className="col-span-3 flex items-start">
-              <img src={logo} alt="KRTC Logo" className="h-16 w-auto object-contain" />
+              <img src={companyInfo?.branding?.logo || logo} alt="KRTC Logo" className="h-16 w-auto object-contain" />
             </div>
             <div className="col-span-9 text-right">
               <p className="font-mono text-xs italic text-gray-500">
@@ -637,7 +646,7 @@ export default function ViewInvoiceCalibration() {
                 BIS Recognized &amp; ISO 9001 Certified Test &amp; Calibration Laboratory
               </p>
               <h2 className="mt-1 text-xl font-bold text-navy-700" style={{ color: "navy" }}>
-                {invoice.companyname ?? "KAILTECH TEST AND RESEARCH CENTRE PVT LTD."}
+                {companyInfo?.company?.name || invoice.companyname || "KAILTECH TEST AND RESEARCH CENTRE PVT LTD."}
               </h2>
             </div>
             <div className="col-span-6 text-center text-base font-bold">
@@ -754,11 +763,11 @@ export default function ViewInvoiceCalibration() {
                     <div><b>Remark :</b> {invoice.remark}</div>
                   )}
                   {(invoice.brnnos?.trim() || invoice.remark?.trim()) && <br />}
-                  <div>PAN : AADCK0799A</div>
-                  <div>GSTIN : 23AADCK0799A1ZV</div>
-                  <div>SAC Code : 998394 Category : Scientific and Technical Consultancy Services</div>
+                  <div>PAN : {companyInfo?.company?.pan_no || "AADCK0799A"}</div>
+                  <div>GSTIN : {companyInfo?.company?.gst_no || "23AADCK0799A1ZV"}</div>
+                  <div>SAC Code : {companyInfo?.company?.sac_code || "998394"} Category : Scientific and Technical Consultancy Services</div>
                   <div>Udhyam Registeration No. Type of MSME : 230262102537</div>
-                  <div>CIN NO.U73100MP2006PTC019006</div>
+                  <div>CIN NO. {companyInfo?.company?.cin_no || "U73100MP2006PTC019006"}</div>
                 </td>
 
                 {/* Right: Summary */}

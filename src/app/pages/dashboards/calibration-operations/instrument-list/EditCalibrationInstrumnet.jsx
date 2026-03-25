@@ -415,32 +415,32 @@ export default function EditCalibrationInstrumnet() {
         const fetchedPriceLists =
           priceMatrix.length > 0
             ? priceMatrix.map((price) => ({
-                id: price.id || "",
-                packagename: safeString(price.packagename),
-                packagedesc: safeString(price.packagedesc),
-                accreditation: safeString(price.accreditation),
-                location: safeString(price.location),
-                currency:
-                  currencyOptions.find(
-                    (opt) => opt.value === safeString(price.currency),
-                  ) || null,
-                rate: safeString(price.rate),
-                daysrequired: safeString(price.daysrequired),
-                matrices:
-                  Array.isArray(price.matrix) && price.matrix.length > 0
-                    ? price.matrix.map((matrix, matrixIndex) => ({
-                        id: matrix.id || "",
-                        matrixno: matrixIndex + 1,
-                        unittype: safeString(matrix.unittype),
-                        unit: safeString(matrix.unit),
-                        mode: safeString(matrix.mode),
-                        instrangemin: safeString(matrix.instrangemin),
-                        instrangemax: safeString(matrix.instrangemax),
-                        tolerance: safeString(matrix.tolerance),
-                        tolerancetype: safeString(matrix.tolerancetype),
-                      }))
-                    : [],
-              }))
+              id: price.id || "",
+              packagename: safeString(price.packagename),
+              packagedesc: safeString(price.packagedesc),
+              accreditation: safeString(price.accreditation),
+              location: safeString(price.location),
+              currency:
+                currencyOptions.find(
+                  (opt) => opt.value === safeString(price.currency),
+                ) || null,
+              rate: safeString(price.rate),
+              daysrequired: safeString(price.daysrequired),
+              matrices:
+                Array.isArray(price.matrix) && price.matrix.length > 0
+                  ? price.matrix.map((matrix, matrixIndex) => ({
+                    id: matrix.id || "",
+                    matrixno: matrixIndex + 1,
+                    unittype: safeString(matrix.unittype),
+                    unit: safeString(matrix.unit),
+                    mode: safeString(matrix.mode),
+                    instrangemin: safeString(matrix.instrangemin),
+                    instrangemax: safeString(matrix.instrangemax),
+                    tolerance: safeString(matrix.tolerance),
+                    tolerancetype: safeString(matrix.tolerancetype),
+                  }))
+                  : [],
+            }))
             : [];
 
         setPriceLists(fetchedPriceLists);
@@ -453,7 +453,7 @@ export default function EditCalibrationInstrumnet() {
     };
 
     fetchAllData();
-  }, [id]);
+  }, [currencyOptions, id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -560,7 +560,7 @@ export default function EditCalibrationInstrumnet() {
       if (
         newMatrices.length > 0 &&
         JSON.stringify(newMatrices[newMatrices.length - 1]) ===
-          JSON.stringify(newMatrix)
+        JSON.stringify(newMatrix)
       ) {
         return prev;
       }
@@ -773,7 +773,7 @@ export default function EditCalibrationInstrumnet() {
 
           toast.success(
             `Step 1 Complete! Instrument ID: ${finalInstrumentId}, Format ID: ${finalFormatId}` +
-              (uncertaintyId ? `, Uncertainty ID: ${uncertaintyId}` : ""),
+            (uncertaintyId ? `, Uncertainty ID: ${uncertaintyId}` : ""),
           );
 
           setTimeout(() => {
@@ -867,15 +867,14 @@ export default function EditCalibrationInstrumnet() {
                 <button
                   type="button"
                   onClick={() => isClickable && handleStepClick(step)}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 ${
-                    currentStep >= step
+                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 ${currentStep >= step
                       ? isClickable
                         ? "cursor-pointer bg-blue-600 text-white hover:bg-blue-700"
                         : "cursor-default bg-blue-600 text-white"
                       : isClickable
                         ? "cursor-pointer bg-gray-300 text-gray-600 hover:bg-gray-400"
                         : "cursor-not-allowed bg-gray-300 text-gray-600"
-                  } ${currentStep === step ? "ring-2 ring-blue-400 ring-offset-2" : ""}`}
+                    } ${currentStep === step ? "ring-2 ring-blue-400 ring-offset-2" : ""}`}
                   disabled={!isClickable}
                   title={
                     step === 1
@@ -897,9 +896,8 @@ export default function EditCalibrationInstrumnet() {
                 </button>
                 {step < 4 && (
                   <div
-                    className={`h-1 w-16 ${
-                      currentStep > step ? "bg-blue-600" : "bg-gray-300"
-                    }`}
+                    className={`h-1 w-16 ${currentStep > step ? "bg-blue-600" : "bg-gray-300"
+                      }`}
                   />
                 )}
               </div>
@@ -952,7 +950,7 @@ export default function EditCalibrationInstrumnet() {
             {currentStep === 3 && "Step 3: Uncertainty Settings"}
             {currentStep === 4 && "Step 4: Certificate Settings"}
           </h2>
-          
+
           <Button
             variant="outline"
             className="bg-blue-600 text-white hover:bg-blue-700"

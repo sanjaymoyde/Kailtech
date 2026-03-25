@@ -1,27 +1,29 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { RowActions } from "./RowActions";
+// import { RowActions } from "./RowActions";
 
 const columnHelper = createColumnHelper();
 
 export const columns = [
   columnHelper.accessor("id", {
     id: "id",
-    header: "ID",
-    cell: (info) => info.getValue() ?? "-",
+    header: () => <div className="text-center">ID</div>,
+    cell: (info) => <div className="text-center">{info.getValue() ?? "-"}</div>,
   }),
   columnHelper.accessor("name", {
     id: "name",
-    header: "Name",
-    cell: (info) => info.getValue() ?? "-",
+    header: () => <div className="text-center">Name</div>,
+    cell: (info) => <div className="text-center">{info.getValue() ?? "-"}</div>,
   }),
   columnHelper.accessor("description", {
     id: "description",
-    header: "Description/Symbol",
-    cell: (info) => info.getValue() ?? "-",
+    header: () => <div className="text-center">Description/Symbol</div>,
+    cell: (info) => <div className="text-center">{info.getValue() ?? "-"}</div>,
   }),
+/*
   columnHelper.display({
     id: "actions",
     header: "Actions",
     cell: (info) => <RowActions row={info.row} table={info.table} />,
   }),
+*/
 ];
