@@ -389,32 +389,32 @@ export default function CloneInstrument() {
         const clonedPriceLists =
           priceMatrix.length > 0
             ? priceMatrix.map((price) => ({
-                // Remove id to create new entry
-                packagename: safeString(price.packagename),
-                packagedesc: safeString(price.packagedesc),
-                accreditation: safeString(price.accreditation),
-                location: safeString(price.location),
-                currency:
-                  currencyOptions.find(
-                    (opt) => opt.value === safeString(price.currency)
-                  ) || null,
-                rate: safeString(price.rate),
-                daysrequired: safeString(price.daysrequired),
-                matrices:
-                  Array.isArray(price.matrix) && price.matrix.length > 0
-                    ? price.matrix.map((matrix, matrixIndex) => ({
-                        // Remove id to create new entry
-                        matrixno: matrixIndex + 1,
-                        unittype: safeString(matrix.unittype),
-                        unit: safeString(matrix.unit),
-                        mode: safeString(matrix.mode),
-                        instrangemin: safeString(matrix.instrangemin),
-                        instrangemax: safeString(matrix.instrangemax),
-                        tolerance: safeString(matrix.tolerance),
-                        tolerancetype: safeString(matrix.tolerancetype),
-                      }))
-                    : [],
-              }))
+              // Remove id to create new entry
+              packagename: safeString(price.packagename),
+              packagedesc: safeString(price.packagedesc),
+              accreditation: safeString(price.accreditation),
+              location: safeString(price.location),
+              currency:
+                currencyOptions.find(
+                  (opt) => opt.value === safeString(price.currency)
+                ) || null,
+              rate: safeString(price.rate),
+              daysrequired: safeString(price.daysrequired),
+              matrices:
+                Array.isArray(price.matrix) && price.matrix.length > 0
+                  ? price.matrix.map((matrix, matrixIndex) => ({
+                    // Remove id to create new entry
+                    matrixno: matrixIndex + 1,
+                    unittype: safeString(matrix.unittype),
+                    unit: safeString(matrix.unit),
+                    mode: safeString(matrix.mode),
+                    instrangemin: safeString(matrix.instrangemin),
+                    instrangemax: safeString(matrix.instrangemax),
+                    tolerance: safeString(matrix.tolerance),
+                    tolerancetype: safeString(matrix.tolerancetype),
+                  }))
+                  : [],
+            }))
             : [];
 
         setPriceLists(clonedPriceLists);
@@ -532,7 +532,7 @@ export default function CloneInstrument() {
       if (
         newMatrices.length > 0 &&
         JSON.stringify(newMatrices[newMatrices.length - 1]) ===
-          JSON.stringify(newMatrix)
+        JSON.stringify(newMatrix)
       ) {
         return prev;
       }
@@ -759,19 +759,17 @@ export default function CloneInstrument() {
         {[1, 2, 3, 4].map((step) => (
           <div key={step} className="flex items-center">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                currentStep >= step
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${currentStep >= step
                   ? "bg-blue-600 text-white"
                   : "bg-gray-300 text-gray-600"
-              }`}
+                }`}
             >
               {step}
             </div>
             {step < 4 && (
               <div
-                className={`h-1 w-16 ${
-                  currentStep > step ? "bg-blue-600" : "bg-gray-300"
-                }`}
+                className={`h-1 w-16 ${currentStep > step ? "bg-blue-600" : "bg-gray-300"
+                  }`}
               />
             )}
           </div>
@@ -823,7 +821,7 @@ export default function CloneInstrument() {
             {currentStep === 4 && "Step 4: Certificate Settings"}
           </h2>
           <Button
-            variant="outline"
+            variant="outlined"
             className="bg-blue-600 text-white hover:bg-blue-700"
             onClick={() =>
               navigate("/dashboards/calibration-operations/instrument-list")

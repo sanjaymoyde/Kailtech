@@ -66,6 +66,7 @@ export default function OrdersDatatableV1() {
       const [tableSettings, setTableSettings] = useState({
         enableFullScreen: false,
         enableRowDense: false,
+        enableSorting: true,
       });
 
 

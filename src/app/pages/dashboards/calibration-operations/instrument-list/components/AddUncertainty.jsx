@@ -290,12 +290,12 @@ export default function AddUncertainty({
         prevRows.map((row) =>
           row.id === id
             ? {
-                ...row,
-                selectedTable: selectedOption,
-                fieldfrom: selectedOption.value,
-                fieldname: null,
-                fieldnameOptions: options,
-              }
+              ...row,
+              selectedTable: selectedOption,
+              fieldfrom: selectedOption.value,
+              fieldname: null,
+              fieldnameOptions: options,
+            }
             : row,
         ),
       );
@@ -304,12 +304,12 @@ export default function AddUncertainty({
         prevRows.map((row) =>
           row.id === id
             ? {
-                ...row,
-                selectedTable: null,
-                fieldfrom: "",
-                fieldname: null,
-                fieldnameOptions: [],
-              }
+              ...row,
+              selectedTable: null,
+              fieldfrom: "",
+              fieldname: null,
+              fieldnameOptions: [],
+            }
             : row,
         ),
       );
@@ -528,7 +528,7 @@ export default function AddUncertainty({
             style={{ cursor: loading ? "not-allowed" : "pointer" }}
             className="rounded-md bg-blue-600 px-8 py-3 text-lg font-medium text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-          Save & Next
+            Save & Next
           </button>
         </div>
       </div>

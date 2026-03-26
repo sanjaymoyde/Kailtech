@@ -48,7 +48,7 @@ export default function EditUnit() {
       ...prev,
       [name]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -61,31 +61,31 @@ export default function EditUnit() {
   // Custom validation function
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!unit.name.trim()) {
       newErrors.name = "This is required field";
     }
-    
+
     // Description is optional, so no validation needed
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form before submitting
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
 
     try {
       const form = new FormData();
       form.append("name", unit.name);
-      form.append("description", unit.description);
+      form.append("description_text", unit.description); // Fix: this field is required by the DB
 
       const response = await axios.post(`/master/update-unit/${id}`, form); // ✅ updated endpoint
       const result = response.data;
@@ -116,7 +116,7 @@ export default function EditUnit() {
             Edit Unit
           </h2>
           <Button
-            variant="outline"
+            variant="outlined"
             className="text-white bg-blue-600 hover:bg-blue-700"
             onClick={() => navigate("/dashboards/master-data/units")}
           >
@@ -132,7 +132,7 @@ export default function EditUnit() {
               name="name"
               value={unit.name}
               onChange={handleChange}
-              // removed required attribute
+            // removed required attribute
             />
             {errors.name && (
               <p className="text-red-500 text-sm mt-1">{errors.name}</p>
@@ -145,7 +145,7 @@ export default function EditUnit() {
               name="description"
               value={unit.description}
               onChange={handleChange}
-              // no required attribute (description is optional)
+            // no required attribute (description is optional)
             />
             {/* No error for description as it's optional */}
           </div>

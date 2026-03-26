@@ -220,12 +220,12 @@ export default function AddCertificateSetting({
         prevRows.map((row) =>
           row.id === id
             ? {
-                ...row,
-                selectedTable: selectedOption,
-                fieldfrom: selectedOption.value,
-                fieldname: null,
-                fieldnameOptions: options,
-              }
+              ...row,
+              selectedTable: selectedOption,
+              fieldfrom: selectedOption.value,
+              fieldname: null,
+              fieldnameOptions: options,
+            }
             : row,
         ),
       );
@@ -234,12 +234,12 @@ export default function AddCertificateSetting({
         prevRows.map((row) =>
           row.id === id
             ? {
-                ...row,
-                selectedTable: null,
-                fieldfrom: "",
-                fieldname: null,
-                fieldnameOptions: [],
-              }
+              ...row,
+              selectedTable: null,
+              fieldfrom: "",
+              fieldname: null,
+              fieldnameOptions: [],
+            }
             : row,
         ),
       );
@@ -291,7 +291,7 @@ export default function AddCertificateSetting({
         variable: row.setVariable || "",
         field_heading: row.fieldHeading || "",
         field_position: parseInt(row.fieldPosition) || "0",
-        formula: null, 
+        formula: null,
         checkbox: row.checked ? "yes" : "no",
       }));
 
@@ -349,81 +349,81 @@ export default function AddCertificateSetting({
 
   return (
     <>
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-[98%] space-y-6">
-        {/* Title */}
-        <h1 className="flex items-center gap-3 text-2xl font-bold text-gray-800">
-          Certificate Settings
-        </h1>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-[98%] space-y-6">
+          {/* Title */}
+          <h1 className="flex items-center gap-3 text-2xl font-bold text-gray-800">
+            Certificate Settings
+          </h1>
 
-        {/* Table Component */}
-        <CertificateTable
-          rows={rows}
-          tableList={tableList}
-          customSelectStyles={customSelectStyles}
-          handleCheckbox={handleCheckbox}
-          handleInputChange={handleInputChange}
-          handleTableSelection={handleTableSelection}
-          handleFieldnameChange={handleFieldnameChange}
-          addRow={addRow}
-          removeRow={removeRow}
-          loading={loading}
-        />
+          {/* Table Component */}
+          <CertificateTable
+            rows={rows}
+            tableList={tableList}
+            customSelectStyles={customSelectStyles}
+            handleCheckbox={handleCheckbox}
+            handleInputChange={handleInputChange}
+            handleTableSelection={handleTableSelection}
+            handleFieldnameChange={handleFieldnameChange}
+            addRow={addRow}
+            removeRow={removeRow}
+            loading={loading}
+          />
 
-        {/* Action Buttons */}
-        <div className="mt-4 flex flex-row items-center justify-between gap-2">
-          <Button
-            onClick={onBack}
-            variant="outline"
-            className="rounded-md bg-gray-600 px-8 py-3 text-lg font-medium text-white shadow-md transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            ← Back
-          </Button>
+          {/* Action Buttons */}
+          <div className="mt-4 flex flex-row items-center justify-between gap-2">
+            <Button
+              onClick={onBack}
+              variant="outline"
+              className="rounded-md bg-gray-600 px-8 py-3 text-lg font-medium text-white shadow-md transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              ← Back
+            </Button>
 
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            style={{ cursor: loading ? "not-allowed" : "pointer" }}
-            className="rounded-md bg-blue-600 px-8 py-3 text-lg font-medium text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <svg
-                  className="h-4 w-4 animate-spin text-white"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"
-                  ></path>
-                </svg>
-                Saving...
-              </div>
-            ) : (
-              "Complete & Finish"
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Toast-style Success Message */}
-      {successMessage && (
-        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
-          <div className="animate-bounce rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow-2xl">
-            {successMessage}
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              style={{ cursor: loading ? "not-allowed" : "pointer" }}
+              className="rounded-md bg-blue-600 px-8 py-3 text-lg font-medium text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="h-4 w-4 animate-spin text-white"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"
+                    ></path>
+                  </svg>
+                  Saving...
+                </div>
+              ) : (
+                "Complete & Finish"
+              )}
+            </button>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Toast-style Success Message */}
+        {successMessage && (
+          <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+            <div className="animate-bounce rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow-2xl">
+              {successMessage}
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }

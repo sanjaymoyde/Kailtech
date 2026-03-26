@@ -34,7 +34,7 @@ const Button = forwardRef((props, ref) => {
     children,
     color,
     isIcon,
-    variant = "filled",
+    variant: inputVariant = "filled",
     unstyled,
     type = "button",
     isGlow,
@@ -43,6 +43,7 @@ const Button = forwardRef((props, ref) => {
     ...rest
   } = props;
 
+  const variant = inputVariant === "outline" ? "outlined" : inputVariant;
   const Component = component || "button";
   const mergedColor = color || "neutral";
 
@@ -93,7 +94,7 @@ Button.propTypes = {
   disabled: PropTypes.bool,
   onClick: PropTypes.func,
   color: PropTypes.oneOf(COLORS),
-  variant: PropTypes.oneOf(["filled", "outlined", "soft", "flat"]),
+  variant: PropTypes.oneOf(["filled", "outlined", "soft", "flat", "outline"]),
   unstyled: PropTypes.bool,
   isGlow: PropTypes.bool,
 };

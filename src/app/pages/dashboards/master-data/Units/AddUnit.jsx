@@ -21,7 +21,7 @@ export default function AddUnit() {
       ...prev,
       [name]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -34,31 +34,32 @@ export default function AddUnit() {
   // Custom validation function
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = "This is required field";
     }
-    
+
     // Description is optional, so no validation needed
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form before submitting
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
 
     try {
       const form = new FormData();
       form.append("name", formData.name);
       form.append("description", formData.description);
+      form.append("description_text", formData.description); // Fix: this field is required by the DB
 
       await axios.post("/master/add-unit", form); // ✅ Your provided endpoint
 
@@ -83,7 +84,7 @@ export default function AddUnit() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Add Unit</h2>
           <Button
-            variant="outline"
+            variant="outlined"
             className="text-white bg-blue-600 hover:bg-blue-700"
             onClick={() => navigate("/dashboards/master-data/units")}
           >
@@ -100,7 +101,7 @@ export default function AddUnit() {
               placeholder="Unit Name"
               value={formData.name}
               onChange={handleChange}
-              // removed required attribute
+            // removed required attribute
             />
             {errors.name && (
               <p className="text-red-500 text-sm mt-1">{errors.name}</p>
@@ -114,7 +115,7 @@ export default function AddUnit() {
               placeholder="Unit Description"
               value={formData.description}
               onChange={handleChange}
-              // no required attribute (description is optional)
+            // no required attribute (description is optional)
             />
             {/* No error for description as it's optional */}
           </div>

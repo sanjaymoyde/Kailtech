@@ -21,7 +21,7 @@ export default function CalibrationPriceList() {
   const [priceData, setPriceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Search states
   const [searchFilters, setSearchFilters] = useState({
     id: "",
@@ -45,7 +45,7 @@ export default function CalibrationPriceList() {
     try {
       // Use instrumentId from route params
       const response = await axios.get(`/calibrationoperations/get-calibrationprice-byid/${instrumentId}`);
-      
+
       if (response.data.status) {
         setPriceData(response.data.data || []);
         setFilteredData(response.data.data || []);
@@ -72,7 +72,7 @@ export default function CalibrationPriceList() {
       if (searchValue) {
         filtered = filtered.filter((item) => {
           let itemValue = "";
-          
+
           switch (key) {
             case "id":
               itemValue = String(item.id || "");
@@ -98,7 +98,7 @@ export default function CalibrationPriceList() {
             default:
               itemValue = "";
           }
-          
+
           return itemValue.toLowerCase().includes(searchValue);
         });
       }
@@ -127,7 +127,7 @@ export default function CalibrationPriceList() {
     navigate(`/dashboards/calibration-operations/instrument-list/view-matrix/${instrumentId}/${priceId}`);
   };
 
-  
+
 
   const openDeleteModal = (priceId) => {
     setSelectedPriceId(priceId);
@@ -149,16 +149,16 @@ export default function CalibrationPriceList() {
       await axios.delete(
         `/calibrationoperations/delete-Calibration-price/${selectedPriceId}`
       );
-      
+
       setDeleteSuccess(true);
       toast.success("Calibration price deleted successfully ✅", {
         duration: 1000,
         icon: "🗑️",
       });
-      
+
       // Remove deleted item from state
       setPriceData((prev) => prev.filter((item) => item.id !== selectedPriceId));
-      
+
       setTimeout(() => {
         closeDeleteModal();
       }, 1000);
@@ -185,10 +185,10 @@ export default function CalibrationPriceList() {
           Manage all calibration prices for Instrument ID: {instrumentId}
         </p>
         <Button
-          variant="outline"
+          variant="outlined"
           className="bg-blue-600 text-white hover:bg-blue-700"
           onClick={() =>
-          
+
             navigate(`/dashboards/calibration-operations/instrument-list/view-prices/${instrumentId}`)
           }
         >
@@ -228,7 +228,7 @@ export default function CalibrationPriceList() {
             <div className="px-4 py-3 text-sm text-gray-600 dark:text-dark-300">
               Showing {filteredData.length} of {priceData.length} entries
             </div>
-            
+
             <table className="min-w-full divide-y divide-gray-200 dark:divide-dark-500">
               <thead className="bg-gray-50 dark:bg-dark-700">
                 <tr>
@@ -363,22 +363,20 @@ export default function CalibrationPriceList() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm">
                         <span
-                          className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                            price.accreditation === "Nabl"
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${price.accreditation === "Nabl"
                               ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                               : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                          }`}
+                            }`}
                         >
                           {price.accreditation || "N/A"}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm">
                         <span
-                          className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                            price.location === "Site"
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${price.location === "Site"
                               ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
                               : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                          }`}
+                            }`}
                         >
                           {price.location || "N/A"}
                         </span>

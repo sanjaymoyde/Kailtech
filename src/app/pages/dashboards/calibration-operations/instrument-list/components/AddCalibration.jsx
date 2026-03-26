@@ -293,8 +293,8 @@ export default function AddCalibration({
 
         const setpointValue = data.setpoint
           ? setpointOptions.find(
-              (opt) => opt.value.toLowerCase() === data.setpoint.toLowerCase(),
-            )
+            (opt) => opt.value.toLowerCase() === data.setpoint.toLowerCase(),
+          )
           : null;
         const labValue = data.allottolab
           ? labToCalibrateOptions.find((opt) => opt.value === data.allottolab)
@@ -717,64 +717,64 @@ export default function AddCalibration({
                 {/* Master Repeatable Field - Always show if setpoint is master or separate */}
                 {(currentSetpoint === "master" ||
                   currentSetpoint === "separate") && (
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
-                      Master Repeatable
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={rows3[0]?.masterRepeatable || ""}
-                      onChange={(e) =>
-                        handleInputChange3(
-                          rows3[0]?.id,
-                          "masterRepeatable",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                      placeholder="Master Repeatable"
-                      title="Enter number of master observation rows"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      {currentSetpoint === "master"
-                        ? "Number of observation rows for Master"
-                        : "Master observation rows (for separate mode)"}
-                    </p>
-                  </div>
-                )}
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Master Repeatable
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={rows3[0]?.masterRepeatable || ""}
+                        onChange={(e) =>
+                          handleInputChange3(
+                            rows3[0]?.id,
+                            "masterRepeatable",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="Master Repeatable"
+                        title="Enter number of master observation rows"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {currentSetpoint === "master"
+                          ? "Number of observation rows for Master"
+                          : "Master observation rows (for separate mode)"}
+                      </p>
+                    </div>
+                  )}
 
                 {/* UUC Repeatable Field - Always show if setpoint is uuc or separate */}
                 {(currentSetpoint === "uuc" ||
                   currentSetpoint === "separate") && (
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
-                      UUC Repeatable
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={rows3[0]?.uucRepeatable || ""}
-                      onChange={(e) =>
-                        handleInputChange3(
-                          rows3[0]?.id,
-                          "uucRepeatable",
-                          e.target.value,
-                        )
-                      }
-                      className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                      placeholder="UUC Repeatable"
-                      title="Enter number of UUC observation rows"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      {currentSetpoint === "uuc"
-                        ? "Number of observation rows for UUC"
-                        : "UUC observation rows (for separate mode)"}
-                    </p>
-                  </div>
-                )}
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        UUC Repeatable
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={rows3[0]?.uucRepeatable || ""}
+                        onChange={(e) =>
+                          handleInputChange3(
+                            rows3[0]?.id,
+                            "uucRepeatable",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="UUC Repeatable"
+                        title="Enter number of UUC observation rows"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {currentSetpoint === "uuc"
+                          ? "Number of observation rows for UUC"
+                          : "UUC observation rows (for separate mode)"}
+                      </p>
+                    </div>
+                  )}
 
                 {/* Lab to Calibrate */}
                 <div>
@@ -1046,7 +1046,7 @@ export default function AddCalibration({
                     {rows2.map((row) => {
                       const isRequiredRow =
                         currentSetpoint === "master" ||
-                        currentSetpoint === "uuc"
+                          currentSetpoint === "uuc"
                           ? row.id <= requiredRowsCount
                           : false;
 
@@ -1145,18 +1145,18 @@ export default function AddCalibration({
 
               {(currentSetpoint === "separate" ||
                 rows2.length < requiredRowsCount) && (
-                <div className="flex justify-end border-t p-4">
-                  <button
-                    style={{ cursor: "pointer" }}
-                    onClick={addRow2}
-                    className="rounded-md bg-green-600 px-6 py-2 font-medium text-white transition hover:bg-green-700"
-                  >
-                    {currentSetpoint === "separate"
-                      ? "Add Row"
-                      : `Add Row (Auto: ${requiredRowsCount})`}
-                  </button>
-                </div>
-              )}
+                  <div className="flex justify-end border-t p-4">
+                    <button
+                      style={{ cursor: "pointer" }}
+                      onClick={addRow2}
+                      className="rounded-md bg-green-600 px-6 py-2 font-medium text-white transition hover:bg-green-700"
+                    >
+                      {currentSetpoint === "separate"
+                        ? "Add Row"
+                        : `Add Row (Auto: ${requiredRowsCount})`}
+                    </button>
+                  </div>
+                )}
             </>
           )}
         </div>

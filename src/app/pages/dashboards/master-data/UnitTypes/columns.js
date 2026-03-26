@@ -31,6 +31,11 @@ export const columns = [
   columnHelper.accessor("name", {
     id: "name",
     header: "Name",
+    sortingFn: (rowA, rowB, columnId) => {
+      const a = rowA.getValue(columnId)?.toString().trim() || "";
+      const b = rowB.getValue(columnId)?.toString().trim() || "";
+      return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+    },
   }),
 
   // ✅ Description Column

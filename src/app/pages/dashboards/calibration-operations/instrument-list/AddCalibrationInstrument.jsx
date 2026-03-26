@@ -20,7 +20,7 @@ export default function AddInstrument() {
   const [savedInstrumentId, setSavedInstrumentId] = useState(null);
   const [savedFormatId, setSavedFormatId] = useState(null);
   const [savedUncertaintyId, setSavedUncertaintyId] = useState(null);
-  
+
   // Form state management
   const [formData, setFormData] = useState({
     name: "",
@@ -204,7 +204,7 @@ export default function AddInstrument() {
             value: item.id.toString(),
           })),
         );
-        
+
         setFormateOptions(
           safeArray(formatelist.data.data).map((item) => ({
             label: item.name,
@@ -369,7 +369,7 @@ export default function AddInstrument() {
       if (
         newMatrices.length > 0 &&
         JSON.stringify(newMatrices[newMatrices.length - 1]) ===
-          JSON.stringify(newMatrix)
+        JSON.stringify(newMatrix)
       ) {
         return prev;
       }
@@ -576,7 +576,7 @@ export default function AddInstrument() {
 
           toast.success(
             `Step 1 Complete! Instrument ID: ${finalInstrumentId}, Format ID: ${finalFormatId}` +
-              (uncertaintyId ? `, Uncertainty ID: ${uncertaintyId}` : ""),
+            (uncertaintyId ? `, Uncertainty ID: ${uncertaintyId}` : ""),
           );
 
           setTimeout(() => {
@@ -617,19 +617,17 @@ export default function AddInstrument() {
         {[1, 2, 3, 4].map((step) => (
           <div key={step} className="flex items-center">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                currentStep >= step
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${currentStep >= step
                   ? "bg-blue-600 text-white"
                   : "bg-gray-300 text-gray-600"
-              }`}
+                }`}
             >
               {step}
             </div>
             {step < 4 && (
               <div
-                className={`h-1 w-16 ${
-                  currentStep > step ? "bg-blue-600" : "bg-gray-300"
-                }`}
+                className={`h-1 w-16 ${currentStep > step ? "bg-blue-600" : "bg-gray-300"
+                  }`}
               />
             )}
           </div>
@@ -649,7 +647,7 @@ export default function AddInstrument() {
             {currentStep === 4 && "Step 4: Certificate Settings"}
           </h2>
           <Button
-            variant="outline"
+            variant="outlined"
             className="bg-blue-600 text-white hover:bg-blue-700"
             onClick={() =>
               navigate("/dashboards/calibration-operations/instrument-list")
@@ -795,7 +793,7 @@ export default function AddInstrument() {
                 instrumentId={savedInstrumentId}
                 formatId={savedFormatId}
                 uncertaintyId={savedUncertaintyId}
-                onComplete={() => setCurrentStep(4)} 
+                onComplete={() => setCurrentStep(4)}
                 onBack={() => setCurrentStep(2)}
               />
             ) : (

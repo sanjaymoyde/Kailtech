@@ -204,12 +204,11 @@ export default function EditCalibrationInstrumnet() {
             value: item.id.toString(),
           })),
         );
-        setCurrencyOptions(
-          safeArray(currencylist.data.data).map((item) => ({
-            label: `${item.name} (${item.description})`,
-            value: item.id.toString(),
-          })),
-        );
+        const mappedCurrencies = safeArray(currencylist.data.data).map((item) => ({
+          label: `${item.name} (${item.description})`,
+          value: item.id.toString(),
+        }));
+        setCurrencyOptions(mappedCurrencies);
         setUnitTypeOptions(
           safeArray(unitTypeRes.data.data).map((item) => ({
             label: item.name,
@@ -421,7 +420,7 @@ export default function EditCalibrationInstrumnet() {
               accreditation: safeString(price.accreditation),
               location: safeString(price.location),
               currency:
-                currencyOptions.find(
+                mappedCurrencies.find(
                   (opt) => opt.value === safeString(price.currency),
                 ) || null,
               rate: safeString(price.rate),
@@ -453,7 +452,7 @@ export default function EditCalibrationInstrumnet() {
     };
 
     fetchAllData();
-  }, [currencyOptions, id]);
+  }, [id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -952,7 +951,7 @@ export default function EditCalibrationInstrumnet() {
           </h2>
 
           <Button
-            variant="outline"
+            variant="outlined"
             className="bg-blue-600 text-white hover:bg-blue-700"
             onClick={() =>
               navigate("/dashboards/calibration-operations/instrument-list")
