@@ -107,7 +107,11 @@ export default function OrdersDatatableV2() {
       );
 
       if (Array.isArray(response.data.data)) {
-        setOrders(response.data.data);
+        // ✅ Sort by ID descending so newest comes first
+        const sortedData = [...response.data.data].sort((a, b) => {
+          return (Number(b.id) || 0) - (Number(a.id) || 0);
+        });
+        setOrders(sortedData);
       } else {
         console.warn("Unexpected response structure:", response.data);
         setOrders([]);

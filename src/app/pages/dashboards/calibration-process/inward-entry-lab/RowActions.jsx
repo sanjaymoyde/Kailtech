@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useCallback, useState } from "react";
 import PropTypes from "prop-types";
 import { ConfirmModal } from "components/shared/ConfirmModal";
@@ -84,6 +85,8 @@ export function RowActions({ row, table }) {
       ? [
         {
           label: "Add Inward Item",
+          color:
+            "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
           permission: 98,
           onClick: () =>
             navigate(
@@ -96,6 +99,8 @@ export function RowActions({ row, table }) {
       : []),
     {
       label: "Edit CRF Entry Detail",
+      color:
+        "bg-indigo-100 text-indigo-800 hover:bg-indigo-200",
       onClick: () =>
         navigate(
           getNavigationUrl(
@@ -107,6 +112,8 @@ export function RowActions({ row, table }) {
       ? [
         {
           label: "Review Inward",
+          color:
+            "bg-amber-100 text-amber-800 hover:bg-amber-200",
           permission: 99,
           onClick: () =>
             navigate(
@@ -121,6 +128,8 @@ export function RowActions({ row, table }) {
       ? [
         {
           label: "Technical Acceptance",
+          color:
+            "bg-cyan-100 text-cyan-800 hover:bg-cyan-200",
           permission: 100,
           onClick: () =>
             navigate(
@@ -135,6 +144,8 @@ export function RowActions({ row, table }) {
       ? [
         {
           label: "Perform Calibration",
+          color:
+            "bg-fuchsia-100 text-fuchsia-800 hover:bg-fuchsia-200",
           permission: 97,
           onClick: () =>
             navigate(
@@ -147,6 +158,8 @@ export function RowActions({ row, table }) {
       : []),
     {
       label: "Edit Bd Person",
+      color:
+        "bg-rose-100 text-rose-800 hover:bg-rose-200",
       permission: 406,
       onClick: () =>
         navigate(
@@ -159,6 +172,8 @@ export function RowActions({ row, table }) {
       ? [
         {
           label: "Transfer In lab",
+          color:
+            "bg-violet-100 text-violet-800 hover:bg-violet-200",
           onClick: () =>
             navigate(
               getNavigationUrl(
@@ -170,6 +185,8 @@ export function RowActions({ row, table }) {
       : []),
     {
       label: "SRF View",
+      color:
+        "bg-blue-100 text-blue-800 hover:bg-blue-200",
       permission: 372,
       onClick: () =>
         navigate(
@@ -180,6 +197,8 @@ export function RowActions({ row, table }) {
     },
     {
       label: "CRF View",
+      color:
+        "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
       permission: 373,
       onClick: () =>
         navigate(
@@ -190,6 +209,8 @@ export function RowActions({ row, table }) {
     },
     {
       label: "Edit Work Order detail",
+      color:
+        "bg-cyan-100 text-cyan-800 hover:bg-cyan-200",
       onClick: () =>
         navigate(
           getNavigationUrl(
@@ -199,6 +220,8 @@ export function RowActions({ row, table }) {
     },
     {
       label: "Edit Customer Responsible for payment",
+      color:
+        "bg-orange-100 text-orange-800 hover:bg-orange-200",
       permission: 297,
       onClick: () =>
         navigate(
@@ -209,6 +232,8 @@ export function RowActions({ row, table }) {
     },
     {
       label: "Edit Billing Detail",
+      color:
+        "bg-lime-200 text-lime-900 hover:bg-lime-300",
       permission: 407,
       onClick: () =>
         navigate(
@@ -219,6 +244,8 @@ export function RowActions({ row, table }) {
     },
     {
       label: "Fill Feedback form",
+      color:
+        "bg-sky-100 text-sky-800 hover:bg-sky-200",
       onClick: () =>
         navigate(
           getNavigationUrl(
@@ -241,7 +268,10 @@ export function RowActions({ row, table }) {
           <Button
             key={index}
             onClick={action.onClick}
-            className="h-7 rounded bg-blue-500 px-2.5 py-1 text-xs font-medium text-black outline-none transition-all hover:bg-blue-600 hover:shadow-md"
+            className={clsx(
+              "h-7 rounded px-2.5 py-1 text-xs font-medium outline-none transition-all hover:shadow-md",
+              action.color
+            )}
           >
             <span>{action.label}</span>
           </Button>

@@ -28,13 +28,13 @@ const SearchSelect = ({
       borderColor: error
         ? "#ef4444"
         : state.isFocused
-        ? "#3b82f6"
-        : "rgb(209 213 219)",
+          ? "#3b82f6"
+          : "rgb(209 213 219)",
       boxShadow: error
         ? "0 0 0 1px #ef4444"
         : state.isFocused
-        ? "0 0 0 2px rgb(59 130 246 / 0.5)"
-        : "none",
+          ? "0 0 0 2px rgb(59 130 246 / 0.5)"
+          : "none",
       "&:hover": { borderColor: error ? "#ef4444" : "#3b82f6" },
       backgroundColor: isDisabled ? "#f9fafb" : "white",
       borderRadius: "0.5rem",
@@ -57,8 +57,8 @@ const SearchSelect = ({
       backgroundColor: state.isSelected
         ? "#3b82f6"
         : state.isFocused
-        ? "#eff6ff"
-        : "white",
+          ? "#eff6ff"
+          : "white",
       color: state.isSelected ? "white" : "#374151",
       "&:active": { backgroundColor: "#bfdbfe" },
     }),
@@ -98,30 +98,30 @@ export default function AddTrfStartJob() {
   const todayFormatted = `${today.getDate().toString().padStart(2, "0")}/${(today.getMonth() + 1).toString().padStart(2, "0")}/${today.getFullYear()}`;
 
   // ── Refs for all required fields (scroll-to-error) ──────────────────────────
-  const dateRef                  = useRef(null);
-  const sampleReceivedOnRef      = useRef(null);
-  const ctypeRef                 = useRef(null);
-  const customeridRef            = useRef(null);
-  const specificpurposeRef       = useRef(null);
-  const letterrefnoRef           = useRef(null);
-  const reportnameRef            = useRef(null);
-  const reportaddressRef         = useRef(null);
-  const billingnameRef           = useRef(null);
-  const billingaddressRef        = useRef(null);
-  const gstnoRef                 = useRef(null);
-  const concernpersonnameRef     = useRef(null);
-  const ponumberRef              = useRef(null);
-  const bdRef                    = useRef(null);
-  const promoterRef              = useRef(null);
-  const priorityRef              = useRef(null);
-  const pchargesRef              = useRef(null);
-  const witnessRef               = useRef(null);
-  const modeofrecieptRef         = useRef(null);
-  const paymentstatusRef         = useRef(null);
-  const modeofpaymentRef         = useRef(null);
-  const detailsofpaymentRef      = useRef(null);
-  const paymentamountRef         = useRef(null);
-  const certcollectionremarkRef  = useRef(null);
+  const dateRef = useRef(null);
+  const sampleReceivedOnRef = useRef(null);
+  const ctypeRef = useRef(null);
+  const customeridRef = useRef(null);
+  const specificpurposeRef = useRef(null);
+  const letterrefnoRef = useRef(null);
+  const reportnameRef = useRef(null);
+  const reportaddressRef = useRef(null);
+  const billingnameRef = useRef(null);
+  const billingaddressRef = useRef(null);
+  const gstnoRef = useRef(null);
+  const concernpersonnameRef = useRef(null);
+  const ponumberRef = useRef(null);
+  const bdRef = useRef(null);
+  const promoterRef = useRef(null);
+  const priorityRef = useRef(null);
+  const pchargesRef = useRef(null);
+  const witnessRef = useRef(null);
+  const modeofrecieptRef = useRef(null);
+  const paymentstatusRef = useRef(null);
+  const modeofpaymentRef = useRef(null);
+  const detailsofpaymentRef = useRef(null);
+  const paymentamountRef = useRef(null);
+  const certcollectionremarkRef = useRef(null);
 
   // ── Form State ──────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
@@ -191,34 +191,34 @@ export default function AddTrfStartJob() {
 
   // ── Success modal ───────────────────────────────────────────────────────────
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [successMessage, setSuccessMessage]     = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   // ── Dropdown options ────────────────────────────────────────────────────────
-  const [customerTypes, setCustomerTypes]               = useState([]);
-  const [specificPurposes, setSpecificPurposes]         = useState([]);
-  const [customers, setCustomers]                       = useState([]);
-  const [bds, setBds]                                   = useState([]);
-  const [promoters, setPromoters]                       = useState([]);
-  const [choices, setChoices]                           = useState([]);
-  const [modesOfReceipt, setModesOfReceipt]             = useState([]);
-  const [paymentModes, setPaymentModes]                 = useState([]);
+  const [customerTypes, setCustomerTypes] = useState([]);
+  const [specificPurposes, setSpecificPurposes] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [bds, setBds] = useState([]);
+  const [promoters, setPromoters] = useState([]);
+  const [choices, setChoices] = useState([]);
+  const [modesOfReceipt, setModesOfReceipt] = useState([]);
+  const [paymentModes, setPaymentModes] = useState([]);
   const [certCollectionDetails, setCertCollectionDetails] = useState([]);
 
   // ── Customer-dependent options ──────────────────────────────────────────────
-  const [reportAddresses, setReportAddresses]   = useState([]);
+  const [reportAddresses, setReportAddresses] = useState([]);
   const [billingAddresses, setBillingAddresses] = useState([]);
-  const [concernPersons, setConcernPersons]     = useState([]);
-  const [quotations, setQuotations]             = useState([]);
+  const [concernPersons, setConcernPersons] = useState([]);
+  const [quotations, setQuotations] = useState([]);
 
   // ── Customer credit info ────────────────────────────────────────────────────
   const [customerCredit, setCustomerCredit] = useState(null);
-  const [customerEmail, setCustomerEmail]   = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
 
   // ── Visibility toggles ──────────────────────────────────────────────────────
   const [showPriorityCharges, setShowPriorityCharges] = useState(false);
-  const [showWitnessDetails,  setShowWitnessDetails]  = useState(false);
-  const [showCourierDetails,  setShowCourierDetails]  = useState(false);
-  const [showPaymentDetails,  setShowPaymentDetails]  = useState(true);
+  const [showWitnessDetails, setShowWitnessDetails] = useState(false);
+  const [showCourierDetails, setShowCourierDetails] = useState(false);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(true);
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
 
   // ── Files ───────────────────────────────────────────────────────────────────
@@ -226,7 +226,7 @@ export default function AddTrfStartJob() {
   const [ruploadFile, setRuploadFile] = useState(null);
 
   // ── Loading ─────────────────────────────────────────────────────────────────
-  const [loading, setLoading]               = useState(false);
+  const [loading, setLoading] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
 
@@ -254,29 +254,29 @@ export default function AddTrfStartJob() {
   // ── Scroll to first error (AddInwardEntry pattern) ─────────────────────────
   const scrollToFirstError = useCallback(() => {
     const errorFields = [
-      { field: "date",                 ref: dateRef },
-      { field: "sample_received_on",   ref: sampleReceivedOnRef },
-      { field: "ctype",                ref: ctypeRef },
-      { field: "customerid",           ref: customeridRef },
-      { field: "specificpurpose",      ref: specificpurposeRef },
-      { field: "letterrefno",          ref: letterrefnoRef },
-      { field: "reportname",           ref: reportnameRef },
-      { field: "reportaddress",        ref: reportaddressRef },
-      { field: "billingname",          ref: billingnameRef },
-      { field: "billingaddress",       ref: billingaddressRef },
-      { field: "gstno",                ref: gstnoRef },
-      { field: "concernpersonname",    ref: concernpersonnameRef },
-      { field: "ponumber",             ref: ponumberRef },
-      { field: "bd",                   ref: bdRef },
-      { field: "promoter",             ref: promoterRef },
-      { field: "priority",             ref: priorityRef },
-      { field: "pcharges",             ref: pchargesRef },
-      { field: "witness",              ref: witnessRef },
-      { field: "modeofreciept",        ref: modeofrecieptRef },
-      { field: "paymentstatus",        ref: paymentstatusRef },
-      { field: "modeofpayment",        ref: modeofpaymentRef },
-      { field: "detailsofpayment",     ref: detailsofpaymentRef },
-      { field: "paymentamount",        ref: paymentamountRef },
+      { field: "date", ref: dateRef },
+      { field: "sample_received_on", ref: sampleReceivedOnRef },
+      { field: "ctype", ref: ctypeRef },
+      { field: "customerid", ref: customeridRef },
+      { field: "specificpurpose", ref: specificpurposeRef },
+      { field: "letterrefno", ref: letterrefnoRef },
+      { field: "reportname", ref: reportnameRef },
+      { field: "reportaddress", ref: reportaddressRef },
+      { field: "billingname", ref: billingnameRef },
+      { field: "billingaddress", ref: billingaddressRef },
+      { field: "gstno", ref: gstnoRef },
+      { field: "concernpersonname", ref: concernpersonnameRef },
+      { field: "ponumber", ref: ponumberRef },
+      { field: "bd", ref: bdRef },
+      { field: "promoter", ref: promoterRef },
+      { field: "priority", ref: priorityRef },
+      { field: "pcharges", ref: pchargesRef },
+      { field: "witness", ref: witnessRef },
+      { field: "modeofreciept", ref: modeofrecieptRef },
+      { field: "paymentstatus", ref: paymentstatusRef },
+      { field: "modeofpayment", ref: modeofpaymentRef },
+      { field: "detailsofpayment", ref: detailsofpaymentRef },
+      { field: "paymentamount", ref: paymentamountRef },
       { field: "certcollectionremark", ref: certcollectionremarkRef },
     ];
 
@@ -318,15 +318,15 @@ export default function AddTrfStartJob() {
         axios.get("/certificate-collect-as"),
       ]);
 
-      if (customerTypesRes.data?.Data)         setCustomerTypes(customerTypesRes.data.Data);
-      if (specificPurposesRes.data?.data)       setSpecificPurposes(specificPurposesRes.data.data);
-      if (customersRes.data?.data)              setCustomers(customersRes.data.data);
-      if (bdsRes.data?.data)                    setBds(bdsRes.data.data);
-      if (promotersRes.data?.data)              setPromoters(promotersRes.data.data);
-      if (choicesRes.data?.data)                setChoices(choicesRes.data.data);
-      if (modesOfReceiptRes.data?.data)         setModesOfReceipt(modesOfReceiptRes.data.data);
-      if (paymentModesRes.data?.data)           setPaymentModes(paymentModesRes.data.data);
-      if (certCollectionDetailsRes.data?.data)  setCertCollectionDetails(certCollectionDetailsRes.data.data);
+      if (customerTypesRes.data?.Data) setCustomerTypes(customerTypesRes.data.Data);
+      if (specificPurposesRes.data?.data) setSpecificPurposes(specificPurposesRes.data.data);
+      if (customersRes.data?.data) setCustomers(customersRes.data.data);
+      if (bdsRes.data?.data) setBds(bdsRes.data.data);
+      if (promotersRes.data?.data) setPromoters(promotersRes.data.data);
+      if (choicesRes.data?.data) setChoices(choicesRes.data.data);
+      if (modesOfReceiptRes.data?.data) setModesOfReceipt(modesOfReceiptRes.data.data);
+      if (paymentModesRes.data?.data) setPaymentModes(paymentModesRes.data.data);
+      if (certCollectionDetailsRes.data?.data) setCertCollectionDetails(certCollectionDetailsRes.data.data);
     } catch (error) {
       console.error("Error fetching options:", error);
       toast.error("Failed to load form options");
@@ -336,32 +336,31 @@ export default function AddTrfStartJob() {
   };
 
   // ── Fetch customer-dependent data ───────────────────────────────────────────
-  const fetchCustomerDependentData = async (customerId) => {
+  const fetchCustomerDependentData = async (customerId, selectedOption = null) => {
     if (!customerId) return;
     setLoadingCustomer(true);
     try {
-      const [creditRes, addressRes, concernPersonsRes, quotationsRes] = await Promise.all([
-        axios.get(`/people/get-all-customers?id=${customerId}`),
+      const [addressRes, concernPersonsRes, quotationsRes] = await Promise.all([
         axios.get(`/people/get-customers-address/${customerId}`),
         axios.get(`/get-concern-person/${customerId}`),
         axios.get(`/get-quotaion/${customerId}`),
       ]);
 
-      if (creditRes.data?.data) {
-        const c = creditRes.data.data;
+      // ✅ Credit/GST data 
+      if (selectedOption) {
         setCustomerCredit({
-          creditdays:   c.creditdays,
-          creditamount: c.creditamount,
-          leftamount:   c.leftamount,
+          creditdays: selectedOption.creditdays,
+          creditamount: selectedOption.creditamount,
+          leftamount: selectedOption.leftamount,
         });
-        setCustomerEmail(c.email || "");
+        setCustomerEmail(selectedOption.email || "");
 
         setFormData((prev) => ({
           ...prev,
-          gstno:          c.gstno          || "",
-          customername:   c.name           || "",
+          gstno: selectedOption.gstno || "",
+          customername: selectedOption.label.split(" (")[0] || "",
           customeraddress: "nothing",
-          modeofpayment:  c.modeofpayment  ? String(c.modeofpayment) : prev.modeofpayment,
+          modeofpayment: selectedOption.modeofpayment || prev.modeofpayment,
         }));
       }
 
@@ -371,7 +370,7 @@ export default function AddTrfStartJob() {
       }
 
       if (concernPersonsRes.data?.data) setConcernPersons(concernPersonsRes.data.data);
-      if (quotationsRes.data?.data)     setQuotations(quotationsRes.data.data);
+      if (quotationsRes.data?.data) setQuotations(quotationsRes.data.data);
 
       setShowCustomerDetails(true);
     } catch (error) {
@@ -391,8 +390,8 @@ export default function AddTrfStartJob() {
         setFormData((prev) => ({
           ...prev,
           concernpersondesignation: p.designation || "",
-          concernpersonemail:       p.email       || "",
-          concernpersonmobile:      p.mobile      || "",
+          concernpersonemail: p.email || "",
+          concernpersonmobile: p.mobile || "",
         }));
       }
     } catch (error) {
@@ -406,7 +405,7 @@ export default function AddTrfStartJob() {
     try {
       const res = await axios.get(`/people/get-customers-address/${customerId}`);
       if (res.data?.data) {
-        if (type === "report")  setReportAddresses(res.data.data);
+        if (type === "report") setReportAddresses(res.data.data);
         if (type === "billing") setBillingAddresses(res.data.data);
       }
     } catch (err) { console.error(err); }
@@ -417,7 +416,7 @@ export default function AddTrfStartJob() {
     setBillingAddresses(reportAddresses);
     setFormData((prev) => ({
       ...prev,
-      billingname:    prev.reportname,
+      billingname: prev.reportname,
       billingaddress: prev.reportaddress,
     }));
   };
@@ -451,29 +450,7 @@ export default function AddTrfStartJob() {
     setFormData((prev) => ({ ...prev, [fieldName]: selectedValues }));
   };
 
-  const handleCustomerChange = async (e) => {
-    const value = e.target.value;
-    clearError("customerid");
-    setFormData((prev) => ({
-      ...prev,
-      customerid: value,
-      reportname: "", reportaddress: "",
-      billingname: "", billingaddress: "",
-      gstno: "", customername: "", customeraddress: "",
-      concernpersonname: "", concernpersondesignation: "",
-      concernpersonemail: "", concernpersonmobile: "",
-      quotationid: "0",
-      modeofpayment: "",
-    }));
-    setReportAddresses([]);
-    setBillingAddresses([]);
-    setConcernPersons([]);
-    setQuotations([]);
-    setCustomerCredit(null);
-    setCustomerEmail("");
-    setShowCustomerDetails(false);
-    if (value) await fetchCustomerDependentData(value);
-  };
+
 
   const handleReportNameChange = async (e) => {
     const value = e.target.value;
@@ -564,29 +541,29 @@ export default function AddTrfStartJob() {
     const newErrors = {};
 
     if (!formData.sample_received_on) newErrors.sample_received_on = "Sample Received Date is required";
-    if (!formData.ctype)              newErrors.ctype              = "Customer Type is required";
-    if (!formData.customerid)         newErrors.customerid         = "Customer is required";
-    if (!formData.specificpurpose)    newErrors.specificpurpose    = "Specific Purpose is required";
-    if (!formData.letterrefno)        newErrors.letterrefno        = "Customer Reference is required";
+    if (!formData.ctype) newErrors.ctype = "Customer Type is required";
+    if (!formData.customerid) newErrors.customerid = "Customer is required";
+    if (!formData.specificpurpose) newErrors.specificpurpose = "Specific Purpose is required";
+    if (!formData.letterrefno) newErrors.letterrefno = "Customer Reference is required";
 
     if (formData.customerid) {
-      if (!formData.reportname)        newErrors.reportname        = "Report Customer Name is required";
-      if (!formData.reportaddress)     newErrors.reportaddress     = "Report Address is required";
-      if (!formData.billingname)       newErrors.billingname       = "Billing Customer Name is required";
-      if (!formData.billingaddress)    newErrors.billingaddress    = "Billing Address is required";
-      if (!formData.gstno)             newErrors.gstno             = "GST Number is required";
+      if (!formData.reportname) newErrors.reportname = "Report Customer Name is required";
+      if (!formData.reportaddress) newErrors.reportaddress = "Report Address is required";
+      if (!formData.billingname) newErrors.billingname = "Billing Customer Name is required";
+      if (!formData.billingaddress) newErrors.billingaddress = "Billing Address is required";
+      if (!formData.gstno) newErrors.gstno = "GST Number is required";
       if (!formData.concernpersonname) newErrors.concernpersonname = "Concern Person is required";
     }
 
-    if (!formData.ponumber)      newErrors.ponumber      = "Work Order No is required";
-    if (!formData.bd)            newErrors.bd            = "Concerned BD is required";
-    if (!formData.promoter)      newErrors.promoter      = "Engineer is required";
-    if (!formData.priority)      newErrors.priority      = "Priority Sample is required";
-    if (!formData.witness)       newErrors.witness       = "Witness Required is required";
+    if (!formData.ponumber) newErrors.ponumber = "Work Order No is required";
+    if (!formData.bd) newErrors.bd = "Concerned BD is required";
+    if (!formData.promoter) newErrors.promoter = "Engineer is required";
+    if (!formData.priority) newErrors.priority = "Priority Sample is required";
+    if (!formData.witness) newErrors.witness = "Witness Required is required";
     if (!formData.modeofreciept) newErrors.modeofreciept = "Mode of Receipt is required";
 
     if (formData.paymentstatus !== "2") {
-      if (!formData.modeofpayment)    newErrors.modeofpayment    = "Mode of Payment is required";
+      if (!formData.modeofpayment) newErrors.modeofpayment = "Mode of Payment is required";
       if (!formData.detailsofpayment) newErrors.detailsofpayment = "Payment Details are required";
       if (!formData.paymentamount || parseFloat(formData.paymentamount) <= 0)
         newErrors.paymentamount = "Valid Payment Amount is required";
@@ -670,17 +647,26 @@ export default function AddTrfStartJob() {
   }
 
   // ── Pre-compute option arrays (used in multiple places) ─────────────────────
-  const customerOptions    = toOptions(customers,    (c) => `${c.name} (${c.pnumber || c.phone || "N/A"})`);
+  const customerOptions = customers.map((c) => ({
+    value: String(c.id),
+    label: `${c.name} (${c.pnumber || c.phone || "N/A"})`,
+    gstno: c.gstno || "",
+    modeofpayment: c.modeofpayment ? String(c.modeofpayment) : "",
+    email: c.email || "",
+    creditdays: c.creditdays || 0,
+    creditamount: c.creditamount || 0,
+    leftamount: c.leftamount || 0,
+  }));
   const customerTypeOptions = toOptions(customerTypes, (t) => t.name);
   const specificPurposeOptions = toOptions(specificPurposes, (p) => p.name);
-  const bdOptions          = toOptions(bds,          (b) => `${b.firstname} ${b.lastname}`);
-  const promoterOptions    = toOptions(promoters,    (p) => p.name);
-  const choiceOptions      = toOptions(choices,      (c) => c.name);
+  const bdOptions = toOptions(bds, (b) => `${b.firstname} ${b.lastname}`);
+  const promoterOptions = toOptions(promoters, (p) => p.name);
+  const choiceOptions = toOptions(choices, (c) => c.name);
   const modeOfReceiptOptions = toOptions(modesOfReceipt, (m) => m.name);
   const paymentModeOptions = toOptions(paymentModes, (m) => m.name);
-  const reportAddressOptions  = toOptions(reportAddresses,  (a) => `${a.name} (${a.address})`);
+  const reportAddressOptions = toOptions(reportAddresses, (a) => `${a.name} (${a.address})`);
   const billingAddressOptions = toOptions(billingAddresses, (a) => `${a.name} (${a.address})`);
-  const concernPersonOptions  = toOptions(concernPersons,   (p) => `${p.name} (${p.mobile})`);
+  const concernPersonOptions = toOptions(concernPersons, (p) => `${p.name} (${p.mobile})`);
   const quotationOptions = [
     { value: "0", label: "Select Quotation" },
     ...quotations.map((q) => ({
@@ -750,7 +736,6 @@ export default function AddTrfStartJob() {
                 />
                 <ErrMsg field="ctype" />
               </div>
-
               {/* Customer — SearchSelect */}
               <div ref={customeridRef}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Customer (Responsible For Payment) <span className="text-red-500">*</span></label>
@@ -758,7 +743,32 @@ export default function AddTrfStartJob() {
                   options={customerOptions}
                   value={findOption(customerOptions, formData.customerid)}
                   onChange={(opt) => {
-                    handleCustomerChange({ target: { value: opt ? opt.value : "" } });
+                    clearError("customerid");
+                    setFormData((prev) => ({
+                      ...prev,
+                      customerid: opt ? opt.value : "",
+                      reportname: "",
+                      reportaddress: "",
+                      billingname: "",
+                      billingaddress: "",
+                      gstno: "",
+                      customername: "",
+                      customeraddress: "",
+                      concernpersonname: "",
+                      concernpersondesignation: "",
+                      concernpersonemail: "",
+                      concernpersonmobile: "",
+                      quotationid: "0",
+                      modeofpayment: "",
+                    }));
+                    setReportAddresses([]);
+                    setBillingAddresses([]);
+                    setConcernPersons([]);
+                    setQuotations([]);
+                    setCustomerCredit(null);
+                    setCustomerEmail("");
+                    setShowCustomerDetails(false);
+                    if (opt) fetchCustomerDependentData(opt.value, opt); // ✅ opt pass
                   }}
                   placeholder="Search Customer..."
                   error={!!errors.customerid}
@@ -999,7 +1009,7 @@ export default function AddTrfStartJob() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Work Order Number <span className="text-red-500">*</span></label>
                 <Input list="workordersuggest" name="ponumber" value={formData.ponumber} onChange={handleInputChange} className="w-full" placeholder="Enter work order number" />
                 <datalist id="workordersuggest">
-                  {["TRF","Telephonic","Email","Verble","Letter","Challan"].map((s) => <option key={s} value={s} />)}
+                  {["TRF", "Telephonic", "Email", "Verble", "Letter", "Challan"].map((s) => <option key={s} value={s} />)}
                 </datalist>
                 <ErrMsg field="ponumber" />
               </div>

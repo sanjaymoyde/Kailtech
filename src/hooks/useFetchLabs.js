@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import axios from 'utils/axios';
+import { useAuthContext } from 'app/contexts/auth/context';
 
 export const useFetchLabs = () => {
   const [labs, setLabs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { isAuthenticated } = useAuthContext();
 
   useEffect(() => {
     const fetchLabs = async () => {
       try {
         setLoading(true);
         
-        // ✅ API call without token
+        // ✅ API call 
         const response = await axios.get('/master/list-lab');
         
         console.log('✅ API Response:', response.data);
@@ -52,7 +54,7 @@ export const useFetchLabs = () => {
     };
 
     fetchLabs();
-  }, []);
+  }, [isAuthenticated]);
 
   return { labs, loading, error };
-};
+};

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'utils/axios';
 import Select from 'react-select';
+import { toast } from 'sonner';
 
 function ViewChecklist() {
   const navigate = useNavigate();
@@ -65,32 +66,68 @@ function ViewChecklist() {
     fetchGeneralChecklist();
   }, [fetchSiteChecklist, fetchGeneralChecklist]);
 
-  const handleDeleteSiteChecklist = async (checklistId) => {
-    if (window.confirm('Are you sure you want to delete this site checklist item?')) {
-      try {
-        await axios.delete(`/material/delete-site-checklist/${checklistId}`);
-        // Refresh the data after deletion
-        fetchSiteChecklist();
-        alert('Site checklist item deleted successfully');
-      } catch (error) {
-        console.error('Error deleting site checklist:', error);
-        alert('Failed to delete site checklist item');
-      }
-    }
+  const handleDeleteSiteChecklist = (checklistId) => {
+    toast((t) => (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium">Are you sure you want to delete this site checklist item?</p>
+        <div className="flex gap-2">
+          <Button 
+            className="h-8 bg-red-500 hover:bg-red-600 text-white text-xs px-3 rounded"
+            onClick={async () => {
+              toast.dismiss(t);
+              try {
+                await axios.delete(`/material/delete-site-checklist/${checklistId}`);
+                fetchSiteChecklist();
+                toast.success('Site checklist item deleted successfully ✅');
+              } catch (error) {
+                console.error('Error deleting site checklist:', error);
+                toast.error('Failed to delete site checklist item ❌');
+              }
+            }}
+          >
+            Delete
+          </Button>
+          <Button 
+            className="h-8 border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 text-xs px-3 rounded"
+            onClick={() => toast.dismiss(t)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
-  const handleDeleteGeneralChecklist = async (checklistId) => {
-    if (window.confirm('Are you sure you want to delete this general checklist item?')) {
-      try {
-        await axios.delete(`/material/delete-general-checklist/${checklistId}`);
-        // Refresh the data after deletion
-        fetchGeneralChecklist();
-        alert('General checklist item deleted successfully');
-      } catch (error) {
-        console.error('Error deleting general checklist:', error);
-        alert('Failed to delete general checklist item');
-      }
-    }
+  const handleDeleteGeneralChecklist = (checklistId) => {
+    toast((t) => (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium">Are you sure you want to delete this general checklist item?</p>
+        <div className="flex gap-2">
+          <Button 
+            className="h-8 bg-red-500 hover:bg-red-600 text-white text-xs px-3 rounded"
+            onClick={async () => {
+              toast.dismiss(t);
+              try {
+                await axios.delete(`/material/delete-general-checklist/${checklistId}`);
+                fetchGeneralChecklist();
+                toast.success('General checklist item deleted successfully ✅');
+              } catch (error) {
+                console.error('Error deleting general checklist:', error);
+                toast.error('Failed to delete general checklist item ❌');
+              }
+            }}
+          >
+            Delete
+          </Button>
+          <Button 
+            className="h-8 border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 text-xs px-3 rounded"
+            onClick={() => toast.dismiss(t)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   

@@ -4,22 +4,61 @@ import { Button, Input } from "components/ui";
 import { toast } from 'sonner';
 import axios from 'axios';
 
+const API_BASE_URL = "https://lims.kailtech.in/api";
+
+const getAuthToken = () => {
+  return (
+    localStorage.getItem("authToken") ||
+    sessionStorage.getItem("token") ||
+    "your-auth-token-here"
+  );
+};
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      throw new Error("Authentication failed. Please check your token.");
+    }
+    throw error;
+  }
+);
+
 const CMCScopeForm = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    parameter: 'Pressure',
-    mode: 'Measure',
-    minFrequency: '',
-    maxFrequency: '',
-    unit: 'Hectopascal(hPa)',
-    leastcount: '',
-    minCmc: '',
-    maxCmc: '',
-    cmcType: 'Absolute',
-    cmcUnit: 'KJ/ m²',
+    parameter: "Pressure",
+    mode: "Measure",
+    minFrequency: "",
+    maxFrequency: "",
+    unit: "Hectopascal(hPa)",
+    leastcount: "",
+    minCmc: "",
+    maxCmc: "",
+    cmcType: "Absolute",
+    cmcUnit: "KJ/ m²",
     masters: [], // Array to store selected masters
-    location: 'Site',
-    remark: ''
+    location: "Site",
+    remark: "",
   });
 
   const [sourceOptions, setSourceOptions] = useState([]);
@@ -30,90 +69,55 @@ const CMCScopeForm = () => {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const API_BASE_URL = 'https://lims.kailtech.in/api';
-
-  const getAuthToken = () => {
-    return localStorage.getItem('authToken') || sessionStorage.getItem('token') || 'your-auth-token-here';
-  };
-
-  const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-  });
-
-  apiClient.interceptors.request.use(
-    (config) => {
-      const token = getAuthToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
-
-  apiClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401) {
-        throw new Error('Authentication failed. Please check your token.');
-      }
-      throw error;
-    }
-  );
-
-  const fetchMasterOptions = async () => {
-    try {
-      const response = await apiClient.get('/material/get-master-list');
-      if (response.data.status === "true" && response.data.data) {
-        setMasterOptions(response.data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching master options:', err);
-      setError('Failed to load master options: ' + (err.message || 'Unknown error'));
-    }
-  };
-
-  const fetchInstrumentOptions = async () => {
-    try {
-      const response = await apiClient.get('/get-instrumentNames');
-      if (response.data.status === "true" && response.data.data) {
-        setInstrumentOptions(response.data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching instrument options:', err);
-      setError('Failed to load instrument options: ' + (err.message || 'Unknown error'));
-    }
-  };
-
-  const fetchSourceOptions = async () => {
-    try {
-      const response = await apiClient.get('/get-source');
-      if (response.data.status === "true" && response.data.data) {
-        setSourceOptions(response.data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching source options:', err);
-      setError('Failed to load source options: ' + (err.message || 'Unknown error'));
-    }
-  };
-
-  const fetchUnitOptions = async () => {
-    try {
-      const response = await apiClient.get('/master/units-list');
-      if (response.data.status === "true" && response.data.data) {
-        setUnitOptions(response.data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching unit options:', err);
-      setError('Failed to load unit options: ' + (err.message || 'Unknown error'));
-    }
-  };
-
   useEffect(() => {
+    const fetchMasterOptions = async () => {
+      try {
+        const response = await apiClient.get('/material/get-master-list');
+        if (response.data.status === "true" && response.data.data) {
+          setMasterOptions(response.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching master options:', err);
+        setError('Failed to load master options: ' + (err.message || 'Unknown error'));
+      }
+    };
+
+    const fetchInstrumentOptions = async () => {
+      try {
+        const response = await apiClient.get('/get-instrumentNames');
+        if (response.data.status === "true" && response.data.data) {
+          setInstrumentOptions(response.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching instrument options:', err);
+        setError('Failed to load instrument options: ' + (err.message || 'Unknown error'));
+      }
+    };
+
+    const fetchSourceOptions = async () => {
+      try {
+        const response = await apiClient.get('/get-source');
+        if (response.data.status === "true" && response.data.data) {
+          setSourceOptions(response.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching source options:', err);
+        setError('Failed to load source options: ' + (err.message || 'Unknown error'));
+      }
+    };
+
+    const fetchUnitOptions = async () => {
+      try {
+        const response = await apiClient.get('/master/units-list');
+        if (response.data.status === "true" && response.data.data) {
+          setUnitOptions(response.data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching unit options:', err);
+        setError('Failed to load unit options: ' + (err.message || 'Unknown error'));
+      }
+    };
+
     const loadData = async () => {
       setLoading(true);
       try {
@@ -283,7 +287,7 @@ const CMCScopeForm = () => {
                 <label className="text-right text-gray-700 font-medium">Min Frequency / Range</label>
                 <div className="col-span-3">
                   <Input
-                    type="text"
+                    type="number"
                     placeholder="e.g., 1, 50, 100"
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={formData.minFrequency}
@@ -296,7 +300,7 @@ const CMCScopeForm = () => {
                 <label className="text-right text-gray-700 font-medium">Max Frequency / Range</label>
                 <div className="col-span-3">
                   <Input
-                    type="text"
+                    type="number"
                     placeholder="e.g., 10000, 5000, 40"
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={formData.maxFrequency}
@@ -326,7 +330,8 @@ const CMCScopeForm = () => {
                 <label className="text-right text-gray-700 font-medium">UUC Leastcount</label>
                 <div className="col-span-3">
                   <Input
-                    type="text"
+                    type="number"
+                    step="any"
                     placeholder="e.g., 0.01, 0.1"
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={formData.leastcount}
@@ -341,7 +346,8 @@ const CMCScopeForm = () => {
                 </label>
                 <div className="col-span-3">
                   <Input
-                    type="text"
+                    type="number"
+                    step="any"
                     placeholder="e.g., 0.05, 0.66, 0.4"
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={formData.minCmc}
@@ -356,7 +362,8 @@ const CMCScopeForm = () => {
                 </label>
                 <div className="col-span-3">
                   <Input
-                    type="text"
+                    type="number"
+                    step="any"
                     placeholder="e.g., 0.10, 0.37, 13.2"
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={formData.maxCmc}

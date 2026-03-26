@@ -21,13 +21,51 @@ export function OrderIdCell({ getValue }) {
 
 export function DateCell({ getValue }) {
   const { locale } = useLocaleContext();
-  const timestapms = getValue();
-  const date = dayjs(timestapms).locale(locale).format("DD MMM YYYY");
-  const time = dayjs(timestapms).locale(locale).format("hh:mm A");
+  const timestamp = getValue();
+
+  // Debug log to trace what the API is returning
+  console.log('DateCell timestamp:', timestamp);
+
+  if (
+    !timestamp ||
+    timestamp === "0000-00-00" ||
+    timestamp === "0000-00-00 00:00:00" ||
+    timestamp === "NA" ||
+    timestamp === "null"
+  ) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  // Try parsing with dayjs
+  let dateObj = dayjs(timestamp);
+
+  // If initial parsing fails, try common formats
+  if (!dateObj.isValid()) {
+    // If it's a string like '26/03/2026' or '26-03-2026'
+    if (typeof timestamp === 'string') {
+        const parts = timestamp.split(/[-/]/);
+        if (parts.length === 3) {
+            // Assume DD-MM-YYYY or DD/MM/YYYY
+            if (parts[0].length === 2 && parts[2].length === 4) {
+               dateObj = dayjs(`${parts[2]}-${parts[1]}-${parts[0]}`);
+            }
+        }
+    }
+  }
+
+  if (!dateObj.isValid()) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  const date = dateObj.locale(locale).format("D MMMM YYYY");
+  const time = dateObj.locale(locale).format("hh:mm A");
+
   return (
     <>
-      <p className="font-medium">{date}</p>
-      <p className="mt-0.5 text-xs text-gray-400 dark:text-dark-300">{time}</p>
+      <p className="font-medium text-nowrap">{date}</p>
+      {timestamp.includes(':') && (
+         <p className="mt-0.5 text-xs text-gray-400 dark:text-dark-300">{time}</p>
+      )}
     </>
   );
 }
@@ -54,14 +92,6 @@ export function CustomerCell({ row, getValue, column, table }) {
     </div>
   );
 }
-
-// export function TotalCell({ getValue }) {
-//   return (
-//     <p className="text-sm-plus font-medium text-gray-800 dark:text-dark-100">
-//       ${getValue().toFixed(1)}
-//     </p>
-//   );
-// }
 
 export const TotalCell = ({ getValue }) => {
   const value = getValue();
@@ -106,11 +136,11 @@ export function AddressCell({ getValue, column, table }) {
   );
 }
 
-OrderIdCell.propTypes = {
+DateCell.propTypes = {
   getValue: PropTypes.func,
 };
 
-DateCell.propTypes = {
+OrderIdCell.propTypes = {
   getValue: PropTypes.func,
 };
 

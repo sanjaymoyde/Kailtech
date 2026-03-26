@@ -10,30 +10,155 @@ import { EllipsisHorizontalIcon } from "@heroicons/react/20/solid";
 import {
   ArrowUpTrayIcon,
   PrinterIcon,
-  TrashIcon,
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
-import { Fragment, useState } from "react";
-import { CiViewTable } from "react-icons/ci";
+import { Fragment } from "react";
 import PropTypes from "prop-types";
+import { saveAs } from "file-saver";
+import { toast } from "react-hot-toast";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Local Imports
-import { Button, GhostSpinner } from "components/ui";
+import { Button } from "components/ui";
 
 // ----------------------------------------------------------------------
 
 export function SelectedRowsActions({ table }) {
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
   const selectedRows = table.getSelectedRowModel().rows;
 
-  const handleDeleteRows = () => {
-    if (selectedRows.length > 0) {
-      setDeleteLoading(true);
-      setTimeout(() => {
-        table.options.meta?.deleteRows(selectedRows);
-        setDeleteLoading(false);
-      }, 1000);
+  const handlePrint = () => {
+    try {
+      toast.success("Preparing for print...");
+      
+      const headers = table.getAllColumns()
+        .filter(col => col.getIsVisible() && col.id !== "select" && col.id !== "actions" && col.id !== "expander")
+        .map(col => col.id.toUpperCase());
+
+      const rows = selectedRows.map(row => {
+        return table.getAllColumns()
+          .filter(col => col.getIsVisible() && col.id !== "select" && col.id !== "actions" && col.id !== "expander")
+          .map(col => {
+            const val = row.getValue(col.id);
+            return val === undefined || val === null ? "" : String(val);
+          });
+      });
+
+      // Generate Clean HTML Table for Printing
+      const printWindow = window.open('', '_blank');
+      const html = `
+        <html>
+          <head>
+            <title>Print Observations</title>
+            <style>
+              body { font-family: sans-serif; padding: 20px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+              th { background-color: #f7f7f7; font-weight: bold; text-transform: uppercase; font-size: 12px; }
+              td { font-size: 11px; }
+              h2 { color: #333; margin: 0; }
+              .logo { font-size: 24px; font-weight: bold; color: #4f46e5; margin-bottom: 5px; }
+              .header { border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="logo">KAILTECH</div>
+              <h2>Observation Settings Report</h2>
+              <p>Printed on: ${new Date().toLocaleString()}</p>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  ${headers.map(h => `<th>${h}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(row => `
+                  <tr>
+                    ${row.map(cell => `<td>${cell}</td>`).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <script>
+              window.onload = function() {
+                window.print();
+                window.onafterprint = function() { window.close(); };
+              };
+            </script>
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(html);
+      printWindow.document.close();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate print view");
+    }
+  };
+
+  const handleExportCSV = () => {
+    try {
+      const headers = table.getAllColumns()
+        .filter(col => col.getIsVisible() && col.id !== "select" && col.id !== "actions" && col.id !== "expander")
+        .map(col => col.id.toUpperCase());
+
+      const csvContent = [
+        headers.join(","),
+        ...selectedRows.map(row => {
+          return table.getAllColumns()
+            .filter(col => col.getIsVisible() && col.id !== "select" && col.id !== "actions" && col.id !== "expander")
+            .map(col => {
+              const val = row.getValue(col.id);
+              return `"${val === undefined || val === null ? "" : val}"`;
+            })
+            .join(",");
+        })
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+      saveAs(blob, `observations_${new Date().toISOString().slice(0, 10)}.csv`);
+      toast.success("CSV exported successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to export CSV");
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      const headers = table.getAllColumns()
+        .filter(col => col.getIsVisible() && col.id !== "select" && col.id !== "actions" && col.id !== "expander")
+        .map(col => col.id.toUpperCase());
+
+      const body = selectedRows.map(row => {
+        return table.getAllColumns()
+          .filter(col => col.getIsVisible() && col.id !== "select" && col.id !== "actions" && col.id !== "expander")
+          .map(col => {
+            const val = row.getValue(col.id);
+            return val === undefined || val === null ? "" : String(val);
+          });
+      });
+
+      doc.text("Observation Settings", 14, 15);
+      
+      autoTable(doc, {
+        head: [headers],
+        body: body,
+        startY: 20,
+        styles: { fontSize: 8 },
+        headStyles: { fillStyle: 'DF', fillColor: [79, 70, 229] } // Purple header
+      });
+
+      doc.save(`observations_${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success("PDF exported successfully");
+    } catch (err) {
+      console.error("PDF Export error:", err);
+      toast.error("Failed to export PDF: Check table data");
     }
   };
 
@@ -59,25 +184,10 @@ export function SelectedRowsActions({ table }) {
               </span>
             </p>
             <div className="flex space-x-1.5 ">
-              <Button
-                onClick={handleDeleteRows}
+              <Button 
+                onClick={handlePrint}
                 className="w-7 gap-1.5 rounded-full px-3 py-1.5 text-xs-plus sm:w-auto sm:rounded-sm "
-                color="error"
-                disabled={deleteLoading || selectedRows.length <= 0}
               >
-                {deleteLoading ? (
-                  <div className="flex size-4 items-center justify-center">
-                    <GhostSpinner
-                      className="size-3.5 shrink-0 border-2"
-                      variant="soft"
-                    />
-                  </div>
-                ) : (
-                  <TrashIcon className="size-4 shrink-0" />
-                )}
-                <span className="max-sm:hidden">Delete</span>
-              </Button>
-              <Button className="w-7 gap-1.5 rounded-full px-3 py-1.5 text-xs-plus sm:w-auto sm:rounded-sm ">
                 <PrinterIcon className="size-4 shrink-0" />
                 <span className="max-sm:hidden">Print</span>
               </Button>
@@ -103,6 +213,7 @@ export function SelectedRowsActions({ table }) {
                   <MenuItem>
                     {({ focus }) => (
                       <button
+                        onClick={handleExportCSV}
                         className={clsx(
                           "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors ",
                           focus &&
@@ -110,13 +221,14 @@ export function SelectedRowsActions({ table }) {
                         )}
                       >
                         <ArrowUpTrayIcon className="size-4.5" />
-                        <span>Export CVS</span>
+                        <span>Export CSV</span>
                       </button>
                     )}
                   </MenuItem>
                   <MenuItem>
                     {({ focus }) => (
                       <button
+                        onClick={handleExportPDF}
                         className={clsx(
                           "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors ",
                           focus &&
@@ -125,20 +237,6 @@ export function SelectedRowsActions({ table }) {
                       >
                         <ArrowUpTrayIcon className="size-4.5" />
                         <span>Export PDF</span>
-                      </button>
-                    )}
-                  </MenuItem>
-                  <MenuItem>
-                    {({ focus }) => (
-                      <button
-                        className={clsx(
-                          "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors ",
-                          focus &&
-                            "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
-                        )}
-                      >
-                        <CiViewTable className="size-4.5" />
-                        <span>Save as view</span>
                       </button>
                     )}
                   </MenuItem>

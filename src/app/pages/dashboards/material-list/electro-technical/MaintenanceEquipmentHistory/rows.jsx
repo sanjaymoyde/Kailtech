@@ -21,13 +21,33 @@ export function OrderIdCell({ getValue }) {
 
 export function DateCell({ getValue }) {
   const { locale } = useLocaleContext();
-  const timestapms = getValue();
-  const date = dayjs(timestapms).locale(locale).format("DD MMM YYYY");
-  const time = dayjs(timestapms).locale(locale).format("hh:mm A");
+  const timestamp = getValue();
+
+  if (
+    !timestamp ||
+    timestamp === "0000-00-00" ||
+    timestamp === "0000-00-00 00:00:00" ||
+    timestamp === "NA" ||
+    timestamp === "null"
+  ) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  const dateObj = dayjs(timestamp);
+
+  if (!dateObj.isValid()) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  const date = dateObj.locale(locale).format("D MMMM YYYY");
+  const time = dateObj.locale(locale).format("hh:mm A");
+
   return (
     <>
-      <p className="font-medium">{date}</p>
-      <p className="mt-0.5 text-xs text-gray-400 dark:text-dark-300">{time}</p>
+      <p className="font-medium text-nowrap">{date}</p>
+      {timestamp.includes(':') && (
+        <p className="mt-0.5 text-xs text-gray-400 dark:text-dark-300">{time}</p>
+      )}
     </>
   );
 }

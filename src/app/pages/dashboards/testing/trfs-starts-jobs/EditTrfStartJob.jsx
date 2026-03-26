@@ -19,30 +19,30 @@ export default function EditTrfStartJob() {
   const todayFormatted = `${today.getDate().toString().padStart(2, "0")}/${(today.getMonth() + 1).toString().padStart(2, "0")}/${today.getFullYear()}`;
 
   // ── Refs for scroll-to-error ────────────────────────────────────────────────
-  const dateRef                  = useRef(null);
-  const sampleReceivedOnRef      = useRef(null);
-  const ctypeRef                 = useRef(null);
-  const customeridRef            = useRef(null);
-  const specificpurposeRef       = useRef(null);
-  const letterrefnoRef           = useRef(null);
-  const reportnameRef            = useRef(null);
-  const reportaddressRef         = useRef(null);
-  const billingnameRef           = useRef(null);
-  const billingaddressRef        = useRef(null);
-  const gstnoRef                 = useRef(null);
-  const concernpersonnameRef     = useRef(null);
-  const ponumberRef              = useRef(null);
-  const bdRef                    = useRef(null);
-  const promoterRef              = useRef(null);
-  const priorityRef              = useRef(null);
-  const pchargesRef              = useRef(null);
-  const witnessRef               = useRef(null);
-  const modeofrecieptRef         = useRef(null);
-  const paymentstatusRef         = useRef(null);
-  const modeofpaymentRef         = useRef(null);
-  const detailsofpaymentRef      = useRef(null);
-  const paymentamountRef         = useRef(null);
-  const certcollectionremarkRef  = useRef(null);
+  const dateRef = useRef(null);
+  const sampleReceivedOnRef = useRef(null);
+  const ctypeRef = useRef(null);
+  const customeridRef = useRef(null);
+  const specificpurposeRef = useRef(null);
+  const letterrefnoRef = useRef(null);
+  const reportnameRef = useRef(null);
+  const reportaddressRef = useRef(null);
+  const billingnameRef = useRef(null);
+  const billingaddressRef = useRef(null);
+  const gstnoRef = useRef(null);
+  const concernpersonnameRef = useRef(null);
+  const ponumberRef = useRef(null);
+  const bdRef = useRef(null);
+  const promoterRef = useRef(null);
+  const priorityRef = useRef(null);
+  const pchargesRef = useRef(null);
+  const witnessRef = useRef(null);
+  const modeofrecieptRef = useRef(null);
+  const paymentstatusRef = useRef(null);
+  const modeofpaymentRef = useRef(null);
+  const detailsofpaymentRef = useRef(null);
+  const paymentamountRef = useRef(null);
+  const certcollectionremarkRef = useRef(null);
 
   // ── Form State ──────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
@@ -112,43 +112,43 @@ export default function EditTrfStartJob() {
   const [errors, setErrors] = useState({});
 
   // ── Dropdown options ────────────────────────────────────────────────────────
-  const [customerTypes, setCustomerTypes]               = useState([]);
-  const [specificPurposes, setSpecificPurposes]         = useState([]);
-  const [customers, setCustomers]                       = useState([]);
-  const [bds, setBds]                                   = useState([]);
-  const [promoters, setPromoters]                       = useState([]);
-  const [choices, setChoices]                           = useState([]);
-  const [modesOfReceipt, setModesOfReceipt]             = useState([]);
-  const [paymentModes, setPaymentModes]                 = useState([]);
+  const [customerTypes, setCustomerTypes] = useState([]);
+  const [specificPurposes, setSpecificPurposes] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [bds, setBds] = useState([]);
+  const [promoters, setPromoters] = useState([]);
+  const [choices, setChoices] = useState([]);
+  const [modesOfReceipt, setModesOfReceipt] = useState([]);
+  const [paymentModes, setPaymentModes] = useState([]);
   const [certCollectionDetails, setCertCollectionDetails] = useState([]);
 
   // ── Customer-dependent options ──────────────────────────────────────────────
-  const [reportAddresses, setReportAddresses]   = useState([]);
+  const [reportAddresses, setReportAddresses] = useState([]);
   const [billingAddresses, setBillingAddresses] = useState([]);
-  const [concernPersons, setConcernPersons]     = useState([]);
-  const [quotations, setQuotations]             = useState([]);
+  const [concernPersons, setConcernPersons] = useState([]);
+  const [quotations, setQuotations] = useState([]);
 
   // ── Customer credit & email ─────────────────────────────────────────────────
   const [customerCredit, setCustomerCredit] = useState(null);
-  const [customerEmail, setCustomerEmail]   = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
 
   // ── Visibility toggles ──────────────────────────────────────────────────────
   const [showPriorityCharges, setShowPriorityCharges] = useState(false);
-  const [showWitnessDetails,  setShowWitnessDetails]  = useState(false);
-  const [showCourierDetails,  setShowCourierDetails]  = useState(false);
-  const [showPaymentDetails,  setShowPaymentDetails]  = useState(true);
+  const [showWitnessDetails, setShowWitnessDetails] = useState(false);
+  const [showCourierDetails, setShowCourierDetails] = useState(false);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(true);
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
 
   // ── Files ───────────────────────────────────────────────────────────────────
-  const [wuploadFile, setWuploadFile]   = useState(null);
-  const [ruploadFile, setRuploadFile]   = useState(null);
+  const [wuploadFile, setWuploadFile] = useState(null);
+  const [ruploadFile, setRuploadFile] = useState(null);
   const [existingWupload, setExistingWupload] = useState(null);
   const [existingRupload, setExistingRupload] = useState(null);
 
   // ── Loading ─────────────────────────────────────────────────────────────────
-  const [loading, setLoading]             = useState(false);
+  const [loading, setLoading] = useState(false);
   const [loadingOptions, setLoadingOptions] = useState(true);
-  const [loadingData, setLoadingData]     = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
 
   // ── ReactSelect styles ──────────────────────────────────────────────────────
@@ -175,29 +175,29 @@ export default function EditTrfStartJob() {
   // ── Scroll to first error ───────────────────────────────────────────────────
   const scrollToFirstError = useCallback(() => {
     const errorFields = [
-      { field: "date",                 ref: dateRef },
-      { field: "sample_received_on",   ref: sampleReceivedOnRef },
-      { field: "ctype",                ref: ctypeRef },
-      { field: "customerid",           ref: customeridRef },
-      { field: "specificpurpose",      ref: specificpurposeRef },
-      { field: "letterrefno",          ref: letterrefnoRef },
-      { field: "reportname",           ref: reportnameRef },
-      { field: "reportaddress",        ref: reportaddressRef },
-      { field: "billingname",          ref: billingnameRef },
-      { field: "billingaddress",       ref: billingaddressRef },
-      { field: "gstno",                ref: gstnoRef },
-      { field: "concernpersonname",    ref: concernpersonnameRef },
-      { field: "ponumber",             ref: ponumberRef },
-      { field: "bd",                   ref: bdRef },
-      { field: "promoter",             ref: promoterRef },
-      { field: "priority",             ref: priorityRef },
-      { field: "pcharges",             ref: pchargesRef },
-      { field: "witness",              ref: witnessRef },
-      { field: "modeofreciept",        ref: modeofrecieptRef },
-      { field: "paymentstatus",        ref: paymentstatusRef },
-      { field: "modeofpayment",        ref: modeofpaymentRef },
-      { field: "detailsofpayment",     ref: detailsofpaymentRef },
-      { field: "paymentamount",        ref: paymentamountRef },
+      { field: "date", ref: dateRef },
+      { field: "sample_received_on", ref: sampleReceivedOnRef },
+      { field: "ctype", ref: ctypeRef },
+      { field: "customerid", ref: customeridRef },
+      { field: "specificpurpose", ref: specificpurposeRef },
+      { field: "letterrefno", ref: letterrefnoRef },
+      { field: "reportname", ref: reportnameRef },
+      { field: "reportaddress", ref: reportaddressRef },
+      { field: "billingname", ref: billingnameRef },
+      { field: "billingaddress", ref: billingaddressRef },
+      { field: "gstno", ref: gstnoRef },
+      { field: "concernpersonname", ref: concernpersonnameRef },
+      { field: "ponumber", ref: ponumberRef },
+      { field: "bd", ref: bdRef },
+      { field: "promoter", ref: promoterRef },
+      { field: "priority", ref: priorityRef },
+      { field: "pcharges", ref: pchargesRef },
+      { field: "witness", ref: witnessRef },
+      { field: "modeofreciept", ref: modeofrecieptRef },
+      { field: "paymentstatus", ref: paymentstatusRef },
+      { field: "modeofpayment", ref: modeofpaymentRef },
+      { field: "detailsofpayment", ref: detailsofpaymentRef },
+      { field: "paymentamount", ref: paymentamountRef },
       { field: "certcollectionremark", ref: certcollectionremarkRef },
     ];
     for (const { field, ref } of errorFields) {
@@ -243,15 +243,15 @@ export default function EditTrfStartJob() {
         axios.get("/certificate-collect-as"),
       ]);
 
-      if (customerTypesRes.data?.Data)         setCustomerTypes(customerTypesRes.data.Data);
-      if (specificPurposesRes.data?.data)       setSpecificPurposes(specificPurposesRes.data.data);
-      if (customersRes.data?.data)              setCustomers(customersRes.data.data);
-      if (bdsRes.data?.data)                    setBds(bdsRes.data.data);
-      if (promotersRes.data?.data)              setPromoters(promotersRes.data.data);
-      if (choicesRes.data?.data)                setChoices(choicesRes.data.data);
-      if (modesOfReceiptRes.data?.data)         setModesOfReceipt(modesOfReceiptRes.data.data);
-      if (paymentModesRes.data?.data)           setPaymentModes(paymentModesRes.data.data);
-      if (certCollectionDetailsRes.data?.data)  setCertCollectionDetails(certCollectionDetailsRes.data.data);
+      if (customerTypesRes.data?.Data) setCustomerTypes(customerTypesRes.data.Data);
+      if (specificPurposesRes.data?.data) setSpecificPurposes(specificPurposesRes.data.data);
+      if (customersRes.data?.data) setCustomers(customersRes.data.data);
+      if (bdsRes.data?.data) setBds(bdsRes.data.data);
+      if (promotersRes.data?.data) setPromoters(promotersRes.data.data);
+      if (choicesRes.data?.data) setChoices(choicesRes.data.data);
+      if (modesOfReceiptRes.data?.data) setModesOfReceipt(modesOfReceiptRes.data.data);
+      if (paymentModesRes.data?.data) setPaymentModes(paymentModesRes.data.data);
+      if (certCollectionDetailsRes.data?.data) setCertCollectionDetails(certCollectionDetailsRes.data.data);
     } catch (error) {
       console.error("Error fetching options:", error);
       toast.error("Failed to load form options");
@@ -309,67 +309,67 @@ export default function EditTrfStartJob() {
 
         // Set date inputs for display
         setDateInputs({
-          date:               formatDateForInput(d.date)               || todayDisplay,
+          date: formatDateForInput(d.date) || todayDisplay,
           sample_received_on: formatDateForInput(d.sample_received_on) || "",
-          wdatetime:          formatDateForInput(d.wdatetime)          || "",
-          dateofdispatch:     formatDateForInput(d.dateofdispatch)     || "",
-          deadline:           formatDateForInput(d.deadline)           || "",
+          wdatetime: formatDateForInput(d.wdatetime) || "",
+          dateofdispatch: formatDateForInput(d.dateofdispatch) || "",
+          deadline: formatDateForInput(d.deadline) || "",
         });
 
         // Fill form data
         // NOTE: API returns dates as YYYY-MM-DD — convert to DD/MM/YYYY for update API
         setFormData({
-          id:                       d.id        || id,
-          date:                     d.date                 ? formatDateForServer(d.date)                 : todayFormatted,
-          sample_received_on:       d.sample_received_on   ? formatDateForServer(d.sample_received_on)   : "",
-          ctype:                    String(d.ctype             || ""),
-          customerid:               String(d.customerid        || ""),
-          specificpurpose:          String(d.specificpurpose   || ""),
-          letterrefno:              d.letterrefno              || "",
-          ponumber:                 d.ponumber                 || "",
-          bd:                       String(d.bd                || ""),
-          promoter:                 String(d.promoter          || ""),
-          priority:                 String(d.priority          || ""),
-          pcharges:                 d.pcharges                 || "0",
-          pchargestype:             String(d.pchargestype      || "1"),
-          witness:                  String(d.witness           || ""),
-          wdatetime:                d.wdatetime ? formatDateForServer(d.wdatetime) : "",
-          wtime:                    d.wtime                    || "",
-          wdetail:                  d.wdetail                  || "",
-          wcharges:                 d.wcharges                 || "0",
-          wchargestype:             String(d.wchargestype      || "1"),
-          wstatus:                  String(d.wstatus           || "1"),
-          modeofreciept:            String(d.modeofreciept     || "1"),
-          localcontact:             d.localcontact             || "",
-          couriername:              d.couriername              || "",
-          dateofdispatch:           d.dateofdispatch ? formatDateForServer(d.dateofdispatch) : "",
-          docketno:                 d.docketno                 || "",
-          modeofdispatch:           String(d.modeofdispatch    || "1"),
-          paymentstatus:            String(d.paymentstatus     || "1"),
-          modeofpayment:            String(d.modeofpayment     || ""),
-          detailsofpayment:         d.detailsofpayment         || "",
-          paymentamount:            d.paymentamount            || "",
-          certcollectiondetail:     certDetail,
-          additionalemail:          d.additionalemail          || "",
-          certcollectionremark:     d.certcollectionremark     || "",
-          returnable:               String(d.returnable        || ""),
-          documents:                d.documents                || "",
-          deadline:                 d.deadline ? formatDateForServer(d.deadline) : "",
-          specialrequest:           d.specialrequest           || "",
-          notes:                    d.notes                    || "",
+          id: d.id || id,
+          date: d.date ? formatDateForServer(d.date) : todayFormatted,
+          sample_received_on: d.sample_received_on ? formatDateForServer(d.sample_received_on) : "",
+          ctype: String(d.ctype || ""),
+          customerid: String(d.customerid || ""),
+          specificpurpose: String(d.specificpurpose || ""),
+          letterrefno: d.letterrefno || "",
+          ponumber: d.ponumber || "",
+          bd: String(d.bd || ""),
+          promoter: String(d.promoter || ""),
+          priority: String(d.priority || ""),
+          pcharges: d.pcharges || "0",
+          pchargestype: String(d.pchargestype || "1"),
+          witness: String(d.witness || ""),
+          wdatetime: d.wdatetime ? formatDateForServer(d.wdatetime) : "",
+          wtime: d.wtime || "",
+          wdetail: d.wdetail || "",
+          wcharges: d.wcharges || "0",
+          wchargestype: String(d.wchargestype || "1"),
+          wstatus: String(d.wstatus || "1"),
+          modeofreciept: String(d.modeofreciept || "1"),
+          localcontact: d.localcontact || "",
+          couriername: d.couriername || "",
+          dateofdispatch: d.dateofdispatch ? formatDateForServer(d.dateofdispatch) : "",
+          docketno: d.docketno || "",
+          modeofdispatch: String(d.modeofdispatch || "1"),
+          paymentstatus: String(d.paymentstatus || "1"),
+          modeofpayment: String(d.modeofpayment || ""),
+          detailsofpayment: d.detailsofpayment || "",
+          paymentamount: d.paymentamount || "",
+          certcollectiondetail: certDetail,
+          additionalemail: d.additionalemail || "",
+          certcollectionremark: d.certcollectionremark || "",
+          returnable: String(d.returnable || ""),
+          documents: d.documents || "",
+          deadline: d.deadline ? formatDateForServer(d.deadline) : "",
+          specialrequest: d.specialrequest || "",
+          notes: d.notes || "",
           // Customer detail fields
-          reportname:               String(d.reportname        || ""),
-          reportaddress:            String(d.reportaddress     || ""),
-          billingname:              String(d.billingname       || ""),
-          billingaddress:           String(d.billingaddress    || ""),
-          gstno:                    d.gstno                    || "",
-          concernpersonname:        String(d.concernpersonname || ""),
+          reportname: String(d.reportname || ""),
+          reportaddress: String(d.reportaddress || ""),
+          billingname: String(d.billingname || ""),
+          billingaddress: String(d.billingaddress || ""),
+          gstno: d.gstno || "",
+          concernpersonname: String(d.concernpersonname || ""),
           concernpersondesignation: d.concernpersondesignation || "",
-          concernpersonemail:       d.concernpersonemail       || "",
-          concernpersonmobile:      d.concernpersonmobile      || "",
-          quotationid:              String(d.quotationid       || "0"),
-          customername:             d.customername             || "",
-          customeraddress:          d.customeraddress          || "nothing",
+          concernpersonemail: d.concernpersonemail || "",
+          concernpersonmobile: d.concernpersonmobile || "",
+          quotationid: String(d.quotationid || "0"),
+          customername: d.customername || "",
+          customeraddress: d.customeraddress || "nothing",
         });
 
         // Existing uploaded files
@@ -414,16 +414,16 @@ export default function EditTrfStartJob() {
       if (creditRes.data?.data) {
         const c = creditRes.data.data;
         setCustomerCredit({
-          creditdays:   c.creditdays,
+          creditdays: c.creditdays,
           creditamount: c.creditamount,
-          leftamount:   c.leftamount,
+          leftamount: c.leftamount,
         });
         setCustomerEmail(c.email || "");
         // Only set gstno/customername if not already filled from TRF data
         setFormData((prev) => ({
           ...prev,
-          gstno:          prev.gstno        || c.gstno        || "",
-          customername:   prev.customername || c.name         || "",
+          gstno: prev.gstno || c.gstno || "",
+          customername: prev.customername || c.name || "",
           customeraddress: prev.customeraddress || "nothing",
         }));
       }
@@ -455,7 +455,7 @@ export default function EditTrfStartJob() {
       }
 
       if (concernPersonsRes.data?.data) setConcernPersons(concernPersonsRes.data.data);
-      if (quotationsRes.data?.data)     setQuotations(quotationsRes.data.data);
+      if (quotationsRes.data?.data) setQuotations(quotationsRes.data.data);
 
       setShowCustomerDetails(true);
     } catch (error) {
@@ -467,31 +467,31 @@ export default function EditTrfStartJob() {
   };
 
   // ── Fetch customer-dependent data (for CHANGE — same as Add) ───────────────
-  const fetchCustomerDependentData = async (customerId) => {
+  // fetchCustomerDependentData को selectedOption accept करने दो
+  const fetchCustomerDependentData = async (customerId, selectedOption = null) => {
     if (!customerId) return;
     setLoadingCustomer(true);
     try {
-      const [creditRes, addressRes, concernPersonsRes, quotationsRes] = await Promise.all([
-        axios.get(`/people/get-all-customers?id=${customerId}`),
+      const [addressRes, concernPersonsRes, quotationsRes] = await Promise.all([
         axios.get(`/people/get-customers-address/${customerId}`),
         axios.get(`/get-concern-person/${customerId}`),
         axios.get(`/get-quotaion/${customerId}`),
       ]);
 
-      if (creditRes.data?.data) {
-        const c = creditRes.data.data;
+      // ✅ selectedOption से GST/credit लो
+      if (selectedOption) {
         setCustomerCredit({
-          creditdays:   c.creditdays,
-          creditamount: c.creditamount,
-          leftamount:   c.leftamount,
+          creditdays: selectedOption.creditdays,
+          creditamount: selectedOption.creditamount,
+          leftamount: selectedOption.leftamount,
         });
-        setCustomerEmail(c.email || "");
+        setCustomerEmail(selectedOption.email || "");
         setFormData((prev) => ({
           ...prev,
-          gstno:          c.gstno         || "",
-          customername:   c.name          || "",
+          gstno: selectedOption.gstno || "",
+          customername: selectedOption.label?.split(" (")[0] || "",
           customeraddress: "nothing",
-          modeofpayment:  c.modeofpayment ? String(c.modeofpayment) : prev.modeofpayment,
+          modeofpayment: selectedOption.modeofpayment || prev.modeofpayment,
         }));
       }
 
@@ -499,9 +499,8 @@ export default function EditTrfStartJob() {
         setReportAddresses(addressRes.data.data);
         setBillingAddresses(addressRes.data.data);
       }
-
       if (concernPersonsRes.data?.data) setConcernPersons(concernPersonsRes.data.data);
-      if (quotationsRes.data?.data)     setQuotations(quotationsRes.data.data);
+      if (quotationsRes.data?.data) setQuotations(quotationsRes.data.data);
 
       setShowCustomerDetails(true);
     } catch (error) {
@@ -521,8 +520,8 @@ export default function EditTrfStartJob() {
         setFormData((prev) => ({
           ...prev,
           concernpersondesignation: p.designation || "",
-          concernpersonemail:       p.email       || "",
-          concernpersonmobile:      p.mobile      || "",
+          concernpersonemail: p.email || "",
+          concernpersonmobile: p.mobile || "",
         }));
       }
     } catch (error) {
@@ -535,7 +534,7 @@ export default function EditTrfStartJob() {
     try {
       const res = await axios.get(`/people/get-customers-address/${customerId}`);
       if (res.data?.data) {
-        if (type === "report")  setReportAddresses(res.data.data);
+        if (type === "report") setReportAddresses(res.data.data);
         if (type === "billing") setBillingAddresses(res.data.data);
       }
     } catch (err) { console.error(err); }
@@ -546,7 +545,7 @@ export default function EditTrfStartJob() {
     setBillingAddresses(reportAddresses);
     setFormData((prev) => ({
       ...prev,
-      billingname:    prev.reportname,
+      billingname: prev.reportname,
       billingaddress: prev.reportaddress,
     }));
   };
@@ -594,7 +593,23 @@ export default function EditTrfStartJob() {
     setCustomerCredit(null);
     setCustomerEmail("");
     setShowCustomerDetails(false);
-    if (value) await fetchCustomerDependentData(value);
+
+    if (value) {
+      // ✅ customers array से matching option ढूंढो
+      const selectedOpt = customers.find((c) => String(c.id) === String(value));
+      const optWithData = selectedOpt ? {
+        value: String(selectedOpt.id),
+        label: `${selectedOpt.name} (${selectedOpt.pnumber || selectedOpt.phone || "N/A"})`,
+        gstno: selectedOpt.gstno || "",
+        modeofpayment: selectedOpt.modeofpayment ? String(selectedOpt.modeofpayment) : "",
+        email: selectedOpt.email || "",
+        creditdays: selectedOpt.creditdays || 0,
+        creditamount: selectedOpt.creditamount || 0,
+        leftamount: selectedOpt.leftamount || 0,
+      } : null;
+
+      await fetchCustomerDependentData(value, optWithData); // ✅ opt pass
+    }
   };
 
   const handleReportNameChange = async (e) => {
@@ -678,29 +693,29 @@ export default function EditTrfStartJob() {
     const newErrors = {};
 
     if (!formData.sample_received_on) newErrors.sample_received_on = "Sample Received Date is required";
-    if (!formData.ctype)              newErrors.ctype              = "Customer Type is required";
-    if (!formData.customerid)         newErrors.customerid         = "Customer is required";
-    if (!formData.specificpurpose)    newErrors.specificpurpose    = "Specific Purpose is required";
-    if (!formData.letterrefno)        newErrors.letterrefno        = "Customer Reference is required";
+    if (!formData.ctype) newErrors.ctype = "Customer Type is required";
+    if (!formData.customerid) newErrors.customerid = "Customer is required";
+    if (!formData.specificpurpose) newErrors.specificpurpose = "Specific Purpose is required";
+    if (!formData.letterrefno) newErrors.letterrefno = "Customer Reference is required";
 
     if (formData.customerid) {
-      if (!formData.reportname)        newErrors.reportname        = "Report Customer Name is required";
-      if (!formData.reportaddress)     newErrors.reportaddress     = "Report Address is required";
-      if (!formData.billingname)       newErrors.billingname       = "Billing Customer Name is required";
-      if (!formData.billingaddress)    newErrors.billingaddress    = "Billing Address is required";
-      if (!formData.gstno)             newErrors.gstno             = "GST Number is required";
+      if (!formData.reportname) newErrors.reportname = "Report Customer Name is required";
+      if (!formData.reportaddress) newErrors.reportaddress = "Report Address is required";
+      if (!formData.billingname) newErrors.billingname = "Billing Customer Name is required";
+      if (!formData.billingaddress) newErrors.billingaddress = "Billing Address is required";
+      if (!formData.gstno) newErrors.gstno = "GST Number is required";
       if (!formData.concernpersonname) newErrors.concernpersonname = "Concern Person is required";
     }
 
-    if (!formData.ponumber)      newErrors.ponumber      = "Work Order No is required";
-    if (!formData.bd)            newErrors.bd            = "Concerned BD is required";
-    if (!formData.promoter)      newErrors.promoter      = "Engineer is required";
-    if (!formData.priority)      newErrors.priority      = "Priority Sample is required";
-    if (!formData.witness)       newErrors.witness       = "Witness Required is required";
+    if (!formData.ponumber) newErrors.ponumber = "Work Order No is required";
+    if (!formData.bd) newErrors.bd = "Concerned BD is required";
+    if (!formData.promoter) newErrors.promoter = "Engineer is required";
+    if (!formData.priority) newErrors.priority = "Priority Sample is required";
+    if (!formData.witness) newErrors.witness = "Witness Required is required";
     if (!formData.modeofreciept) newErrors.modeofreciept = "Mode of Receipt is required";
 
     if (formData.paymentstatus !== "2") {
-      if (!formData.modeofpayment)    newErrors.modeofpayment    = "Mode of Payment is required";
+      if (!formData.modeofpayment) newErrors.modeofpayment = "Mode of Payment is required";
       if (!formData.detailsofpayment) newErrors.detailsofpayment = "Payment Details are required";
       if (!formData.paymentamount || parseFloat(formData.paymentamount) <= 0)
         newErrors.paymentamount = "Valid Payment Amount is required";
@@ -746,7 +761,7 @@ export default function EditTrfStartJob() {
       if (ruploadFile) submitData.append("rupload", ruploadFile);
 
       // Flags for removed files
-      
+
       for (let [key, value] of submitData.entries()) console.log(`${key}:`, value);
 
       const response = await axios.post("/testing/update-trf-detail", submitData, {
@@ -1053,7 +1068,7 @@ export default function EditTrfStartJob() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Work Order Number <span className="text-red-500">*</span></label>
                 <Input list="workordersuggest" name="ponumber" value={formData.ponumber} onChange={handleInputChange} className="w-full" placeholder="Enter work order number" />
                 <datalist id="workordersuggest">
-                  {["TRF","Telephonic","Email","Verble","Letter","Challan"].map((s) => <option key={s} value={s} />)}
+                  {["TRF", "Telephonic", "Email", "Verble", "Letter", "Challan"].map((s) => <option key={s} value={s} />)}
                 </datalist>
                 <ErrMsg field="ponumber" />
               </div>
