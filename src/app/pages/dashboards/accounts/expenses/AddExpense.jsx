@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import axios from "utils/axios";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // Local Imports
 import { Page } from "components/shared/Page";
@@ -192,14 +193,17 @@ export default function AddExpense() {
 
             {/* Expense Date — mirrors PHP readonly date picker (onfocus="setcalender") */}
             <FormRow label="Expense Date" required error={errors.expensedate}>
-              <input
-                type="text"
-                name="expensedate"
-                id="expensedate"
+              <DatePicker
+                options={{
+                  dateFormat: "Y-m-d",
+                  altInput: true,
+                  altFormat: "d/m/Y",
+                  allowInput: true,
+                }}
                 value={formData.expensedate}
-                onChange={handleChange}
-                onFocus={(e) => (e.target.type = "date")}
-                onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
+                onChange={(dates, dateStr) =>
+                  handleChange({ target: { name: "expensedate", value: dateStr } })
+                }
                 placeholder="Expense Date"
                 className={inputClass(errors.expensedate)}
               />

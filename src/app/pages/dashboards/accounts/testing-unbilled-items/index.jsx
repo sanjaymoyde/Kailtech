@@ -106,7 +106,7 @@ export default function UnbilledTestingItems() {
         setCustomers(custRes.data.data ?? custRes.data ?? []);
         setBdList(bdRes.data.data ?? bdRes.data ?? []);
       } catch {
-        toast.error("Filter options load nahi ho sake");
+        toast.error("Failed to load filter options");
       } finally {
         setDropdownLoading(false);
       }
@@ -118,7 +118,7 @@ export default function UnbilledTestingItems() {
   // PHP: if (!empty($search)) → run queries else "Search Parameter Required"
   const fetchItems = async (f = filters) => {
     if (!f.startdate || !f.enddate) {
-      toast.error("Start Date aur End Date dono required hain");
+      toast.error("Start Date and End Date both are required");
       return;
     }
     try {
@@ -142,10 +142,10 @@ export default function UnbilledTestingItems() {
 
       setItems(finalList);
       setSearched(true);
-      if (finalList.length === 0) toast.info("Koi unbilled item nahi mila");
+      if (finalList.length === 0) toast.info("Unbilled item not found");
     } catch (err) {
       console.error(err);
-      toast.error("Data fetch karne mein error aaya");
+      toast.error("Error while fetching data");
     } finally {
       setLoading(false);
     }
@@ -231,7 +231,7 @@ export default function UnbilledTestingItems() {
           className={clsx(
             "flex h-full w-full flex-col",
             tableSettings.enableFullScreen &&
-              "dark:bg-dark-900 fixed inset-0 z-61 bg-white pt-3",
+            "dark:bg-dark-900 fixed inset-0 z-61 bg-white pt-3",
           )}
         >
           {/* Toolbar with filters */}
@@ -278,20 +278,20 @@ export default function UnbilledTestingItems() {
                 <div className="flex flex-col items-center justify-center gap-2 py-16">
                   <span className="text-4xl">🔍</span>
                   <p className="dark:text-dark-300 font-medium text-gray-600">
-                    Filters select karein aur Search karein
+                    Select filters and Search
                   </p>
                   <p className="dark:text-dark-500 text-sm text-gray-400">
-                    Start Date aur End Date required hain
+                    Start Date and End Date required
                   </p>
                 </div>
               ) : searched && items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-16">
                   <span className="text-4xl">📋</span>
                   <p className="dark:text-dark-300 font-medium text-gray-600">
-                    Koi unbilled item nahi mila
+                    Unbilled item not found
                   </p>
                   <p className="dark:text-dark-500 text-sm text-gray-400">
-                    Filters adjust karke dobara try karein
+                    Adjust Filters and try again
                   </p>
                 </div>
               ) : (
@@ -313,9 +313,9 @@ export default function UnbilledTestingItems() {
                                   "dark:bg-dark-800 dark:text-dark-100 bg-gray-200 font-semibold text-gray-800 uppercase first:ltr:rounded-tl-lg last:ltr:rounded-tr-lg first:rtl:rounded-tr-lg last:rtl:rounded-tl-lg",
                                   header.column.getCanPin() && [
                                     header.column.getIsPinned() === "left" &&
-                                      "sticky z-2 ltr:left-0 rtl:right-0",
+                                    "sticky z-2 ltr:left-0 rtl:right-0",
                                     header.column.getIsPinned() === "right" &&
-                                      "sticky z-2 ltr:right-0 rtl:left-0",
+                                    "sticky z-2 ltr:right-0 rtl:left-0",
                                   ],
                                 )}
                               >
@@ -328,9 +328,9 @@ export default function UnbilledTestingItems() {
                                       {header.isPlaceholder
                                         ? null
                                         : flexRender(
-                                            header.column.columnDef.header,
-                                            header.getContext(),
-                                          )}
+                                          header.column.columnDef.header,
+                                          header.getContext(),
+                                        )}
                                     </span>
                                     <TableSortIcon
                                       sorted={header.column.getIsSorted()}
@@ -355,8 +355,8 @@ export default function UnbilledTestingItems() {
                             className={clsx(
                               "dark:border-b-dark-500 relative border-y border-transparent border-b-gray-200",
                               row.getIsSelected() &&
-                                !isSafari &&
-                                "row-selected after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500 after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent",
+                              !isSafari &&
+                              "row-selected after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500 after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent",
                             )}
                           >
                             {row.getVisibleCells().map((cell) => (
@@ -369,9 +369,9 @@ export default function UnbilledTestingItems() {
                                     : "dark:bg-dark-900",
                                   cell.column.getCanPin() && [
                                     cell.column.getIsPinned() === "left" &&
-                                      "sticky z-2 ltr:left-0 rtl:right-0",
+                                    "sticky z-2 ltr:left-0 rtl:right-0",
                                     cell.column.getIsPinned() === "right" &&
-                                      "sticky z-2 ltr:right-0 rtl:left-0",
+                                    "sticky z-2 ltr:right-0 rtl:left-0",
                                   ],
                                 )}
                               >
@@ -403,7 +403,7 @@ export default function UnbilledTestingItems() {
                       className={clsx(
                         "px-4 pb-4 sm:px-5 sm:pt-4",
                         tableSettings.enableFullScreen &&
-                          "dark:bg-dark-800 bg-gray-50",
+                        "dark:bg-dark-800 bg-gray-50",
                         !(
                           table.getIsSomeRowsSelected() ||
                           table.getIsAllRowsSelected()

@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import dayjs from "dayjs";
 
 // Local Imports
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -28,9 +29,9 @@ const columnHelper = createColumnHelper();
 
 const fmtDate = (d) => {
   if (!d || d === "0000-00-00") return "—";
-  const dt = new Date(d);
-  if (isNaN(dt)) return d;
-  return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}/${dt.getFullYear()}`;
+  const dt = dayjs(d);
+  if (!dt.isValid()) return d;
+  return dt.format("DD/MM/YYYY");
 };
 
 const PERMISSIONS = [274, 275, 276]; // Replace with real auth

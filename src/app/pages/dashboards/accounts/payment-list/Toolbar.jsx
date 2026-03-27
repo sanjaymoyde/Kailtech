@@ -7,6 +7,7 @@ import PropTypes from "prop-types";
 // Local Imports
 import { Button, Input } from "components/ui";
 import { TableConfig } from "./TableConfig";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // ----------------------------------------------------------------------
 
@@ -71,10 +72,17 @@ export function Toolbar({
           <label className="dark:text-dark-300 text-xs font-medium text-gray-600">
             Start Date
           </label>
-          <input
-            type="date"
+          <DatePicker
+            options={{
+              dateFormat: "Y-m-d",
+              altInput: true,
+              altFormat: "d/m/Y",
+              allowInput: true,
+            }}
             value={filters.startdate}
-            onChange={(e) => handleFilterChange("startdate", e.target.value)}
+            onChange={(selectedDates, dateStr) =>
+              handleFilterChange("startdate", dateStr)
+            }
             className="focus:border-primary-500 focus:ring-primary-500 dark:border-dark-500 dark:bg-dark-800 dark:text-dark-100 h-9 rounded-md border border-gray-300 px-3 text-sm text-gray-700 focus:ring-1 focus:outline-none"
           />
         </div>
@@ -84,10 +92,17 @@ export function Toolbar({
           <label className="dark:text-dark-300 text-xs font-medium text-gray-600">
             End Date
           </label>
-          <input
-            type="date"
+          <DatePicker
+            options={{
+              dateFormat: "Y-m-d",
+              altInput: true,
+              altFormat: "d/m/Y",
+              allowInput: true,
+            }}
             value={filters.enddate}
-            onChange={(e) => handleFilterChange("enddate", e.target.value)}
+            onChange={(selectedDates, dateStr) =>
+              handleFilterChange("enddate", dateStr)
+            }
             className="focus:border-primary-500 focus:ring-primary-500 dark:border-dark-500 dark:bg-dark-800 dark:text-dark-100 h-9 rounded-md border border-gray-300 px-3 text-sm text-gray-700 focus:ring-1 focus:outline-none"
           />
         </div>

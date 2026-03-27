@@ -24,7 +24,7 @@ import { useSkipper } from "utils/react-table/useSkipper";
 import { Toolbar } from "./Toolbar";
 import { columns } from "./columns";
 import { PaginationSection } from "components/shared/table/PaginationSection";
-import { SelectedRowsActions } from "./SelectedRowsActions";
+import { SelectedRowsActions } from "components/shared/table/SelectedRowsActions";
 import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
 // ----------------------------------------------------------------------
@@ -286,7 +286,7 @@ export default function OrdersDatatableV1() {
                 </TBody>
               </Table>
             </div>
-            <SelectedRowsActions table={table} />
+            <SelectedRowsActions table={table} title="Observation Settings" showDelete={false} />
             <PaginationSection table={table} />
           </Card>
         </div>

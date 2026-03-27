@@ -269,7 +269,6 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
         setSubmitError("Failed to load item details.");
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClone, cloneId, isEdit, itemId]);
 
   useEffect(() => {
@@ -316,7 +315,6 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
       finally { setLoadingGradeSize(false); }
     };
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.product]);
 
   // ── 5. Product + package_type → package list ──────────────────────────────
@@ -417,7 +415,7 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = () => {
-    const required = ["product","brand","qrcode","testrequest","grade","size","package","isok","disposable","condition","specification","conformity"];
+    const required = ["product","brand","grade","size","package","isok","disposable","condition","specification","conformity"];
     const errs = {};
     required.forEach((f) => { if (!form[f] && form[f] !== 0) errs[f] = "This is a required field"; });
     return errs;
@@ -542,12 +540,12 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
           {errors.brand && <p className={errCls}>{errors.brand}</p>}
         </div>
         <div>
-          <label className={labelCls}>QR Code <span className="text-red-500">*</span></label>
+          <label className={labelCls}>QR Code</label>
           <input name="qrcode" className={iCls(errors.qrcode)} value={form.qrcode} onChange={handleChange} placeholder="QR Code" />
           {errors.qrcode && <p className={errCls}>{errors.qrcode}</p>}
         </div>
         <div>
-          <label className={labelCls}>Test Request <span className="text-red-500">*</span></label>
+          <label className={labelCls}>Test Request</label>
           <input name="testrequest" className={iCls(errors.testrequest)} value={form.testrequest} onChange={handleChange} placeholder="Test Request" />
           {errors.testrequest && <p className={errCls}>{errors.testrequest}</p>}
         </div>

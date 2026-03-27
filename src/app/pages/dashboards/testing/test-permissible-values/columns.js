@@ -31,12 +31,6 @@ export const columns = [
     cell: (info) => info.getValue(),
   }),
 
-  // ✅ Description (from API)
-  columnHelper.accessor("description", {
-    id: "description",
-    header: "Description",
-    cell: (info) => info.getValue(),
-  }),
 
   // ✅ Actions
   columnHelper.display({

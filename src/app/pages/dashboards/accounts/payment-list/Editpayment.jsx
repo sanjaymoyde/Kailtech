@@ -7,6 +7,7 @@ import { toast } from "sonner";
 // Local Imports
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // ----------------------------------------------------------------------
 
@@ -259,10 +260,17 @@ export default function EditPayment() {
 
             {/* Payment Date */}
             <FormRow label="Payment Date">
-              <input
-                type="date"
+              <DatePicker
+                options={{
+                  dateFormat: "Y-m-d",
+                  altInput: true,
+                  altFormat: "d/m/Y",
+                  allowInput: true,
+                }}
                 value={form.paymentdate}
-                onChange={(e) => handleChange("paymentdate", e.target.value)}
+                onChange={(dates, dateStr) =>
+                  handleChange("paymentdate", dateStr)
+                }
                 className={inputCls}
               />
             </FormRow>
@@ -280,10 +288,17 @@ export default function EditPayment() {
                   />
                 </FormRow>
                 <FormRow label="Cheque Date">
-                  <input
-                    type="date"
+                  <DatePicker
+                    options={{
+                      dateFormat: "Y-m-d",
+                      altInput: true,
+                      altFormat: "d/m/Y",
+                      allowInput: true,
+                    }}
                     value={form.chequedate}
-                    onChange={(e) => handleChange("chequedate", e.target.value)}
+                    onChange={(dates, dateStr) =>
+                      handleChange("chequedate", dateStr)
+                    }
                     className={inputCls}
                   />
                 </FormRow>

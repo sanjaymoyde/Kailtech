@@ -24,7 +24,7 @@ import { Toolbar } from "./Toolbar";
 import { columns } from "./columns";
 // import { ordersList } from "./data";
 import { PaginationSection } from "components/shared/table/PaginationSection";
-import { SelectedRowsActions } from "./SelectedRowsActions";
+import { SelectedRowsActions } from "components/shared/table/SelectedRowsActions";
 import { useThemeContext } from "app/contexts/theme/context";
 import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
@@ -294,7 +294,7 @@ export default function OrdersDatatableV1() {
                   </TBody>
                 </Table>
               </div>
-              <SelectedRowsActions table={table} />
+              <SelectedRowsActions table={table} title="Tax Slabs" showDelete={false} />
               {table.getCoreRowModel().rows.length && (
                 <div
                   className={clsx(

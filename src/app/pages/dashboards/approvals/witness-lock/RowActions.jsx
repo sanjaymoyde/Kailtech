@@ -2,6 +2,9 @@ import { useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import { Input } from "components/ui";
+import { DatePicker } from "components/shared/form/Datepicker";
+import { ClockIcon } from "@heroicons/react/24/outline";
 
 // PHP: perm 178 required for both buttons
 function usePermissions() {
@@ -67,12 +70,14 @@ function UnlockModal({ row, onClose, onSuccess }) {
             <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
               Witness Date
             </label>
-            <input
-              type="text"
+            <DatePicker
+              options={{
+                dateFormat: "d/m/Y",
+                allowInput: true
+              }}
               value={wdatetime}
-              onChange={(e) => setWdatetime(e.target.value)}
+              onChange={(selectedDates, dateStr) => setWdatetime(dateStr)}
               placeholder="dd/mm/yyyy"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-dark-600 dark:bg-dark-900 dark:text-dark-100 dark:focus:ring-blue-900"
             />
           </div>
 
@@ -81,11 +86,11 @@ function UnlockModal({ row, onClose, onSuccess }) {
             <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
               Witness Time
             </label>
-            <input
+            <Input
               type="time"
               value={wtime}
               onChange={(e) => setWtime(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-dark-600 dark:bg-dark-900 dark:text-dark-100 dark:focus:ring-blue-900"
+              prefix={<ClockIcon className="size-5" />}
             />
           </div>
 
@@ -94,12 +99,11 @@ function UnlockModal({ row, onClose, onSuccess }) {
             <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
               Witness Details
             </label>
-            <input
+            <Input
               type="text"
               value={wdetail}
               onChange={(e) => setWdetail(e.target.value)}
               placeholder="name of persons"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-dark-600 dark:bg-dark-900 dark:text-dark-100 dark:focus:ring-blue-900"
             />
           </div>
         </div>

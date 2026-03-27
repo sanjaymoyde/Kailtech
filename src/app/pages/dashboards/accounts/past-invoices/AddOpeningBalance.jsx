@@ -4,6 +4,7 @@ import axios from "utils/axios";
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
 import { toast } from "sonner";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 const EMPTY_ROW = {
   invoiceid: "",
@@ -491,12 +492,16 @@ export default function AddOpeningBalance() {
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-dark-200">
                 Date
               </label>
-              <input
-                type="date"
+              <DatePicker
+                options={{
+                  dateFormat: "Y-m-d",
+                  altInput: true,
+                  altFormat: "d/m/Y",
+                  allowInput: true,
+                }}
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(dates, dateStr) => setDate(dateStr)}
                 className={inputCls}
-                max="2030-12-31"
                 required
               />
             </div>
@@ -594,19 +599,19 @@ export default function AddOpeningBalance() {
                     {invoiceRows.map((row, index) => (
                       <tr key={row.invoiceid || index}>
                         <td className="border border-gray-300 p-1.5 dark:border-dark-500">
-                          <input
-                            type="date"
+                          <DatePicker
+                            options={{
+                              dateFormat: "Y-m-d",
+                              altInput: true,
+                              altFormat: "d/m/Y",
+                              allowInput: true,
+                            }}
                             value={row.invoicedate}
-                            onChange={(e) =>
-                              handleRowChange(
-                                index,
-                                "invoicedate",
-                                e.target.value,
-                              )
+                            onChange={(dates, dateStr) =>
+                              handleRowChange(index, "invoicedate", dateStr)
                             }
                             className={inputCls}
                             style={{ minWidth: 130 }}
-                            max="2030-12-31"
                           />
                         </td>
                         <td className="border border-gray-300 p-1.5 dark:border-dark-500">

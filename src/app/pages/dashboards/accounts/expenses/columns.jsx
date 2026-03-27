@@ -1,8 +1,5 @@
-// Import Dependencies
 import { createColumnHelper } from "@tanstack/react-table";
-
-// Local Imports
-// import { RowActions } from "./RowActions";
+import dayjs from "dayjs";
 
 const columnHelper = createColumnHelper();
 
@@ -34,7 +31,14 @@ export const columns = [
   columnHelper.accessor("expensedate", {
     id: "expensedate",
     header: () => <div className="text-center">Date</div>,
-    cell: (info) => <div className="text-center">{info.getValue() ?? "-"}</div>,
+    cell: (info) => {
+      const val = info.getValue();
+      return (
+        <div className="text-center">
+          {val ? dayjs(val).format("DD/MM/YYYY") : "-"}
+        </div>
+      );
+    },
   }),
 
   columnHelper.accessor("referenceto", {

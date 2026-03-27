@@ -8,6 +8,7 @@ import axios from "utils/axios";
 import { toast } from "sonner";
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -800,10 +801,15 @@ export default function AddCalibrationInvoice() {
                   <span className="dark:text-dark-400 w-32 font-medium text-gray-600">
                     Date:
                   </span>
-                  <input
-                    type="date"
+                  <DatePicker
+                    options={{
+                      dateFormat: "Y-m-d",
+                      altInput: true,
+                      altFormat: "d/m/Y",
+                      allowInput: true,
+                    }}
                     value={invoicedate}
-                    onChange={(e) => setInvoicedate(e.target.value)}
+                    onChange={(dates, dateStr) => setInvoicedate(dateStr)}
                     className="dark:bg-dark-900 dark:border-dark-500 dark:text-dark-100 rounded border border-gray-300 bg-white px-2 py-1 text-sm"
                   />
                 </div>

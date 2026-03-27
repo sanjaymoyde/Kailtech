@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import axios from "utils/axios";
 import Select from "react-select";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // Local Imports
 import { Page } from "components/shared/Page";
@@ -304,13 +305,17 @@ export default function AddCreditNote() {
 
               {/* CN Date */}
               <FormRow label="CN Date" required error={errors.cndate}>
-                <input
-                  type="text"
-                  name="cndate"
+                <DatePicker
+                  options={{
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    allowInput: true,
+                  }}
                   value={formData.cndate}
-                  onChange={handleChange}
-                  onFocus={(e) => (e.target.type = "date")}
-                  onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
+                  onChange={(dates, dateStr) =>
+                    handleChange({ target: { name: "cndate", value: dateStr } })
+                  }
                   placeholder="CN Date"
                   className={inputClass(errors.cndate)}
                 />

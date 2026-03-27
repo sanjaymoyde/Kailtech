@@ -225,7 +225,6 @@ export default function ReviewByQaDetail() {
     allotted_items              = [],
     counts                      = {},
     permissions:   permsObj     = {},
-    available_actions           = [],
     meta                        = {},
   } = report;
 
@@ -258,12 +257,8 @@ export default function ReviewByQaDetail() {
   // PHP: if(perm 180||181) && $reportstatus<9 → Actions column
   const showActionsColumn = (canHod || canQa) && reportStatus < 9;
 
-  const showRetest = (row) =>
-    showActionsColumn && (
-      row.can_retest === true ||
-      permsObj?.can_view_actions === true ||
-      available_actions.some((a) => (typeof a === "object" ? a.id : a) === row.id)
-    );
+  // PHP: every row gets the button when permissions + reportstatus < 9 are satisfied
+  const showRetest = () => showActionsColumn;
 
   // PHP: $reportstatus==8 && in_array(181) && isset($hid) && !empty($hid)
   const showQaApprove = reportStatus === 8 && canQa && !!effectiveHid;

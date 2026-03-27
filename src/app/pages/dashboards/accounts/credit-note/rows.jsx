@@ -15,7 +15,6 @@ import { toast } from "sonner";
 // Local Imports
 import { Highlight } from "components/shared/Highlight";
 import { Avatar, Badge, Tag } from "components/ui";
-import { useLocaleContext } from "app/contexts/locale/context";
 import { ensureString } from "utils/ensureString";
 import { orderStatusOptions } from "./data";
 
@@ -30,10 +29,9 @@ export function OrderIdCell({ getValue }) {
 }
 
 export function DateCell({ getValue }) {
-  const { locale } = useLocaleContext();
   const timestapms = getValue();
-  const date = dayjs(timestapms).locale(locale).format("DD MMM YYYY");
-  const time = dayjs(timestapms).locale(locale).format("hh:mm A");
+  const date = dayjs(timestapms).format("DD/MM/YYYY");
+  const time = dayjs(timestapms).format("hh:mm A");
   return (
     <>
       <p className="font-medium">{date}</p>

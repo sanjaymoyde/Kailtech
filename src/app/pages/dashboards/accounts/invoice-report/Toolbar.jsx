@@ -3,6 +3,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { useNavigate } from "react-router";
 import Select from "react-select";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 export function Toolbar({ filters, onChange, onSearch, customers = [], bdList = [] }) {
   const navigate = useNavigate();
@@ -41,14 +42,15 @@ export function Toolbar({ filters, onChange, onSearch, customers = [], bdList = 
         className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto]"
       >
         {/* Start Date */}
-        <input
-          type="text"
-          value={startDate}
-          onChange={(e) => handleInput("startdate", e.target.value)}
-          onFocus={(e) => (e.target.type = "date")}
-          onBlur={(e) => {
-            if (!e.target.value) e.target.type = "text";
+        <DatePicker
+          options={{
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: true,
           }}
+          value={startDate}
+          onChange={(dates, dateStr) => handleInput("startdate", dateStr)}
           placeholder="Start Date"
           className={clsx(
             "h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none dark:border-dark-500 dark:bg-dark-800 dark:text-dark-100",
@@ -57,14 +59,15 @@ export function Toolbar({ filters, onChange, onSearch, customers = [], bdList = 
         />
 
         {/* End Date */}
-        <input
-          type="text"
-          value={endDate}
-          onChange={(e) => handleInput("enddate", e.target.value)}
-          onFocus={(e) => (e.target.type = "date")}
-          onBlur={(e) => {
-            if (!e.target.value) e.target.type = "text";
+        <DatePicker
+          options={{
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: true,
           }}
+          value={endDate}
+          onChange={(dates, dateStr) => handleInput("enddate", dateStr)}
           placeholder="End Date"
           className={clsx(
             "h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none dark:border-dark-500 dark:bg-dark-800 dark:text-dark-100",

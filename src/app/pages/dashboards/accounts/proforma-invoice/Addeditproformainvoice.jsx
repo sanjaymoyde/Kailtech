@@ -23,6 +23,7 @@ import axios from "utils/axios";
 import { toast } from "sonner";
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // ── Style tokens ──────────────────────────────────────────────────────────
 const inputCls =
@@ -696,10 +697,15 @@ export default function AddEditProformaInvoice() {
             </FormRow>
 
             <FormRow label="Ref Date" required>
-              <input
-                type="date"
+              <DatePicker
+                options={{
+                  dateFormat: "Y-m-d",
+                  altInput: true,
+                  altFormat: "d/m/Y",
+                  allowInput: true,
+                }}
                 value={form.refdate}
-                onChange={(e) => setField("refdate", e.target.value)}
+                onChange={(dates, dateStr) => setField("refdate", dateStr)}
                 className={inputCls}
               />
             </FormRow>

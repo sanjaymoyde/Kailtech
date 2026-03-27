@@ -15,11 +15,13 @@ export const columns = [
     id: "select",
     header: SelectHeader,
     cell: SelectCell,
+    enableColumnFilter: false,
   }),
   columnHelper.accessor((_row, index) => index + 1, {
     id: "s_no",
     header: "S No",
     cell: (info) => info.row.index + 1,
+    filterFn: "textContains",
   }),
 
   // ✅ ID
@@ -27,6 +29,7 @@ export const columns = [
     id: "id",
     header: "TRF Inward Entry No",
     cell: (info) => info.getValue(),
+    filterFn: "textContains",
   }),
 
   // ✅ TRF Entry No
@@ -38,11 +41,13 @@ export const columns = [
         {info.getValue()}
       </span>
     ),
+    filterFn: "textContains",
   }),
   // ✅ Status — PHP ke saath fully matched
   columnHelper.accessor("status", {
     id: "status",
     header: "Status",
+    filterFn: "statusExact",
     cell: (info) => {
       const status = Number(info.getValue());
 
@@ -299,5 +304,6 @@ export const columns = [
     id: "actions",
     header: "Actions",
     cell: RowActions,
+    filterFn: "alwaysTrue",
   }),
 ];

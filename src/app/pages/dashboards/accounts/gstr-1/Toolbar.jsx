@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { useNavigate } from "react-router";
 import axios from "utils/axios";
 import Select from "react-select";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 export function Toolbar({ table, filters, onChange, onSearch }) {
   const navigate = useNavigate();
@@ -118,11 +119,16 @@ export function Toolbar({ table, filters, onChange, onSearch }) {
         {/* Start Date */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-500 uppercase">Start Date</label>
-          <input
-            type="date"
-            max={today}
+          <DatePicker
+            options={{
+              dateFormat: "Y-m-d",
+              altInput: true,
+              altFormat: "d/m/Y",
+              allowInput: true,
+              maxDate: today,
+            }}
             value={filters.startdate}
-            onChange={(e) => onChange("startdate", e.target.value)}
+            onChange={(dates, dateStr) => onChange("startdate", dateStr)}
             className={clsx(
               "h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none bg-white",
               "focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500",
@@ -134,11 +140,16 @@ export function Toolbar({ table, filters, onChange, onSearch }) {
         {/* End Date */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-500 uppercase">End Date</label>
-          <input
-            type="date"
-            max={today}
+          <DatePicker
+            options={{
+              dateFormat: "Y-m-d",
+              altInput: true,
+              altFormat: "d/m/Y",
+              allowInput: true,
+              maxDate: today,
+            }}
             value={filters.enddate}
-            onChange={(e) => onChange("enddate", e.target.value)}
+            onChange={(dates, dateStr) => onChange("enddate", dateStr)}
             className={clsx(
               "h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none bg-white",
               "focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500",

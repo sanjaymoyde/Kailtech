@@ -180,7 +180,7 @@ function CustomerSearch({ customers, value, onChange }) {
         </button>
       )}
       {open && (
-        <div className="dark:bg-dark-800 dark:border-dark-600 absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-xl">
+      <div className="dark:bg-dark-800 dark:border-dark-600 absolute z-50 mt-1 max-h-60 min-w-[400px] overflow-y-auto rounded-md border border-gray-200 bg-white shadow-xl">
           {list.length === 0 ? (
             <div className="px-3 py-2 text-sm text-gray-400">
               No customers found

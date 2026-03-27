@@ -9,7 +9,7 @@ function usePermissions() {
 }
 
 export function RowActions({ row, table }) {
-  const [approving,  setApproving]  = useState(false);
+  const [approving, setApproving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const permissions = usePermissions();
 
@@ -56,9 +56,8 @@ export function RowActions({ row, table }) {
       <button
         onClick={handleApprove}
         disabled={approving}
-        className={`rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-red-700 ${
-          approving ? "cursor-not-allowed opacity-60" : ""
-        }`}
+        className={`rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-red-700 ${approving ? "cursor-not-allowed opacity-60" : ""
+          }`}
       >
         {approving ? "Approving…" : "Approve Witness"}
       </button>
@@ -66,9 +65,8 @@ export function RowActions({ row, table }) {
       <button
         onClick={handleCancel}
         disabled={cancelling}
-        className={`rounded bg-gray-500 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-gray-600 ${
-          cancelling ? "cursor-not-allowed opacity-60" : ""
-        }`}
+        className={`rounded bg-gray-500 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-gray-600 ${cancelling ? "cursor-not-allowed opacity-60" : ""
+          }`}
       >
         {cancelling ? "Cancelling…" : "Cancel Witness"}
       </button>
@@ -77,6 +75,6 @@ export function RowActions({ row, table }) {
 }
 
 RowActions.propTypes = {
-  row:   PropTypes.object,
+  row: PropTypes.object,
   table: PropTypes.object,
 };

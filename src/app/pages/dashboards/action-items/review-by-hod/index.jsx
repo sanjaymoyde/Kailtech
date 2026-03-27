@@ -26,7 +26,7 @@ import { useSkipper } from "utils/react-table/useSkipper";
 import { Toolbar } from "./Toolbar";
 import { columns } from "./columns.jsx";
 import { PaginationSection } from "components/shared/table/PaginationSection";
-import { SelectedRowsActions } from "./SelectedRowsActions";
+import { SelectedRowsActions } from "components/shared/table/SelectedRowsActions";
 import { useThemeContext } from "app/contexts/theme/context";
 import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
@@ -412,7 +412,7 @@ export default function AcceptSample() {
                 </Table>
               </div>
 
-              <SelectedRowsActions table={table} />
+              <SelectedRowsActions table={table} title="Review By HOD" showDelete={false} />
               {table.getCoreRowModel().rows.length > 0 && (
                 <div className={clsx(
                   "px-4 pb-4 sm:px-5 sm:pt-4",

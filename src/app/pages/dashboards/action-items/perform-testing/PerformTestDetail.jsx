@@ -566,7 +566,7 @@ function ActionCell({ row, onRefresh }) {
                 href={`/dashboards/action-items/perform-testing/test-input/${testeventdata_id}`}
                 className="text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
               >
-                Test Input
+                Result submitted
               </a>
             );
           } else {
@@ -599,7 +599,7 @@ function ActionCell({ row, onRefresh }) {
               href={`/dashboards/action-items/perform-testing/test-input/${testeventdata_id}`}
               className="text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
             >
-              Test Input
+              Result submitted
             </a>
           );
         } else {

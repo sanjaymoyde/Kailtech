@@ -11,27 +11,20 @@ function usePermissions() {
 }
 
 export function RowActions({ row, table }) {
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
   const permissions = usePermissions();
 
   const {
     id,
-    hid,
     trf,
     view_report,       // "https://…/testreports/testreport{id}.pdf"
     view_report_with,  // "https://…/testreports/testreportlh{id}.pdf"
   } = row.original;
 
   const [regenerating, setRegenerating] = useState(false);
-  const [regenResult,  setRegenResult]  = useState(null);
+  const [regenResult, setRegenResult] = useState(null);
 
-  // ── Navigate to Final Report view ─────────────────────────────────────
-  // PHP: href="testreport.php?hakuna=tid&what=hid"
-  const handleFinalReport = () => {
-    navigate(
-      `/dashboards/action-items/signed-reports/view?tid=${id}&hid=${hid ?? ""}`
-    );
-  };
+
 
   // ── Regenerate Cache Copy ──────────────────────────────────────────────
   // GET /actionitem/Regeneratetest-Cache-Copy/:tid/:trf
@@ -40,10 +33,10 @@ export function RowActions({ row, table }) {
       setRegenerating(true);
       setRegenResult(null);
       const res = await axios.post(`/actionitem/Regeneratetest-Cache-Copy/${id}/${trf ?? ""}`);
-      const ok  = res.data?.status === "true" || res.data?.status === true;
+      const ok = res.data?.status === "true" || res.data?.status === true;
       // Update view_report links in table row if returned
       if (ok && res.data?.pdf) {
-        table?.options?.meta?.updateData?.(row.index, "view_report",      res.data.pdf);
+        table?.options?.meta?.updateData?.(row.index, "view_report", res.data.pdf);
         table?.options?.meta?.updateData?.(row.index, "view_report_with", res.data.lpdf);
       }
       setRegenResult({ ok, message: ok ? "Cache regenerated successfully." : "Regeneration failed." });
@@ -72,9 +65,6 @@ export function RowActions({ row, table }) {
     );
   };
 
-  // ── Determine Final Report button visibility ───────────────────────────
-  // PHP: if trfstatus==10 → show Final Report (always for signed reports)
-  const showFinalReport = true; // all signed reports have status=10
 
   // ── View Report links (only if PDF exists) ─────────────────────────────
   // PHP: if(file_exists($fileWithFullPath))
@@ -83,15 +73,8 @@ export function RowActions({ row, table }) {
   return (
     <div className="flex flex-col gap-1.5">
 
-      {/* ── Final Report ──────────────────────────────────────────── */}
-      {showFinalReport && (
-        <button
-          onClick={handleFinalReport}
-          className="rounded-md bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-400"
-        >
-          Final Report
-        </button>
-      )}
+
+
 
       {/* ── Upload Amended Report — perm 267 ──────────────────────── */}
       {permissions.includes(267) && (
@@ -146,11 +129,10 @@ export function RowActions({ row, table }) {
       {/* Regen result toast */}
       {regenResult && (
         <p
-          className={`mt-1 rounded px-2 py-1 text-xs font-medium ${
-            regenResult.ok
+          className={`mt-1 rounded px-2 py-1 text-xs font-medium ${regenResult.ok
               ? "bg-green-50 text-green-700"
               : "bg-red-50 text-red-600"
-          }`}
+            }`}
         >
           {regenResult.ok ? "✓ " : "⚠ "}{regenResult.message}
         </p>
@@ -160,6 +142,6 @@ export function RowActions({ row, table }) {
 }
 
 RowActions.propTypes = {
-  row:   PropTypes.object.isRequired,
+  row: PropTypes.object.isRequired,
   table: PropTypes.object,
 };

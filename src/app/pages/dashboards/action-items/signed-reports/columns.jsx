@@ -33,8 +33,13 @@ export const columns = [
     id: "pname",
     header: "Product",
     enableSorting: true,
+    size: 200,
+    maxSize: 250,
     cell: (info) => (
-      <span className="text-gray-800 dark:text-dark-100">
+      <span 
+        className="text-gray-800 dark:text-dark-100 block"
+        style={{ maxWidth: "250px", whiteSpace: "normal", wordBreak: "break-word" }}
+      >
         {info.getValue() ?? "—"}
       </span>
     ),

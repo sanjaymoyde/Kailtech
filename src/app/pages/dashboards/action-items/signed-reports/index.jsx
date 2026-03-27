@@ -149,7 +149,7 @@ export default function SignedReports() {
   // ── Access check — PHP: if(!in_array(137, $permissions)) ─────────────────
   if (!permissions.includes(137)) {
     return (
-      <Page title="TRF Products">
+      <Page title="Final Reports Signed">
         <div className="flex h-60 items-center justify-center rounded-xl border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
           <p className="text-sm font-medium text-red-600 dark:text-red-400">
             ⛔ Access Denied — Permission 137 required
@@ -161,7 +161,7 @@ export default function SignedReports() {
 
   if (loading) {
     return (
-      <Page title="TRF Products">
+      <Page title="Final Reports Signed">
         <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">
           <svg className="h-5 w-5 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -174,7 +174,7 @@ export default function SignedReports() {
   }
 
   return (
-    <Page title="TRF Products">
+    <Page title="Final Reports Signed">
       <div className="transition-content w-full pb-5">
         <div
           className={clsx(

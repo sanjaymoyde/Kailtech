@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router";
 import axios from "utils/axios";
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 const toInputDate = (value) => {
   if (!value || value === "0000-00-00") return "";
@@ -286,14 +287,19 @@ export default function EditPastInvoice() {
                     {/* Date */}
                     <td className="border border-gray-300 p-2 dark:border-dark-500">
                       <input type="hidden" name="statecode" value={form.statecode} />
-                      <input
-                        type="date"
-                        name="invoicedate"
+                      <DatePicker
+                        options={{
+                          dateFormat: "Y-m-d",
+                          altInput: true,
+                          altFormat: "d/m/Y",
+                          allowInput: true,
+                        }}
                         value={form.invoicedate}
-                        onChange={handleChange}
+                        onChange={(dates, dateStr) =>
+                          setForm((prev) => recalculate({ ...prev, invoicedate: dateStr }))
+                        }
                         className={inputCls}
                         style={{ minWidth: 110 }}
-                        max="2030-12-31"
                       />
                     </td>
                     {/* Bill No */}

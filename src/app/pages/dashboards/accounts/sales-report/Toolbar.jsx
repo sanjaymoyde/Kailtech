@@ -3,6 +3,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import Select from "react-select";
 import { useNavigate } from "react-router";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // ----------------------------------------------------------------------
 
@@ -86,14 +87,15 @@ export function Toolbar({ filters, onChange, onSearch, metadata }) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Start Date</label>
-            <input
-              type="text"
-              value={startDate}
-              onChange={(e) => handleInput("startdate", e.target.value)}
-              onFocus={(e) => (e.target.type = "date")}
-              onBlur={(e) => {
-                if (!e.target.value) e.target.type = "text";
+            <DatePicker
+              options={{
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d/m/Y",
+                allowInput: true,
               }}
+              value={startDate}
+              onChange={(dates, dateStr) => handleInput("startdate", dateStr)}
               placeholder="Start Date"
               className={clsx(
                 "h-10 w-full rounded border border-gray-300 bg-white px-3 text-sm outline-none",
@@ -105,14 +107,15 @@ export function Toolbar({ filters, onChange, onSearch, metadata }) {
 
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">End Date</label>
-            <input
-              type="text"
-              value={endDate}
-              onChange={(e) => handleInput("enddate", e.target.value)}
-              onFocus={(e) => (e.target.type = "date")}
-              onBlur={(e) => {
-                if (!e.target.value) e.target.type = "text";
+            <DatePicker
+              options={{
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d/m/Y",
+                allowInput: true,
               }}
+              value={endDate}
+              onChange={(dates, dateStr) => handleInput("enddate", dateStr)}
               placeholder="End Date"
               className={clsx(
                 "h-10 w-full rounded border border-gray-300 bg-white px-3 text-sm outline-none",

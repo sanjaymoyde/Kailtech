@@ -1,6 +1,6 @@
 // rowActions.js — Unbilled Testing Items
-// PHP me koi explicit action button nahi tha
-// React me "View TRF" button add kiya hai — TRF detail page pe navigate karta hai
+// PHP: No explicit action button existed
+// React: Added "View TRF" button to navigate to the TRF detail page
 
 import { useNavigate } from "react-router";
 
