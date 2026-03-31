@@ -1,11 +1,30 @@
-import { Navigate } from "react-router";
+import { Navigate, useLocation, useOutlet } from "react-router";
 
 // Local Imports
 import { AppLayout } from "app/layouts/AppLayout";
 import { DynamicLayout } from "app/layouts/DynamicLayout";
+import {
+  canAccessDashboardsRoute,
+  getStoredPermissions,
+} from "app/navigation/dashboards";
 import AuthGuard from "middleware/AuthGuard";
 
 // ----------------------------------------------------------------------
+
+function DashboardPermissionGuard() {
+  const outlet = useOutlet();
+  const { pathname, search } = useLocation();
+  const permissions = getStoredPermissions();
+
+  if (
+    pathname.startsWith("/dashboards") &&
+    !canAccessDashboardsRoute({ pathname, search, permissions })
+  ) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+
+  return <>{outlet}</>;
+}
 
 const protectedRoutes = {
   id: "protected",
@@ -21,6 +40,7 @@ const protectedRoutes = {
         },
         {
           path: "dashboards",
+          Component: DashboardPermissionGuard,
           children: [
             {
               index: true,
@@ -2134,26 +2154,6 @@ const protectedRoutes = {
                         ).default,
                       }),
                     },
-                    {
-                      path: "print-slip/:id",
-                      lazy: async () => ({
-                        Component: (
-                          await import(
-                            "app/pages/dashboards/testing/trfs-starts-jobs/PrintSlip"
-                          )
-                        ).default,
-                      }),
-                    },
-                    {
-                      path: "slip/:id",
-                      lazy: async () => ({
-                        Component: (
-                          await import(
-                            "app/pages/dashboards/testing/trfs-starts-jobs/Slip"
-                          )
-                        ).default,
-                      }),
-                    },
                   ],
                 },
                 {
@@ -2586,14 +2586,6 @@ const protectedRoutes = {
                   }),
                 },
                 {
-                  path: "website-enquiry",
-                  lazy: async () => ({
-                    Component: (
-                      await import("app/pages/dashboards/sales/website-enquiry")
-                    ).default,
-                  }),
-                },
-                {
                   path: "test-packages/add",
                   lazy: async () => ({
                     Component: (
@@ -2808,7 +2800,6 @@ const protectedRoutes = {
                     ).default,
                   }),
                 },
-
                 {
                   path: "calibration-invoice-list",
                   lazy: async () => ({
@@ -2834,7 +2825,7 @@ const protectedRoutes = {
                   lazy: async () => ({
                     Component: (
                       await import(
-                        "app/pages/dashboards/accounts/calibration-invoice-list/EditCalibrationInvoice"
+                        "app/pages/dashboards/accounts/calibration-invoice-list/Addcalibrationinvoice"
                       )
                     ).default,
                   }),
@@ -2844,112 +2835,56 @@ const protectedRoutes = {
                   lazy: async () => ({
                     Component: (
                       await import(
-                        "app/pages/dashboards/accounts/calibration-invoice-list/AddCalibrationInvoice"
-                      )
-                    ).default,
-                  }),
-                },
-                {
-                  path: "calibration-invoice-list/add-advance",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/calibration-invoice-list/AddAdvanceCalibrationInvoice"
-                      )
-                    ).default,
-                  }),
-                },
-                {
-                  path: "calibration-invoice-list/add-foc",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/calibration-invoice-list/AddFOCCalibrationInvoice"
+                        "app/pages/dashboards/accounts/calibration-invoice-list/Addcalibrationinvoice"
                       )
                     ).default,
                   }),
                 },
                 {
                   path: "testing-invoices",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices"
-                      )
-                    ).default,
-                  }),
+                  children: [
+                    {
+                      path: "",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/AddTestingInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add-advance",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/AddTestingAdvanceInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "add-foc",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/AddTestingFOCInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                  ],
                 },
-                {
-                  path: "testing-invoices/create",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices/AddTestingInvoice"
-                      )
-                    ).default,
-                  }),
-                },
-                {
-                  path: "testing-invoices/create-advance",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices/AddTestingAdvanceInvoice"
-                      )
-                    ).default,
-                  }),
-                },
-                {
-                  path: "testing-invoices/view/:id",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices/ViewInvoiceCalibration"
-                      )
-                    ).default,
-                  }),
-                },
-                {
-                  path: "testing-invoices/view-detailed/:id",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices/ViewDetailedInvoice"
-                      )
-                    ).default,
-                  }),
-                },
-                {
-                  path: "testing-invoices/view-itemized/:id",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices/ViewItemizedBill"
-                      )
-                    ).default,
-                  }),
-                },
-                {
-                  path: "testing-invoices/edit/:id",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices/EditTestingInvoice"
-                      )
-                    ).default,
-                  }),
-                },
-                {
-                  path: "testing-invoices/create-foc",
-                  lazy: async () => ({
-                    Component: (
-                      await import(
-                        "app/pages/dashboards/accounts/testing-invoices/AddTestingFOCInvoice"
-                      )
-                    ).default,
-                  }),
-                },
-
                 {
                   path: "past-invoices",
                   children: [

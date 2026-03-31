@@ -17,9 +17,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import { parseUserPermissions } from "utils/permissions";
 
 // Local Imports
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -79,6 +81,17 @@ function PageSpinner() {
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function UnbilledTestingItems() {
   const { cardSkin } = useThemeContext();
+  const navigate = useNavigate();
+
+  // Redirect if permission 143 is missing (Page access restriction from PHP)
+  useMemo(() => {
+    if (typeof window === "undefined") return [];
+    const perms = parseUserPermissions(localStorage.getItem("userPermissions"));
+    if (perms.length > 0 && !perms.includes(143)) {
+      setTimeout(() => navigate("/"), 0);
+    }
+    return perms;
+  }, [navigate]);
 
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);

@@ -9,7 +9,10 @@ import SimpleBar from "simplebar-react";
 
 // Local Imports
 import { navigation } from "app/navigation";
-import { generateDashboardsConfig } from "app/navigation/dashboards"; // Add this
+import {
+  generateDashboardsConfig,
+  getStoredPermissions,
+} from "app/navigation/dashboards";
 import { useLabsContext } from "app/contexts/labs/context"; // Add this
 import { Group } from "./Group";
 import { Accordion } from "components/ui";
@@ -20,24 +23,25 @@ import { isRouteActive } from "utils/isRouteActive";
 export function Menu() {
   const { pathname } = useLocation();
   const { ref } = useRef();
-  
+
   // ✅ Fetch labs data from context
   const { labs, loading } = useLabsContext();
 
   // ✅ Generate dynamic navigation config
   const dynamicNavigation = useMemo(() => {
+    const permissions = getStoredPermissions();
     // Find the dashboards item in navigation array
     const dashboardsIndex = navigation.findIndex(item => item.id === 'dashboards');
-    
+
     if (dashboardsIndex === -1) return navigation;
-    
+
     // Generate dynamic dashboards config with labs data
-    const updatedDashboards = generateDashboardsConfig(labs);
-    
+    const updatedDashboards = generateDashboardsConfig(labs, permissions);
+
     // Replace the static dashboards with dynamic one
     const newNavigation = [...navigation];
     newNavigation[dashboardsIndex] = updatedDashboards;
-    
+
     return newNavigation;
   }, [labs]);
 

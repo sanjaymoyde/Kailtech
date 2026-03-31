@@ -18,6 +18,7 @@ export function Toolbar({
   customers,
   bdList,
   onSearch,
+  permissions = [],
 }) {
   const isFullScreenEnabled = table.getState().tableSettings.enableFullScreen;
   const navigate = useNavigate();
@@ -41,22 +42,26 @@ export function Toolbar({
           </h2>
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={() => navigate("/dashboards/accounts/payment-list/create")}
-            className="h-9 rounded-md px-4 text-sm font-medium"
-            color="primary"
-          >
-            + Payment Received
-          </Button>
-          <Button
-            onClick={() =>
-              navigate("/dashboards/accounts/payment-list/create?advance=Yes")
-            }
-            className="h-9 rounded-md px-4 text-sm font-medium"
-            color="info"
-          >
-            + Advance Payment Received
-          </Button>
+          {permissions.includes(274) && (
+            <>
+              <Button
+                onClick={() => navigate("/dashboards/accounts/payment-list/create")}
+                className="h-9 rounded-md px-4 text-sm font-medium"
+                color="primary"
+              >
+                + Payment Received
+              </Button>
+              <Button
+                onClick={() =>
+                  navigate("/dashboards/accounts/payment-list/create?advance=Yes")
+                }
+                className="h-9 rounded-md px-4 text-sm font-medium"
+                color="info"
+              >
+                + Advance Payment Received
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -195,4 +200,5 @@ Toolbar.propTypes = {
   customers: PropTypes.array,
   bdList: PropTypes.array,
   onSearch: PropTypes.func,
+  permissions: PropTypes.array,
 };

@@ -9,11 +9,12 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router";
 import axios from "utils/axios";
 import { toast } from "sonner";
 import dayjs from "dayjs";
+import { parseUserPermissions } from "utils/permissions";
 
 // Local Imports
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -34,9 +35,7 @@ const fmtDate = (d) => {
   return dt.format("DD/MM/YYYY");
 };
 
-const PERMISSIONS = [274, 275, 276]; // Replace with real auth
-
-// ── Delete action cell ────────────────────────────────────────────────────────
+// ── Row actions cell ──────────────────────────────────────────────────────────
 function DeleteButton({ row, onDelete }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -95,7 +94,11 @@ function DeleteButton({ row, onDelete }) {
 // ── Row actions cell ──────────────────────────────────────────────────────────
 function RowActions({ row, table }) {
   const navigate = useNavigate();
-  const canDelete = PERMISSIONS.includes(276);
+  const permissions = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    return parseUserPermissions(localStorage.getItem("userPermissions"));
+  }, []);
+  const canDelete = permissions.includes(276);
 
   const onDelete = () => {
     table.options.meta?.deleteRow(row);

@@ -11,11 +11,12 @@ import {
 } from "@tanstack/react-table";
 import clsx from "clsx";
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router";
 import axios from "utils/axios";
 import { parseUserPermissions } from "utils/permissions";
 
 // Local Imports
-import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
+import { Table, Card, THead, TBody, TFoot, Th, Tr, Td } from "components/ui";
 import { TableSortIcon } from "components/shared/table/TableSortIcon";
 import { Page } from "components/shared/Page";
 import { useLockScrollbar, useDidUpdate, useLocalStorage } from "hooks";
@@ -35,10 +36,18 @@ const isSafari = getUserAgentBrowser() === "Safari";
 // PHP permission IDs replicated — adjust to your auth system
 export default function PaymentList() {
   const { cardSkin } = useThemeContext();
+  const navigate = useNavigate();
   const permissions = useMemo(() => {
     if (typeof window === "undefined") return [];
-    return parseUserPermissions(localStorage.getItem("userPermissions"));
-  }, []);
+    const perms = parseUserPermissions(localStorage.getItem("userPermissions"));
+    
+    // Redirect if permission 275 is missing (Page access restriction from PHP)
+    if (perms.length > 0 && !perms.includes(275)) {
+      setTimeout(() => navigate("/"), 0);
+    }
+    
+    return perms;
+  }, [navigate]);
 
   const [payments, setPayments] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -73,7 +82,6 @@ export default function PaymentList() {
 
   const fetchBdList = async () => {
     try {
-      // Adjust endpoint to match your backend
       const res = await axios.get("/people/get-customer-bd");
       if (
         (res.data.status === true || res.data.status === "true") &&
@@ -233,6 +241,7 @@ export default function PaymentList() {
             customers={customers}
             bdList={bdList}
             onSearch={handleSearch}
+            permissions={permissions}
           />
 
           <div
@@ -346,6 +355,50 @@ export default function PaymentList() {
                       </Tr>
                     ))}
                   </TBody>
+                  {table.getRowModel().rows.length > 0 && (
+                    <TFoot className="dark:bg-dark-800 bg-gray-100 font-semibold text-gray-800">
+                      <Tr>
+                        <Td /> {/* select */}
+                        <Td className="whitespace-nowrap">This Page Total</Td> {/* s_no */}
+                        <Td colSpan={9} /> {/* empty space */}
+                        <Td className="whitespace-nowrap">Total Amount</Td> {/* utr_no column */}
+                        <Td>
+                          {table
+                            .getRowModel()
+                            .rows.reduce(
+                              (sum, row) =>
+                                sum +
+                                (parseFloat(row.original.paymentamount) || 0),
+                              0,
+                            )
+                            .toFixed(2)}
+                        </Td>
+                        <Td>
+                          {table
+                            .getRowModel()
+                            .rows.reduce(
+                              (sum, row) =>
+                                sum + (parseFloat(row.original.tds) || 0),
+                              0,
+                            )
+                            .toFixed(2)}
+                        </Td>
+                        <Td>
+                          {table
+                            .getRowModel()
+                            .rows.reduce(
+                              (sum, row) =>
+                                sum +
+                                (parseFloat(row.original.totalinvoiceamount) ||
+                                  0),
+                              0,
+                            )
+                            .toFixed(2)}
+                        </Td>
+                        <Td /> {/* actions */}
+                      </Tr>
+                    </TFoot>
+                  )}
                 </Table>
               </div>
 

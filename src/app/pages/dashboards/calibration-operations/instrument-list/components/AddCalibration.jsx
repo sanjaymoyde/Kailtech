@@ -19,10 +19,21 @@ export default function AddCalibration({
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [labToCalibrateOptions, setLabToCalibrateOptions] = useState([]);
-  const [fieldnameOptions, setFieldnameOptions] = useState([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uucRepeatableValue, setUucRepeatableValue] = useState("");
   const [masterRepeatableValue, setMasterRepeatableValue] = useState("");
+  const [functionOptions, setFunctionOptions] = useState([]);
+  const [allFunctionsData, setAllFunctionsData] = useState({});
+
+  // ✅ Source table list for two-tier dropdown
+  const tableList = [
+    { value: "mastermatrix", label: "Master Matrix" },
+    { value: "newcrfcalibrationpoint", label: "CRF Calibration Point" },
+    { value: "new_summary", label: "Summary" },
+    { value: "new_crfmatrix", label: "CRF Matrix" },
+    { value: "cmcscope", label: "CMC Scope" },
+  ];
 
   const data = [
     { type: "Operator", symbol: "+", name: "Addition", example: "$a + $b" },
@@ -137,7 +148,6 @@ export default function AddCalibration({
       console.error("No instrumentId provided to Edit component");
     }
     fetchLabOptions();
-    fetchFieldnameOptions();
   }, [instrumentId]);
 
   useEffect(() => {
@@ -153,6 +163,42 @@ export default function AddCalibration({
       handleSeparateMode();
     }
   }, [rows3[0]?.setpoint?.value, masterRepeatableValue, uucRepeatableValue]);
+
+  useEffect(() => {
+    const currentSetpoint = rows3[0]?.setpoint?.value;
+    const repeatable =
+      currentSetpoint === "master" ? masterRepeatableValue : uucRepeatableValue;
+
+    if (currentSetpoint && repeatable && repeatable > 0) {
+      fetchFunctionFormulas(currentSetpoint, repeatable);
+    }
+  }, [rows3[0]?.setpoint?.value, masterRepeatableValue, uucRepeatableValue]);
+
+  const fetchFunctionFormulas = async (setpoint, repeatable) => {
+    if (!setpoint || !repeatable) return;
+    try {
+      const authToken = localStorage.getItem("authToken");
+      const response = await axios.get(
+        `/observationsetting/get-function-formula?setpoint=${setpoint}&repeatable=${repeatable}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      if (response.data.success) {
+        setAllFunctionsData(response.data.functions);
+        const options = Object.keys(response.data.functions).map((key) => ({
+          value: key,
+          label: key,
+        }));
+        setFunctionOptions(options);
+      }
+    } catch (error) {
+      console.error("Error fetching function formulas:", error);
+    }
+  };
 
   const handleMasterMode = () => {
     if (!masterRepeatableValue) {
@@ -218,7 +264,8 @@ export default function AddCalibration({
     }
   };
 
-  const fetchFieldnameOptions = async () => {
+  const fetchFieldnameOptions = async (tableName) => {
+    if (!tableName) return [];
     try {
       const authToken = localStorage.getItem("authToken");
       const response = await axios.get(
@@ -231,19 +278,41 @@ export default function AddCalibration({
         },
       );
 
-      if (response.data.success && Array.isArray(response.data.new_summary)) {
-        const options = response.data.new_summary.map((fieldname) => ({
+      if (!response.data.success) return [];
+
+      const data = response.data;
+      let targetList = [];
+
+      switch (tableName) {
+        case "new_summary":
+          targetList = data.new_summary;
+          break;
+        case "mastermatrix":
+          targetList = data.mastermatrix;
+          break;
+        case "newcrfcalibrationpoint":
+          targetList = data.newcrfcalibrationpoint;
+          break;
+        case "new_crfmatrix":
+          targetList = data.new_crfmatrix;
+          break;
+        case "cmcscope":
+          targetList = data.cmcscope;
+          break;
+        default:
+          targetList = [];
+      }
+
+      if (Array.isArray(targetList)) {
+        return targetList.map((fieldname) => ({
           value: fieldname,
           label: fieldname,
         }));
-        setFieldnameOptions(options);
-      } else {
-        console.warn("No new_summary found:", response.data);
-        setFieldnameOptions([]);
       }
+      return [];
     } catch (error) {
       console.error("Error fetching fieldname options:", error);
-      setFieldnameOptions([]);
+      return [];
     }
   };
 
@@ -266,17 +335,29 @@ export default function AddCalibration({
       if (response.data.success) {
         const data = response.data.data;
 
-        const table1Data = data.resultsetting.calibration_settings.map(
-          (item, index) => ({
-            id: index + 1,
-            checked: item.checkbox === "yes",
-            fieldname: item.fieldname
-              ? { value: item.fieldname, label: item.fieldname }
-              : null,
-            fieldHeading: item.field_heading,
-            SetVariable: item.SetVariable,
-            formula: item.formula,
-            fieldPosition: item.field_position.toString(),
+        const table1Data = await Promise.all(
+          data.resultsetting.calibration_settings.map(async (item, index) => {
+            const tableObj = tableList.find((t) => t.value === item.fieldfrom);
+            let fieldOptions = [];
+            if (item.fieldfrom) {
+              fieldOptions = await fetchFieldnameOptions(item.fieldfrom);
+            }
+
+            return {
+              id: index + 1,
+              checked: item.checkbox === "yes",
+              selectedTable: tableObj || null,
+              fieldname: item.fieldname
+                ? { value: item.fieldname, label: item.fieldname }
+                : null,
+              fieldnameOptions: fieldOptions,
+              fieldfrom: item.fieldfrom || "",
+              fieldHeading: item.field_heading || "",
+              SetVariable: item.SetVariable || "",
+              formula: item.formula || "",
+              fieldPosition: item.field_position != null ? item.field_position.toString() : "",
+              selectedFunction: null,
+            };
           }),
         );
 
@@ -284,10 +365,10 @@ export default function AddCalibration({
           (item, index) => ({
             id: index + 1,
             checked: item.checkbox === "yes",
-            fieldname: item.fieldname,
-            setvariable: item.setvariable,
-            formula: item.formula,
-            fieldHeading: item.field_heading,
+            fieldname: item.fieldname || "",
+            setvariable: item.setvariable || "",
+            formula: item.formula || "",
+            fieldHeading: item.field_heading || "",
           }),
         );
 
@@ -371,11 +452,15 @@ export default function AddCalibration({
   const createEmptyRow1 = (id) => ({
     id,
     checked: true,
+    selectedTable: null,
     fieldname: null,
+    fieldnameOptions: [],
+    fieldfrom: "",
     fieldHeading: "",
     SetVariable: "",
     formula: "",
     fieldPosition: "",
+    selectedFunction: null,
   });
 
   const createEmptyRow2 = (id, type = "uuc") => {
@@ -438,6 +523,66 @@ export default function AddCalibration({
         row.id === id ? { ...row, [field]: selectedOption } : row,
       ),
     );
+  };
+
+  const handleTableSelection1 = async (id, selectedOption) => {
+    if (selectedOption) {
+      const options = await fetchFieldnameOptions(selectedOption.value);
+      setRows1((prevRows) =>
+        prevRows.map((row) =>
+          row.id === id
+            ? {
+              ...row,
+              selectedTable: selectedOption,
+              fieldfrom: selectedOption.value,
+              fieldname: null,
+              fieldnameOptions: options,
+            }
+            : row,
+        ),
+      );
+    } else {
+      setRows1((prevRows) =>
+        prevRows.map((row) =>
+          row.id === id
+            ? {
+              ...row,
+              selectedTable: null,
+              fieldfrom: "",
+              fieldname: null,
+              fieldnameOptions: [],
+            }
+            : row,
+        ),
+      );
+    }
+  };
+
+  const handleFunctionSelect = (rowId, selectedOption) => {
+    if (!selectedOption) {
+      setRows1(
+        rows1.map((row) =>
+          row.id === rowId ? { ...row, selectedFunction: null } : row,
+        ),
+      );
+      return;
+    }
+
+    const funcData = allFunctionsData[selectedOption.value];
+    if (funcData) {
+      setRows1(
+        rows1.map((row) =>
+          row.id === rowId
+            ? {
+              ...row,
+              selectedFunction: selectedOption,
+              SetVariable: funcData.variable,
+              formula: funcData.formula,
+            }
+            : row,
+        ),
+      );
+    }
   };
 
   const addRow1 = () => {
@@ -558,6 +703,7 @@ export default function AddCalibration({
         .filter((row) => row.fieldname && row.fieldname.value)
         .map((row) => ({
           fieldname: row.fieldname.value,
+          fieldfrom: row.fieldfrom || "",
           SetVariable: row.SetVariable,
           formula: row.formula,
           field_heading: row.fieldHeading,
@@ -857,28 +1003,56 @@ export default function AddCalibration({
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <Select
-                            value={row.fieldname}
-                            onChange={(selectedOption) =>
-                              handleSelectChange1(
-                                row.id,
-                                "fieldname",
-                                selectedOption,
-                              )
-                            }
-                            options={fieldnameOptions}
-                            placeholder="Select..."
-                            isClearable
-                            styles={customSelectStyles}
-                            menuPortalTarget={document.body}
-                            menuPosition="fixed"
-                          />
+                          <div className="flex flex-col gap-2">
+                            <Select
+                              value={row.selectedTable}
+                              onChange={(selectedOption) =>
+                                handleTableSelection1(row.id, selectedOption)
+                              }
+                              options={tableList}
+                              placeholder="Select table..."
+                              isClearable
+                              styles={customSelectStyles}
+                              menuPortalTarget={document.body}
+                              menuPosition="fixed"
+                            />
+                            {row.selectedTable && (
+                              <Select
+                                value={row.fieldname}
+                                onChange={(selectedOption) =>
+                                  handleSelectChange1(
+                                    row.id,
+                                    "fieldname",
+                                    selectedOption,
+                                  )
+                                }
+                                options={row.fieldnameOptions || []}
+                                placeholder="Select fieldname..."
+                                isClearable
+                                styles={customSelectStyles}
+                                menuPortalTarget={document.body}
+                                menuPosition="fixed"
+                              />
+                            )}
+                            <Select
+                              value={row.selectedFunction}
+                              onChange={(selectedOption) =>
+                                handleFunctionSelect(row.id, selectedOption)
+                              }
+                              options={functionOptions}
+                              placeholder="Select Function..."
+                              isClearable
+                              styles={customSelectStyles}
+                              menuPortalTarget={document.body}
+                              menuPosition="fixed"
+                            />
+                          </div>
                         </td>
                         {/* Set Variable */}
                         <td className="px-4 py-3">
                           <input
                             type="text"
-                            value={row.SetVariable}
+                            value={row.SetVariable || ""}
                             onChange={(e) =>
                               handleInputChange1(
                                 row.id,
@@ -908,7 +1082,7 @@ export default function AddCalibration({
                         <td className="px-4 py-3">
                           <input
                             type="text"
-                            value={row.fieldPosition}
+                            value={row.fieldPosition || ""}
                             onChange={(e) =>
                               handleInputChange1(
                                 row.id,
