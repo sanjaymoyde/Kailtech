@@ -9,8 +9,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { useLocation, useSearchParams } from "react-router";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "utils/axios";
 
 // Local Imports
@@ -36,39 +37,59 @@ export default function ProductsDatatableV1() {
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const [lastModifiedId, setLastModifiedId] = useLocalStorage("test-parameters-last-modified-id", null);
 
-  // ✅ Fetch products from API
+  // Update persistent lastModifiedId when navigation state changes
+  useEffect(() => {
+    const idFromNav = searchParams.get('updatedId') || location.state?.updatedId;
+    if (idFromNav) {
+      setLastModifiedId(parseInt(idFromNav));
+    }
+  }, [location.state, searchParams, setLastModifiedId]);
+
+  // ✅ Fetch products from API (Memoized to prevent unnecessary re-runs)
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("/testing/get-perameter-list");
+
+      // Check if response has the expected structure
+      let data = [];
+      if (response.data && Array.isArray(response.data)) {
+        data = [...response.data];
+      } else if (response.data.status && Array.isArray(response.data.data)) {
+        data = [...response.data.data];
+      } else {
+        console.warn("Unexpected response structure:", response.data);
+      }
+
+      // 1️⃣ Default Sort: Highest ID first (Newest at top) - Optional but good practice
+      data.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+
+      // 2️⃣ "Edit Mode" Sort: Move the specifically updated item (Persistent) to the ABSOLUTE top
+      if (lastModifiedId && data.length > 0) {
+        const index = data.findIndex(p => parseInt(p.id) === parseInt(lastModifiedId));
+        if (index > -1) {
+          const [item] = data.splice(index, 1);
+          data.unshift(item);
+        }
+      }
+
+      setProducts(data);
+
+    } catch (err) {
+      console.error("Error fetching product list:", err);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [lastModifiedId]); // Depend on lastModifiedId
+
   useEffect(() => {
     fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-  try {
-    setLoading(true);
-    const response = await axios.get("/testing/get-perameter-list");
-    
-    console.log("API response:", response.data);
-
-    // Check if response has the expected structure
-    if (response.data && Array.isArray(response.data)) {
-      // If the API directly returns an array
-      setProducts(response.data);
-    } else if (response.data.status && Array.isArray(response.data.data)) {
-      // If the API returns {status: true, data: [...]}
-      setProducts(response.data.data);
-    } else {
-      console.warn("Unexpected response structure:", response.data);
-      setProducts([]);
-    }
-
-  } catch (err) {
-    console.error("Error fetching product list:", err);
-    // Optionally show an error message to the user
-    setProducts([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  }, [fetchProducts, lastModifiedId]); // Re-run if lastModifiedId changes
 
   const [tableSettings, setTableSettings] = useState({
     enableFullScreen: false,
@@ -175,7 +196,7 @@ export default function ProductsDatatableV1() {
           className={clsx(
             "flex h-full w-full flex-col",
             tableSettings.enableFullScreen &&
-              "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
+            "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
           )}
         >
           <Toolbar table={table} />
@@ -210,9 +231,9 @@ export default function ProductsDatatableV1() {
                               "bg-gray-200 font-semibold uppercase text-gray-800 dark:bg-dark-800 dark:text-dark-100 first:ltr:rounded-tl-lg last:ltr:rounded-tr-lg first:rtl:rounded-tr-lg last:rtl:rounded-tl-lg",
                               header.column.getCanPin() && [
                                 header.column.getIsPinned() === "left" &&
-                                  "sticky z-2 ltr:left-0 rtl:right-0",
+                                "sticky z-2 ltr:left-0 rtl:right-0",
                                 header.column.getIsPinned() === "right" &&
-                                  "sticky z-2 ltr:right-0 rtl:left-0",
+                                "sticky z-2 ltr:right-0 rtl:left-0",
                               ],
                             )}
                           >
@@ -225,9 +246,9 @@ export default function ProductsDatatableV1() {
                                   {header.isPlaceholder
                                     ? null
                                     : flexRender(
-                                        header.column.columnDef.header,
-                                        header.getContext(),
-                                      )}
+                                      header.column.columnDef.header,
+                                      header.getContext(),
+                                    )}
                                 </span>
                                 <TableSortIcon
                                   sorted={header.column.getIsSorted()}
@@ -252,7 +273,7 @@ export default function ProductsDatatableV1() {
                           className={clsx(
                             "relative border-y border-transparent border-b-gray-200 dark:border-b-dark-500",
                             row.getIsSelected() && !isSafari &&
-                              "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
+                            "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
                           )}
                         >
                           {row.getVisibleCells().map((cell) => {
@@ -266,9 +287,9 @@ export default function ProductsDatatableV1() {
                                     : "dark:bg-dark-900",
                                   cell.column.getCanPin() && [
                                     cell.column.getIsPinned() === "left" &&
-                                      "sticky z-2 ltr:left-0 rtl:right-0",
+                                    "sticky z-2 ltr:left-0 rtl:right-0",
                                     cell.column.getIsPinned() === "right" &&
-                                      "sticky z-2 ltr:right-0 rtl:left-0",
+                                    "sticky z-2 ltr:right-0 rtl:left-0",
                                   ],
                                 )}
                               >
@@ -301,7 +322,7 @@ export default function ProductsDatatableV1() {
                   className={clsx(
                     "px-4 pb-4 sm:px-5 sm:pt-4",
                     tableSettings.enableFullScreen &&
-                      "bg-gray-50 dark:bg-dark-800",
+                    "bg-gray-50 dark:bg-dark-800",
                     !(
                       table.getIsSomeRowsSelected() ||
                       table.getIsAllRowsSelected()

@@ -67,6 +67,15 @@ export const columns = [
   columnHelper.accessor((row) => fmtDate(row.approved_on, row.invoicedate), {
     id: "date",
     header: "Date",
+    sortingFn: (rowA, rowB, columnId) => {
+      const a = rowA.getValue(columnId);
+      const b = rowB.getValue(columnId);
+      if (!a) return -1;
+      if (!b) return 1;
+      const [da, ma, ya] = a.split("/");
+      const [db, mb, yb] = b.split("/");
+      return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
+    },
     cell: (info) => (
       <span className="dark:text-dark-200 text-xs text-gray-700 tabular-nums">
         {info.getValue()}

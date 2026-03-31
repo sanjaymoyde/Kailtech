@@ -314,7 +314,7 @@ const AddNewInstrument = () => {
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = date.getFullYear();
 
-      return `${year}-${month}-${day}`;
+      return `${day}/${month}/${year}`;
     } catch {
       return '';
     }
@@ -332,6 +332,8 @@ const AddNewInstrument = () => {
       setLoading(prev => ({ ...prev, submitting: true }));
 
       // Map form data to API request structure
+      const authToken = localStorage.getItem('authToken');
+
       const requestData = {
         name: formData.instrumentName,
         description: formData.description,
@@ -348,13 +350,13 @@ const AddNewInstrument = () => {
         manufacturer: formData.manufacturerDetails,
 
         batchno: formData.batchNo,
-        mfddate: formatDateForAPI(formData.mfdDate), // ✅ Formatted for API
-        expdate: formatDateForAPI(formData.expiryDate), // ✅ Formatted for API
-        purchasedate: formatDateForAPI(formData.purchaseDate), // ✅ Formatted for API
+        mfddate: formatDateForAPI(formData.mfdDate),
+        expdate: formatDateForAPI(formData.expiryDate),
+        purchasedate: formatDateForAPI(formData.purchaseDate),
 
         frequency: formData.calibrationFrequency,
         allowedfor: formData.instrumentAllowedFor,
-        instrumentlocation: parseInt(formData.instrumentLocation),
+        instrumentlocation: String(formData.instrumentLocation), // Changed to String to match your example
 
         iscalibrationrequired: formData.calibrationRequired,
         WIreference: formData.wiReference,
@@ -369,7 +371,13 @@ const AddNewInstrument = () => {
 
       console.log('📤 Submitting instrument data:', requestData);
 
-      const response = await axios.post('/material/mm-instrument-create', requestData);
+      const response = await axios.post('/material/mm-instrument-create', requestData, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
 
       console.log('✅ Instrument created successfully:', response.data);
 

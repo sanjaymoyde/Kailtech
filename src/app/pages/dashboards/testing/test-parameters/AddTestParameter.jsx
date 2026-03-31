@@ -227,7 +227,10 @@ export default function AddTestParameter() {
         toast.success("Test parameter added successfully ✅", {
           duration: 1000,
         });
-        navigate("/dashboards/testing/test-parameters");
+        const newId = res.data?.data?.id || res.data?.id;
+        navigate("/dashboards/testing/test-parameters", { 
+          state: { updatedId: newId } 
+        });
       } else {
         toast.error(res.data?.message || "Failed to add test parameter ❌");
       }

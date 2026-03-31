@@ -300,7 +300,7 @@ export function RowActions({ row, table }) {
         {
           label: "Print Slip",
           icon: PrinterIcon,
-          onClick: go(`${base}/print-slip/${trfId}`),
+          onClick: go(`${base}/slip/${trfId}`),
         },
       ]
       : []),

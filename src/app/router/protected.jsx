@@ -2134,6 +2134,26 @@ const protectedRoutes = {
                         ).default,
                       }),
                     },
+                    {
+                      path: "print-slip/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/testing/trfs-starts-jobs/PrintSlip"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "slip/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/testing/trfs-starts-jobs/Slip"
+                          )
+                        ).default,
+                      }),
+                    },
                   ],
                 },
                 {
@@ -2788,8 +2808,8 @@ const protectedRoutes = {
                     ).default,
                   }),
                 },
-                
-                 {
+
+                {
                   path: "calibration-invoice-list",
                   lazy: async () => ({
                     Component: (

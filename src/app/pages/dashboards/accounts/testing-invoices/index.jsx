@@ -74,7 +74,7 @@ export default function TestingInvoiceList() {
   });
 
   const [globalFilter, setGlobalFilter] = useState("");
-  const [sorting, setSorting] = useState([{ id: "date", desc: true }]);
+  const [sorting, setSorting] = useState([]);
 
   const [columnVisibility, setColumnVisibility] = useLocalStorage(
     "col-vis-testing-invoice-list",

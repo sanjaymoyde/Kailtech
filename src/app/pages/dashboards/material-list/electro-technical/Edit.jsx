@@ -309,7 +309,7 @@ const Edit = () => {
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = date.getFullYear();
 
-      return `${year}-${month}-${day}`;
+      return `${day}/${month}/${year}`;
     } catch {
       return '';
     }
@@ -324,6 +324,8 @@ const Edit = () => {
 
     try {
       setLoading(prev => ({ ...prev, submitting: true }));
+
+      const authToken = localStorage.getItem('authToken');
 
       const requestData = {
         id: parseInt(instrumentId),
@@ -351,13 +353,19 @@ const Edit = () => {
         WIreference: formData.wiReference || '',
         software: formData.softwareFirmwareDetails || '',
         Acceptance: formData.acceptanceCriteria || '',
-        instrumentlocation: formData.instrumentLocation,
+        instrumentlocation: String(formData.instrumentLocation), // Standardized to String
         qty: formData.qty ? parseInt(formData.qty) : 0
       };
 
       console.log('📤 Submitting update request:', requestData);
 
-      const response = await axios.post('/material/update-mm-instrument', requestData);
+      const response = await axios.post('/material/update-mm-instrument', requestData, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
 
       console.log('✅ Update successful:', response.data);
 
