@@ -3,19 +3,15 @@ import { createColumnHelper } from "@tanstack/react-table";
 
 // Local Imports
 import { RowActions } from "./RowActions";
-import {
-  SelectCell,
-  SelectHeader,
-} from "components/shared/table/SelectCheckbox";
 
 const columnHelper = createColumnHelper();
 
 // ✅ PHP code se: 0=Pending, 1=Approved, 2=Completed, 99=Rejected
 const statusMap = {
-  0:  { label: "Pending",   color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  1:  { label: "Approved",  color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-  2:  { label: "Completed", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-  99: { label: "Rejected",  color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+  0: { label: "Pending", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  1: { label: "Approved", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+  2: { label: "Completed", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+  99: { label: "Rejected", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
 };
 
 const formatDate = (val) => {
@@ -26,12 +22,7 @@ const formatDate = (val) => {
 };
 
 export const columns = [
-  // ── Checkbox ──────────────────────────────────────────────────────────────
-  columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
+
 
   // ── Serial Number (UI generated) ──────────────────────────────────────────
   columnHelper.accessor((_row, index) => index + 1, {

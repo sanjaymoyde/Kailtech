@@ -1,10 +1,6 @@
 // Import Dependencies
 import { createColumnHelper } from "@tanstack/react-table";
 import { useState } from "react";
-import {
-  SelectCell,
-  SelectHeader,
-} from "components/shared/table/SelectCheckbox";
 
 const columnHelper = createColumnHelper();
 
@@ -21,9 +17,8 @@ const ExpandableCell = ({ row, getValue }) => {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <button
-          className={`flex h-6 w-6 items-center justify-center rounded-full font-bold text-white ${
-            isExpanded ? "bg-red-500" : "bg-green-500"
-          }`}
+          className={`flex h-6 w-6 items-center justify-center rounded-full font-bold text-white ${isExpanded ? "bg-red-500" : "bg-green-500"
+            }`}
         >
           {isExpanded ? "−" : "+"}
         </button>
@@ -37,18 +32,16 @@ const ExpandableCell = ({ row, getValue }) => {
           </p>
           <p>
             <strong>Requested By:</strong>{" "}
-            {`${row.original.firstname || ""} ${
-              row.original.lastname || ""
-            }`.trim() || "—"}
+            {`${row.original.firstname || ""} ${row.original.lastname || ""
+              }`.trim() || "—"}
           </p>
           <p>
             <strong>Approved On:</strong> {row.original.updated_on || "—"}
           </p>
           <p>
             <strong>Approved By:</strong>{" "}
-            {`${row.original.appfname || ""} ${
-              row.original.applname || ""
-            }`.trim() || "—"}
+            {`${row.original.appfname || ""} ${row.original.applname || ""
+              }`.trim() || "—"}
           </p>
         </div>
       )}
@@ -85,13 +78,6 @@ const StatusBadge = ({ status }) => {
 // Columns
 // ----------------------------------------------------------------------
 export const columns = [
-  // Checkbox
-  columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
-
   // ID (Expandable)
   columnHelper.accessor("id", {
     header: "ID",
@@ -179,7 +165,7 @@ export const columns = [
             onClick={() => {
               // ✅ Debug log to verify data
               console.log("Button clicked, row data:", row.original);
-              
+
               // ✅ Call the function from table meta
               if (table.options.meta?.openApproveRejectModal) {
                 table.options.meta.openApproveRejectModal(row.original);

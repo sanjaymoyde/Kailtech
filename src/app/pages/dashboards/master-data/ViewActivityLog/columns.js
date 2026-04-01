@@ -3,19 +3,10 @@ import { createColumnHelper } from "@tanstack/react-table";
 
 // Local Imports
 // import { RowActions } from "./RowActions";
-import {
-  SelectCell,
-  SelectHeader,
-} from "components/shared/table/SelectCheckbox";
 
 const columnHelper = createColumnHelper();
 
 export const columns = [
-  columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
 
   // ✅ Serial Number
   columnHelper.accessor((_row, index) => index + 1, {
@@ -31,7 +22,7 @@ export const columns = [
     cell: (info) => {
       const value = info.getValue();
       if (!value) return "-";
-      
+
       // Format the datetime
       try {
         // The API returns format like "2024-07-01 01:11:00.00"
@@ -86,5 +77,5 @@ export const columns = [
     cell: (info) => info.getValue() || "-",
   }),
 
-  
+
 ];

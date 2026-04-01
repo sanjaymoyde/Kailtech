@@ -2145,6 +2145,26 @@ const protectedRoutes = {
                       }),
                     },
                     {
+                      path: "slip/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/testing/trfs-starts-jobs/Slip"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "print-slip/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/testing/trfs-starts-jobs/PrintSlip"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
                       path: "pending-technical-acceptance",
                       lazy: async () => ({
                         Component: (
@@ -2854,7 +2874,7 @@ const protectedRoutes = {
                       }),
                     },
                     {
-                      path: "add",
+                      path: "create",
                       lazy: async () => ({
                         Component: (
                           await import(
@@ -2864,7 +2884,7 @@ const protectedRoutes = {
                       }),
                     },
                     {
-                      path: "add-advance",
+                      path: "create-advance",
                       lazy: async () => ({
                         Component: (
                           await import(
@@ -2874,11 +2894,51 @@ const protectedRoutes = {
                       }),
                     },
                     {
-                      path: "add-foc",
+                      path: "create-foc",
                       lazy: async () => ({
                         Component: (
                           await import(
                             "app/pages/dashboards/accounts/testing-invoices/AddTestingFOCInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "edit/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/EditTestingInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "view/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/ViewInvoiceCalibration"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "view-detailed/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/ViewDetailedInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "view-itemized/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/ViewItemizedBill"
                           )
                         ).default,
                       }),

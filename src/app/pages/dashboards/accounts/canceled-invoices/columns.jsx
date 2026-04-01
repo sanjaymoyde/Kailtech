@@ -24,6 +24,13 @@ function formatAmount(value) {
 
 function renderStatusBadge(value) {
   const numeric = Number(value);
+  if (numeric === 99) {
+    return (
+      <span className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+        Canceled
+      </span>
+    );
+  }
   const isApproved = numeric === 1;
 
   return (

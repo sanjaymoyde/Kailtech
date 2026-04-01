@@ -3,6 +3,20 @@ import { createColumnHelper } from "@tanstack/react-table";
 
 const columnHelper = createColumnHelper();
 
+const formatDate = (val) => {
+  if (!val || val === "0000-00-00") return "-";
+  try {
+    const date = new Date(val);
+    if (isNaN(date.getTime())) return val;
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = String(date.getFullYear());
+    return `${day}-${month}-${year}`;
+  } catch {
+    return val;
+  }
+};
+
 const fmt = (val) => {
   if (val === undefined || val === null || val === "" || isNaN(val)) return "-";
   return new Intl.NumberFormat("en-IN", {
@@ -15,7 +29,7 @@ export const columns = [
   columnHelper.accessor("date", {
     id: "date",
     header: "Date",
-    cell: (info) => info.getValue() ?? "-",
+    cell: (info) => formatDate(info.getValue()),
   }),
   columnHelper.accessor("party", {
     id: "party",

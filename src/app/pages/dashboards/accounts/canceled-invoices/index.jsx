@@ -50,7 +50,7 @@ export default function CanceledInvoices() {
     const fetchInvoices = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("/accounts/get-past-invoice-list");
+        const res = await axios.get("/accounts/get-canceled-invoice");
         const rows = res.data?.data ?? res.data ?? [];
         setData(Array.isArray(rows) ? rows : []);
       } catch (error) {
@@ -218,9 +218,8 @@ export default function CanceledInvoices() {
                                     )
                                   }
                                 >
-                                  <option value="">All</option>
-                                  <option value="0">Pending</option>
-                                  <option value="1">Approved</option>
+                                   <option value="">All</option>
+                                   <option value="99">Canceled</option>
                                 </select>
                               ) : (
                                 <input

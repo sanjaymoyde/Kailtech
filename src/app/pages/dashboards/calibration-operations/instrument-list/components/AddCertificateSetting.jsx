@@ -3,6 +3,7 @@ import axios from "utils/axios";
 import CertificateTable from "./CertificateTable";
 import { toast } from "react-hot-toast";
 import { Button } from "components/ui/button";
+import { PlusCircleIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 export default function AddCertificateSetting({
   instid,
@@ -27,7 +28,9 @@ export default function AddCertificateSetting({
   ];
 
   // ✅ States
-  const [rows, setRows] = useState([]);
+  const [tables, setTables] = useState([
+    { id: Date.now(), tableName: "", rows: [] }
+  ]);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -116,13 +119,26 @@ export default function AddCertificateSetting({
         const data = response.data.data;
         console.log("Fetched certificate settings:", data);
 
+        let flattenedCertificateSettings = [];
+        if (data.certificatesetting && data.certificatesetting.certificatesetting && data.certificatesetting.certificatesetting.length > 0) {
+          flattenedCertificateSettings = data.certificatesetting.certificatesetting;
+        } else if (data.certificatesetting && typeof data.certificatesetting === "object") {
+          Object.keys(data.certificatesetting).forEach((key) => {
+             // Treat all dynamic keys as Certificate sub-tables
+             const rowsArray = data.certificatesetting[key];
+             if (Array.isArray(rowsArray)) {
+                rowsArray.forEach(row => {
+                   flattenedCertificateSettings.push({ ...row, table_name: row.table_name || key });
+                });
+             }
+          });
+        }
+        
         if (
-          data.certificatesetting &&
-          data.certificatesetting.certificatesetting &&
-          data.certificatesetting.certificatesetting.length > 0
+          flattenedCertificateSettings.length > 0
         ) {
-          const certificateData = await Promise.all(
-            data.certificatesetting.certificatesetting.map(
+          const allRows = await Promise.all(
+            flattenedCertificateSettings.map(
               async (item, index) => {
                 const tableObj = tableList.find(
                   (t) => t.value === item.fieldfrom,
@@ -149,20 +165,38 @@ export default function AddCertificateSetting({
                     : "",
                   setVariable: item.variable || "",
                   fieldnameOptions: fieldnameOptions,
+                  table_index: item.table_index || 0,
+                  table_name: item.table_name || ""
                 };
               },
             ),
           );
-          setRows(certificateData);
+          
+          const groupedTables = allRows.reduce((acc, row) => {
+            const tIdx = row.table_index || 0;
+            if (!acc[tIdx]) acc[tIdx] = [];
+            acc[tIdx].push(row);
+            return acc;
+          }, []);
+
+          const initialTables = groupedTables.length > 0
+            ? groupedTables.map((rows, idx) => ({
+                id: Date.now() + idx,
+                tableName: rows[0]?.table_name || "",
+                rows
+              }))
+            : [{ id: Date.now(), tableName: "", rows: [createEmptyRow(1)] }];
+
+          setTables(initialTables);
         } else {
-          setRows([createEmptyRow(1)]);
+          setTables([{ id: Date.now(), tableName: "", rows: [createEmptyRow(1)] }]);
         }
       } else {
-        setRows([createEmptyRow(1)]);
+        setTables([{ id: Date.now(), tableName: "", rows: [createEmptyRow(1)] }]);
       }
     } catch (error) {
       console.error("Error fetching certificate settings:", error);
-      setRows([createEmptyRow(1)]);
+      setTables([{ id: Date.now(), tableName: "", rows: [createEmptyRow(1)] }]);
     } finally {
       setLoading(false);
     }
@@ -186,85 +220,125 @@ export default function AddCertificateSetting({
   };
 
   // ✅ Handlers
-  const handleCheckbox = (id) => {
-    setRows((prevRows) =>
-      prevRows.map((row) => {
-        if (row.id === id) {
-          const newChecked = !row.checked;
-          return {
-            ...row,
-            checked: newChecked,
-            fieldPosition: newChecked
-              ? row.fieldPosition === "0" || row.fieldPosition === 0
-                ? "1"
-                : row.fieldPosition
-              : "0",
-          };
-        }
-        return row;
-      }),
-    );
+  const handleCheckbox = (tableId, id) => {
+    setTables((prev) => prev.map(t => {
+      if (t.id === tableId) {
+        return {
+          ...t,
+          rows: t.rows.map(row => {
+            if (row.id === id) {
+              const newChecked = !row.checked;
+              return {
+                ...row,
+                checked: newChecked,
+                fieldPosition: newChecked
+                  ? row.fieldPosition === "0" || row.fieldPosition === 0
+                    ? "1"
+                    : row.fieldPosition
+                  : "0",
+              };
+            }
+            return row;
+          })
+        };
+      }
+      return t;
+    }));
   };
 
-  const handleInputChange = (id, field, value) => {
-    setRows((prevRows) =>
-      prevRows.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
-    );
+  const handleInputChange = (tableId, id, field, value) => {
+    setTables((prev) => prev.map(t => {
+      if (t.id === tableId) {
+        return {
+          ...t,
+          rows: t.rows.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+        };
+      }
+      return t;
+    }));
   };
 
-  const handleTableSelection = async (id, selectedOption) => {
+  const handleTableSelection = async (tableId, id, selectedOption) => {
     if (selectedOption) {
       const options = await fetchFieldnameOptions(selectedOption.value);
-
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          row.id === id
-            ? {
-              ...row,
-              selectedTable: selectedOption,
-              fieldfrom: selectedOption.value,
-              fieldname: null,
-              fieldnameOptions: options,
-            }
-            : row,
-        ),
-      );
+      setTables((prev) => prev.map(t => {
+        if (t.id === tableId) {
+          return {
+            ...t,
+            rows: t.rows.map((row) =>
+              row.id === id
+                ? { ...row, selectedTable: selectedOption, fieldfrom: selectedOption.value, fieldname: null, fieldnameOptions: options }
+                : row
+            )
+          };
+        }
+        return t;
+      }));
     } else {
-      setRows((prevRows) =>
-        prevRows.map((row) =>
-          row.id === id
-            ? {
-              ...row,
-              selectedTable: null,
-              fieldfrom: "",
-              fieldname: null,
-              fieldnameOptions: [],
-            }
-            : row,
-        ),
-      );
+      setTables((prev) => prev.map(t => {
+        if (t.id === tableId) {
+          return {
+            ...t,
+            rows: t.rows.map((row) =>
+              row.id === id
+                ? { ...row, selectedTable: null, fieldfrom: "", fieldname: null, fieldnameOptions: [] }
+                : row
+            )
+          };
+        }
+        return t;
+      }));
     }
   };
 
-  const handleFieldnameChange = (id, selectedOption) => {
-    setRows((prevRows) =>
-      prevRows.map((row) =>
-        row.id === id ? { ...row, fieldname: selectedOption } : row,
-      ),
-    );
+  const handleFieldnameChange = (tableId, id, selectedOption) => {
+    setTables((prev) => prev.map(t => {
+      if (t.id === tableId) {
+        return {
+          ...t,
+          rows: t.rows.map((row) =>
+            row.id === id ? { ...row, fieldname: selectedOption } : row
+          )
+        };
+      }
+      return t;
+    }));
   };
 
-  const addRow = () => {
-    const newId = rows.length > 0 ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-    setRows([...rows, createEmptyRow(newId)]);
+  const addRow = (tableId) => {
+    setTables((prev) => prev.map(t => {
+      if (t.id === tableId) {
+        const newId = t.rows.length > 0 ? Math.max(...t.rows.map((r) => r.id)) + 1 : 1;
+        return { ...t, rows: [...t.rows, createEmptyRow(newId)] };
+      }
+      return t;
+    }));
   };
 
-  const removeRow = (id) => {
-    if (rows.length === 1) {
-      alert("At least one row is required!");
-      return;
-    }
-    setRows((prevRows) => prevRows.filter((row) => row.id !== id));
+  const removeRow = (tableId, id) => {
+    setTables((prev) => prev.map(t => {
+      if (t.id === tableId) {
+        if (t.rows.length === 1) {
+          alert("At least one row is required!");
+          return t;
+        }
+        return { ...t, rows: t.rows.filter((row) => row.id !== id) };
+      }
+      return t;
+    }));
+  };
+
+  const addTable = () => {
+    setTables([...tables, { id: Date.now(), tableName: "", rows: [createEmptyRow(1)] }]);
+  };
+
+  const removeTable = (tableId) => {
+    if (tables.length === 1) return;
+    setTables(tables.filter(t => t.id !== tableId));
+  };
+
+  const handleTableNameChange = (tableId, newName) => {
+    setTables(prev => prev.map(t => t.id === tableId ? { ...t, tableName: newName } : t));
   };
 
   // ✅ Save handler - Certificate Setting API
@@ -285,21 +359,35 @@ export default function AddCertificateSetting({
       }
 
       // ✅ Map rows to certificate settings format
-      const certificatesetting = rows.map((row) => ({
-        fieldfrom: row.fieldfrom || "",
-        fieldname: row.fieldname?.value || "",
-        variable: row.setVariable || "",
-        field_heading: row.fieldHeading || "",
-        field_position: parseInt(row.fieldPosition) || "0",
-        formula: null,
-        checkbox: row.checked ? "yes" : "no",
-      }));
+      const dynamic_certificate_settings = {};
+
+      tables.forEach((table, tIdx) => {
+        const tName = table.tableName && table.tableName.trim() !== "" 
+            ? table.tableName.trim() 
+            : `certificatesetting_${tIdx + 1}`; // fallback
+
+        const tableRows = table.rows.map((row) => ({
+          fieldfrom: row.fieldfrom || "",
+          fieldname: row.fieldname?.value || "",
+          variable: row.setVariable || "",
+          field_heading: row.fieldHeading || "",
+          field_position: parseInt(row.fieldPosition) || "0",
+          formula: null,
+          checkbox: row.checked ? "yes" : "no",
+          table_index: tIdx,
+          table_name: tName,
+        }));
+
+        if (tableRows.length > 0) {
+          dynamic_certificate_settings[tName] = tableRows;
+        }
+      });
 
       const payload = {
         observation_id: parseInt(formatId),
         instid: instid,
         resultsetting: {
-          certificatesetting: certificatesetting,
+          ...dynamic_certificate_settings,
         },
       };
 
@@ -352,23 +440,64 @@ export default function AddCertificateSetting({
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="mx-auto max-w-[98%] space-y-6">
           {/* Title */}
-          <h1 className="flex items-center gap-3 text-2xl font-bold text-gray-800">
-            Certificate Settings
-          </h1>
+          <div className="px-4">
+            <h1 className="flex items-center gap-3 text-2xl font-bold text-gray-800">
+              Certificate Settings
+            </h1>
+          </div>
 
-          {/* Table Component */}
-          <CertificateTable
-            rows={rows}
-            tableList={tableList}
-            customSelectStyles={customSelectStyles}
-            handleCheckbox={handleCheckbox}
-            handleInputChange={handleInputChange}
-            handleTableSelection={handleTableSelection}
-            handleFieldnameChange={handleFieldnameChange}
-            addRow={addRow}
-            removeRow={removeRow}
-            loading={loading}
-          />
+          {/* Tables */}
+          {tables.map((table, tableIdx) => (
+            <div key={table.id} className="overflow-hidden rounded-lg bg-white shadow-md border border-gray-200 mb-6">
+              <div className="border-b border-gray-200 p-4 flex items-center justify-between bg-gray-50">
+                <div className="flex items-center gap-4">
+                  <h3 className="whitespace-nowrap text-xl font-bold text-gray-800">
+                    Table {tableIdx + 1}
+                  </h3>
+                  <input
+                    type="text"
+                    value={table.tableName || ""}
+                    onChange={(e) => handleTableNameChange(table.id, e.target.value)}
+                    className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter table name..."
+                  />
+                </div>
+                <div className="flex gap-2">
+                  {tableIdx === 0 && (
+                    <button
+                      onClick={addTable}
+                      className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                      title="Add new table"
+                    >
+                      <PlusCircleIcon className="h-5 w-5" />
+                      Add Table
+                    </button>
+                  )}
+                  {tableIdx > 0 && (
+                    <button
+                      onClick={() => removeTable(table.id)}
+                      className="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                      Remove Table
+                    </button>
+                  )}
+                </div>
+              </div>
+              <CertificateTable
+                rows={table.rows}
+                tableList={tableList}
+                customSelectStyles={customSelectStyles}
+                handleCheckbox={(rowId) => handleCheckbox(table.id, rowId)}
+                handleInputChange={(rowId, field, value) => handleInputChange(table.id, rowId, field, value)}
+                handleTableSelection={(rowId, selected) => handleTableSelection(table.id, rowId, selected)}
+                handleFieldnameChange={(rowId, selected) => handleFieldnameChange(table.id, rowId, selected)}
+                addRow={() => addRow(table.id)}
+                removeRow={(rowId) => removeRow(table.id, rowId)}
+                loading={loading}
+              />
+            </div>
+          ))}
 
           {/* Action Buttons */}
           <div className="mt-4 flex flex-row items-center justify-between gap-2">

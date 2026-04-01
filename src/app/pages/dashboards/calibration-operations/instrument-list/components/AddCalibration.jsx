@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "utils/axios";
 import Select from "react-select";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 import { EyeIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import { Button } from "components/ui/button";
@@ -13,7 +13,7 @@ export default function AddCalibration({
   onNext,
   onBack,
 }) {
-  const [rows1, setRows1] = useState([]);
+  const [tables1, setTables1] = useState([{ id: Date.now(), tableName: "", rows: [] }]);
   const [rows2, setRows2] = useState([]);
   const [rows3, setRows3] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -96,12 +96,26 @@ export default function AddCalibration({
     },
   ];
 
-  const removeRow1 = (id) => {
-    if (rows1.length === 1) {
-      alert("At least one row is required!");
-      return;
-    }
-    setRows1((prevRows) => prevRows.filter((row) => row.id !== id));
+  const removeRow1 = (tableId, rowId) => {
+    setTables1(prevTables => prevTables.map(table => {
+      if (table.id === tableId) {
+        if (table.rows.length === 1) {
+          alert("At least one row is required!");
+          return table;
+        }
+        return { ...table, rows: table.rows.filter(row => row.id !== rowId) };
+      }
+      return table;
+    }));
+  };
+
+  const addTable1 = () => {
+    setTables1([...tables1, { id: Date.now(), tableName: "", rows: [createEmptyRow1(1)] }]);
+  };
+
+  const removeTable1 = (tableId) => {
+    if (tables1.length === 1) return;
+    setTables1(tables1.filter(t => t.id !== tableId));
   };
 
   const removeRow2 = (id) => {
@@ -144,22 +158,19 @@ export default function AddCalibration({
 
     if (instrumentId) {
       fetchObservationSettings(instrumentId);
-    } else {
-      console.error("No instrumentId provided to Edit component");
     }
     fetchLabOptions();
-  }, [instrumentId]);
+  }, [instrumentId, formatId]);
 
   useEffect(() => {
-    const currentSetpoint = rows3[0]?.setpoint?.value;
+    const setpointVal = rows3[0]?.setpoint?.value;
+    if (!setpointVal) return;
 
-    if (!currentSetpoint) return;
-
-    if (currentSetpoint === "master") {
+    if (setpointVal === "master") {
       handleMasterMode();
-    } else if (currentSetpoint === "uuc") {
+    } else if (setpointVal === "uuc") {
       handleUucMode();
-    } else if (currentSetpoint === "separate") {
+    } else if (setpointVal === "separate") {
       handleSeparateMode();
     }
   }, [rows3[0]?.setpoint?.value, masterRepeatableValue, uucRepeatableValue]);
@@ -335,8 +346,28 @@ export default function AddCalibration({
       if (response.data.success) {
         const data = response.data.data;
 
-        const table1Data = await Promise.all(
-          data.resultsetting.calibration_settings.map(async (item, index) => {
+        let flattenedCalibrationSettings = [];
+        if (data.resultsetting && typeof data.resultsetting === "object") {
+          // If it's an array (old payload format support)
+          if (Array.isArray(data.resultsetting.calibration_settings)) {
+            flattenedCalibrationSettings = data.resultsetting.calibration_settings;
+          } else {
+            // New dynamic key format
+            Object.keys(data.resultsetting).forEach((key) => {
+              if (key !== "observation_settings" && key !== "certificatesetting") {
+                const rowsArray = data.resultsetting[key];
+                if (Array.isArray(rowsArray)) {
+                  rowsArray.forEach(row => {
+                    flattenedCalibrationSettings.push({ ...row, table_name: row.table_name || key });
+                  });
+                }
+              }
+            });
+          }
+        }
+
+        const allRows1 = await Promise.all(
+          flattenedCalibrationSettings.map(async (item, index) => {
             const tableObj = tableList.find((t) => t.value === item.fieldfrom);
             let fieldOptions = [];
             if (item.fieldfrom) {
@@ -357,11 +388,35 @@ export default function AddCalibration({
               formula: item.formula || "",
               fieldPosition: item.field_position != null ? item.field_position.toString() : "",
               selectedFunction: null,
+              table_index: item.table_index || 0,
+              table_name: item.table_name || "",
             };
           }),
         );
 
-        const table2Data = data.observationsetting.observation_settings.map(
+        // Group rows into tables based on table_index
+        const groupedTables = allRows1.reduce((acc, row) => {
+          const tIdx = row.table_index || 0;
+          if (!acc[tIdx]) acc[tIdx] = [];
+          acc[tIdx].push(row);
+          return acc;
+        }, []);
+
+        const initialTables = groupedTables.length > 0
+          ? groupedTables.map((rows, idx) => ({
+            id: Date.now() + idx,
+            tableName: rows[0]?.table_name || "",
+            rows
+          }))
+          : [{ id: Date.now(), tableName: "", rows: [createEmptyRow1(1)] }];
+
+        setTables1(initialTables);
+
+        const obsSettingArray = Array.isArray(data.observationsetting)
+          ? data.observationsetting
+          : data.observationsetting?.observation_settings || [];
+
+        const table2Data = obsSettingArray.map(
           (item, index) => ({
             id: index + 1,
             checked: item.checkbox === "yes",
@@ -390,7 +445,7 @@ export default function AddCalibration({
           labToCalibrate: labValue,
         };
 
-        setRows1(table1Data.length > 0 ? table1Data : [createEmptyRow1(1)]);
+        // setTables1 handled above
         setRows2(
           table2Data.length > 0
             ? table2Data
@@ -435,13 +490,13 @@ export default function AddCalibration({
           }
         }
       } else {
-        setRows1([createEmptyRow1(1)]);
+        setTables1([{ id: Date.now(), rows: [createEmptyRow1(1)] }]);
         setRows2([createEmptyRow2(1, "uuc")]);
         setRows3([createEmptyRow3(1)]);
       }
     } catch (error) {
       console.error("Error fetching observation settings:", error);
-      setRows1([createEmptyRow1(1)]);
+      setTables1([{ id: Date.now(), rows: [createEmptyRow1(1)] }]);
       setRows2([createEmptyRow2(1, "uuc")]);
       setRows3([createEmptyRow3(1)]);
     } finally {
@@ -503,92 +558,78 @@ export default function AddCalibration({
     labToCalibrate: null,
   });
 
-  const handleCheckbox1 = (id) => {
-    setRows1(
-      rows1.map((row) =>
-        row.id === id ? { ...row, checked: !row.checked } : row,
-      ),
-    );
+  const handleCheckbox1 = (tableId, rowId) => {
+    setTables1(prev => prev.map(t => t.id === tableId ? {
+      ...t, rows: t.rows.map(r => r.id === rowId ? { ...r, checked: !r.checked } : r)
+    } : t));
   };
 
-  const handleInputChange1 = (id, field, value) => {
-    setRows1(
-      rows1.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
-    );
+  const handleInputChange1 = (tableId, rowId, field, value) => {
+    setTables1(prev => prev.map(t => t.id === tableId ? {
+      ...t, rows: t.rows.map(r => r.id === rowId ? { ...r, [field]: value } : r)
+    } : t));
   };
 
-  const handleSelectChange1 = (id, field, selectedOption) => {
-    setRows1(
-      rows1.map((row) =>
-        row.id === id ? { ...row, [field]: selectedOption } : row,
-      ),
-    );
+  const handleSelectChange1 = (tableId, rowId, field, selectedOption) => {
+    setTables1(prev => prev.map(t => t.id === tableId ? {
+      ...t, rows: t.rows.map(r => r.id === rowId ? { ...r, [field]: selectedOption } : r)
+    } : t));
   };
 
-  const handleTableSelection1 = async (id, selectedOption) => {
+  const handleTableSelection1 = async (tableId, rowId, selectedOption) => {
     if (selectedOption) {
       const options = await fetchFieldnameOptions(selectedOption.value);
-      setRows1((prevRows) =>
-        prevRows.map((row) =>
-          row.id === id
-            ? {
-              ...row,
-              selectedTable: selectedOption,
-              fieldfrom: selectedOption.value,
-              fieldname: null,
-              fieldnameOptions: options,
-            }
-            : row,
-        ),
-      );
+      setTables1(prev => prev.map(t => t.id === tableId ? {
+        ...t, rows: t.rows.map(r => r.id === rowId ? {
+          ...r,
+          selectedTable: selectedOption,
+          fieldfrom: selectedOption.value,
+          fieldname: null,
+          fieldnameOptions: options,
+        } : r)
+      } : t));
     } else {
-      setRows1((prevRows) =>
-        prevRows.map((row) =>
-          row.id === id
-            ? {
-              ...row,
-              selectedTable: null,
-              fieldfrom: "",
-              fieldname: null,
-              fieldnameOptions: [],
-            }
-            : row,
-        ),
-      );
+      setTables1(prev => prev.map(t => t.id === tableId ? {
+        ...t, rows: t.rows.map(r => r.id === rowId ? {
+          ...r,
+          selectedTable: null,
+          fieldfrom: "",
+          fieldname: null,
+          fieldnameOptions: [],
+        } : r)
+      } : t));
     }
   };
 
-  const handleFunctionSelect = (rowId, selectedOption) => {
+  const handleFunctionSelect = (tableId, rowId, selectedOption) => {
     if (!selectedOption) {
-      setRows1(
-        rows1.map((row) =>
-          row.id === rowId ? { ...row, selectedFunction: null } : row,
-        ),
-      );
+      setTables1(prev => prev.map(t => t.id === tableId ? {
+        ...t, rows: t.rows.map(r => r.id === rowId ? { ...r, selectedFunction: null } : r)
+      } : t));
       return;
     }
 
     const funcData = allFunctionsData[selectedOption.value];
     if (funcData) {
-      setRows1(
-        rows1.map((row) =>
-          row.id === rowId
-            ? {
-              ...row,
-              selectedFunction: selectedOption,
-              SetVariable: funcData.variable,
-              formula: funcData.formula,
-            }
-            : row,
-        ),
-      );
+      setTables1(prev => prev.map(t => t.id === tableId ? {
+        ...t, rows: t.rows.map(r => r.id === rowId ? {
+          ...r,
+          selectedFunction: selectedOption,
+          SetVariable: funcData.variable,
+          formula: funcData.formula,
+        } : r)
+      } : t));
     }
   };
 
-  const addRow1 = () => {
-    const newId =
-      rows1.length > 0 ? Math.max(...rows1.map((r) => r.id)) + 1 : 1;
-    setRows1([...rows1, createEmptyRow1(newId)]);
+  const addRow1 = (tableId) => {
+    setTables1(prev => prev.map(table => {
+      if (table.id === tableId) {
+        const newId = table.rows.length > 0 ? Math.max(...table.rows.map(r => r.id)) + 1 : 1;
+        return { ...table, rows: [...table.rows, createEmptyRow1(newId)] };
+      }
+      return table;
+    }));
   };
 
   const handleCheckbox2 = (id) => {
@@ -603,6 +644,10 @@ export default function AddCalibration({
     setRows2(
       rows2.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
     );
+  };
+
+  const handleTableNameChange1 = (tableId, value) => {
+    setTables1(prev => prev.map(t => t.id === tableId ? { ...t, tableName: value } : t));
   };
 
   const addRow2 = () => {
@@ -651,14 +696,14 @@ export default function AddCalibration({
       const mRepeat = parseInt(newMasterVal) || 0;
       const uRepeat = parseInt(newUucVal) || 0;
       const repeatCount = mRepeat + uRepeat;
-      
+
       if (repeatCount > 0 && repeatCount <= 40) {
         const newRows2 = [];
         let currentId = 1;
-        
+
         // Add Master rows
         for (let i = 1; i <= mRepeat; i++) {
-          const row = rows2.find((r) => r.id === currentId && r.fieldname.includes("Master")) 
+          const row = rows2.find((r) => r.id === currentId && r.fieldname.includes("Master"))
             || createEmptyRow2(currentId, "master");
           row.id = currentId;
           row.fieldname = `Master Observation ${i}`;
@@ -667,10 +712,10 @@ export default function AddCalibration({
           newRows2.push(row);
           currentId++;
         }
-        
+
         // Add UUC rows
         for (let i = 1; i <= uRepeat; i++) {
-          const row = rows2.find((r) => r.id === currentId && r.fieldname.includes("UUC")) 
+          const row = rows2.find((r) => r.id === currentId && r.fieldname.includes("UUC"))
             || createEmptyRow2(currentId, "uuc");
           row.id = currentId;
           row.fieldname = `UUC Observation ${i}`;
@@ -679,7 +724,7 @@ export default function AddCalibration({
           newRows2.push(row);
           currentId++;
         }
-        
+
         setRows2(newRows2);
       } else {
         setRows2([createEmptyRow2(1, "separate")]);
@@ -701,7 +746,7 @@ export default function AddCalibration({
     if (field === "setpoint") {
       const type = selectedOption ? selectedOption.value : "uuc";
       let repeatCount = 1;
-      
+
       if (type === "master") {
         repeatCount = parseInt(masterRepeatableValue) || 1;
         const newRows2 = [];
@@ -719,7 +764,7 @@ export default function AddCalibration({
       } else if (type === "separate") {
         const m = parseInt(masterRepeatableValue) || 0;
         const u = parseInt(uucRepeatableValue) || 0;
-        
+
         if (m + u === 0) {
           setRows2([createEmptyRow2(1, "separate")]);
         } else {
@@ -778,17 +823,31 @@ export default function AddCalibration({
     try {
       const authToken = localStorage.getItem("authToken");
 
-      const calibration_settings = rows1
-        .filter((row) => row.fieldname && row.fieldname.value)
-        .map((row) => ({
-          fieldname: row.fieldname.value,
-          fieldfrom: row.fieldfrom || "",
-          SetVariable: row.SetVariable,
-          formula: row.formula,
-          field_heading: row.fieldHeading,
-          field_position: parseInt(row.fieldPosition) || 0,
-          checkbox: row.checked ? "yes" : "no",
-        }));
+      const dynamic_calibration_settings = {};
+
+      tables1.forEach((table, tIdx) => {
+        const tName = table.tableName && table.tableName.trim() !== "" 
+            ? table.tableName.trim() 
+            : `calibration_settings_${tIdx + 1}`; // fallback
+            
+        const tableRows = table.rows
+          .filter((row) => row.fieldname && row.fieldname.value)
+          .map((row) => ({
+            fieldname: row.fieldname.value,
+            fieldfrom: row.fieldfrom || "",
+            SetVariable: row.SetVariable,
+            formula: row.formula,
+            field_heading: row.fieldHeading,
+            field_position: parseInt(row.fieldPosition) || 0,
+            checkbox: row.checked ? "yes" : "no",
+            table_index: tIdx,
+            table_name: tName,
+          }));
+
+        if (tableRows.length > 0) {
+          dynamic_calibration_settings[tName] = tableRows;
+        }
+      });
 
       const observation_settings = rows2
         .filter((row) => row.fieldname.trim() !== "")
@@ -809,7 +868,7 @@ export default function AddCalibration({
         master: rows3[0]?.masterRepeatable || "",
         allottolab: rows3[0]?.labToCalibrate?.value || "",
         resultsetting: {
-          calibration_settings: calibration_settings,
+          ...dynamic_calibration_settings,
           observation_settings: observation_settings,
         },
       };
@@ -1028,195 +1087,173 @@ export default function AddCalibration({
           )}
         </div>
 
-        <div className="overflow-hidden rounded-lg bg-white shadow-md">
-          <div className="border-b border-gray-200 p-4">
-            <h2 className="text-xl font-bold text-gray-800">
-              Calibration Settings
-            </h2>
-          </div>
+        {loading ? (
+          <div className="rounded-lg bg-white p-8 text-center text-gray-500 shadow-md">Loading...</div>
+        ) : (
+          <div className="space-y-6">
+            <div className="px-4">
+              <h2 className="text-2xl font-bold text-gray-800">Calibration Settings</h2>
+            </div>
+            {tables1.map((table, tableIdx) => (
+              <div key={table.id} className="overflow-hidden rounded-lg bg-white shadow-md border border-gray-200">
+                <div className="border-b border-gray-200 p-4 flex items-center justify-between bg-gray-50">
+                  <div className="flex items-center gap-4">
+                    <h3 className="whitespace-nowrap text-xl font-bold text-gray-800">
+                      table {tableIdx + 1}
+                    </h3>
+                    <input
+                      type="text"
+                      value={table.tableName || ""}
+                      onChange={(e) => handleTableNameChange1(table.id, e.target.value)}
+                      className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter table name..."
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    {tableIdx === 0 && (
+                      <button
+                        onClick={addTable1}
+                        className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                        title="Add new table"
+                      >
+                        <PlusCircleIcon className="h-5 w-5" />
+                        Add Table
+                      </button>
+                    )}
+                    {tableIdx > 0 && (
+                      <button
+                        onClick={() => removeTable1(table.id)}
+                        className="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                        Remove Table
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-          {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading...</div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        S. No.
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Checkbox
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Fieldname
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Set Variable
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Field Heading
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Field Position
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Formula
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows1.map((row) => (
-                      <tr key={row.id} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm">{row.id}</td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            checked={row.checked}
-                            onChange={() => handleCheckbox1(row.id)}
-                            className="h-4 w-4 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col gap-2">
-                            <Select
-                              value={row.selectedTable}
-                              onChange={(selectedOption) =>
-                                handleTableSelection1(row.id, selectedOption)
-                              }
-                              options={tableList}
-                              placeholder="Select table..."
-                              isClearable
-                              styles={customSelectStyles}
-                              menuPortalTarget={document.body}
-                              menuPosition="fixed"
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-100/50">
+                      <tr>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">S. No.</th>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Checkbox</th>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Fieldname</th>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Set Variable</th>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Field Heading</th>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Field Position</th>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Formula</th>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {table.rows.map((row) => (
+                        <tr key={row.id} className="border-b hover:bg-gray-50/50">
+                          <td className="px-4 py-3 text-sm">{row.id}</td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={row.checked}
+                              onChange={() => handleCheckbox1(table.id, row.id)}
+                              className="h-4 w-4 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
                             />
-                            {row.selectedTable && (
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col gap-2">
                               <Select
-                                value={row.fieldname}
-                                onChange={(selectedOption) =>
-                                  handleSelectChange1(
-                                    row.id,
-                                    "fieldname",
-                                    selectedOption,
-                                  )
-                                }
-                                options={row.fieldnameOptions || []}
-                                placeholder="Select fieldname..."
+                                value={row.selectedTable}
+                                onChange={(opt) => handleTableSelection1(table.id, row.id, opt)}
+                                options={tableList}
+                                placeholder="Select table..."
                                 isClearable
                                 styles={customSelectStyles}
                                 menuPortalTarget={document.body}
-                                menuPosition="fixed"
                               />
-                            )}
-                            <Select
-                              value={row.selectedFunction}
-                              onChange={(selectedOption) =>
-                                handleFunctionSelect(row.id, selectedOption)
-                              }
-                              options={functionOptions}
-                              placeholder="Select Function..."
-                              isClearable
-                              styles={customSelectStyles}
-                              menuPortalTarget={document.body}
-                              menuPosition="fixed"
+                              {row.selectedTable && (
+                                <Select
+                                  value={row.fieldname}
+                                  onChange={(opt) => handleSelectChange1(table.id, row.id, "fieldname", opt)}
+                                  options={row.fieldnameOptions || []}
+                                  placeholder="Select fieldname..."
+                                  isClearable
+                                  styles={customSelectStyles}
+                                  menuPortalTarget={document.body}
+                                />
+                              )}
+                              <Select
+                                value={row.selectedFunction}
+                                onChange={(opt) => handleFunctionSelect(table.id, row.id, opt)}
+                                options={functionOptions}
+                                placeholder="Select Function..."
+                                isClearable
+                                styles={customSelectStyles}
+                                menuPortalTarget={document.body}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={row.SetVariable || ""}
+                              onChange={(e) => handleInputChange1(table.id, row.id, "SetVariable", e.target.value)}
+                              className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                              placeholder="Set Variable"
                             />
-                          </div>
-                        </td>
-                        {/* Set Variable */}
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={row.SetVariable || ""}
-                            onChange={(e) =>
-                              handleInputChange1(
-                                row.id,
-                                "SetVariable",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                            placeholder="Set Variable"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={row.fieldHeading}
-                            onChange={(e) =>
-                              handleInputChange1(
-                                row.id,
-                                "fieldHeading",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                            placeholder="Field Heading"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={row.fieldPosition || ""}
-                            onChange={(e) =>
-                              handleInputChange1(
-                                row.id,
-                                "fieldPosition",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                            placeholder="Position"
-                          />
-                        </td>
-                        {/* Formula */}
-                        <td className="px-4 py-3 min-w-[350px]">
-                          <input
-                            type="text"
-                            value={row.formula}
-                            onChange={(e) =>
-                              handleInputChange1(
-                                row.id,
-                                "formula",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full h-14 rounded-md border px-4 py-3 text-base shadow-[0_0_8px_rgba(0,0,0,0.05)] focus:ring-2 focus:ring-blue-500"
-                            placeholder="Formula"
-                          />
-                        </td>
-                        <td className="w-[80px] px-2 py-3 text-center">
-                          <button
-                            style={{ cursor: "pointer" }}
-                            onClick={() => removeRow1(row.id)}
-                            disabled={rows1.length === 1}
-                            className="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <TrashIcon className="size-4.5 stroke-1" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={row.fieldHeading}
+                              onChange={(e) => handleInputChange1(table.id, row.id, "fieldHeading", e.target.value)}
+                              className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                              placeholder="Field Heading"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={row.fieldPosition || ""}
+                              onChange={(e) => handleInputChange1(table.id, row.id, "fieldPosition", e.target.value)}
+                              className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                              placeholder="Position"
+                            />
+                          </td>
+                          <td className="px-4 py-3 min-w-[350px]">
+                            <input
+                              type="text"
+                              value={row.formula}
+                              onChange={(e) => handleInputChange1(table.id, row.id, "formula", e.target.value)}
+                              className="w-full h-14 rounded-md border px-4 py-3 text-base shadow-[0_0_8px_rgba(0,0,0,0.05)] focus:ring-2 focus:ring-blue-500"
+                              placeholder="Formula"
+                            />
+                          </td>
+                          <td className="w-[80px] px-2 py-3 text-center">
+                            <button
+                              onClick={() => removeRow1(table.id, row.id)}
+                              disabled={table.rows.length === 1}
+                              className="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <TrashIcon className="size-4.5 stroke-1" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-              <div className="flex justify-end border-t p-4">
-                <button
-                  style={{ cursor: "pointer" }}
-                  onClick={addRow1}
-                  className="rounded-md bg-green-600 px-6 py-2 font-medium text-white transition hover:bg-green-700"
-                >
-                  Add Row
-                </button>
+                <div className="flex justify-end border-t p-4">
+                  <button
+                    onClick={() => addRow1(table.id)}
+                    className="rounded-md bg-green-600 px-6 py-2 font-medium text-white transition hover:bg-green-700"
+                  >
+                    Add Row
+                  </button>
+                </div>
               </div>
-            </>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
         <div className="overflow-hidden rounded-lg bg-white shadow-md">
           <div className="border-b border-gray-200 p-4">

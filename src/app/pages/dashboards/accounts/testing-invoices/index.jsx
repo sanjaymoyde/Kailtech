@@ -277,18 +277,10 @@ export default function TestingInvoiceList() {
                       </Tr>
                     ) : (
                       table.getRowModel().rows.map((row) => {
-                        // PHP: fnRowCallback — cname != customername → pink row
-                        const isDiff =
-                          (row.original.cname || "").trim() !==
-                          (row.original.customername || "").trim();
-
                         return (
                           <Tr
                             key={row.id}
-                            className={clsx(
-                              "dark:border-b-dark-500 relative border-y border-transparent border-b-gray-200",
-                              isDiff && "bg-red-50 dark:bg-red-900/10",
-                            )}
+                            className="dark:border-b-dark-500 relative border-y border-transparent border-b-gray-200"
                           >
                             {row.getVisibleCells().map((cell) => (
                               <Td
@@ -298,7 +290,6 @@ export default function TestingInvoiceList() {
                                   cardSkin === "shadow"
                                     ? "dark:bg-dark-700"
                                     : "dark:bg-dark-900",
-                                  isDiff && "!bg-red-50 dark:!bg-red-900/10",
                                   cell.column.getCanPin() && [
                                     cell.column.getIsPinned() === "left" &&
                                       "sticky z-2 ltr:left-0 rtl:right-0",
