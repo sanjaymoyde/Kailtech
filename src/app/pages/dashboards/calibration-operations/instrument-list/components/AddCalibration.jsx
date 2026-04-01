@@ -616,45 +616,73 @@ export default function AddCalibration({
   const handleInputChange3 = (id, field, value) => {
     const currentSetpoint = rows3[0]?.setpoint?.value;
 
+    let newMasterVal = field === "masterRepeatable" ? value : masterRepeatableValue;
+    let newUucVal = field === "uucRepeatable" ? value : uucRepeatableValue;
+
     if (field === "masterRepeatable") {
       setMasterRepeatableValue(value);
-
-      if (currentSetpoint === "master") {
-        const repeatCount = parseInt(value);
-        if (!isNaN(repeatCount) && repeatCount > 0 && repeatCount <= 20) {
-          const newRows2 = [];
-          for (let i = 1; i <= repeatCount; i++) {
-            const existingRow = rows2.find((row) => row.id === i);
-            if (existingRow) {
-              newRows2.push(existingRow);
-            } else {
-              newRows2.push(createEmptyRow2(i, "master"));
-            }
-          }
-          setRows2(newRows2);
-        } else if (value === "" || repeatCount === 0) {
-          setRows2([createEmptyRow2(1, "master")]);
-        }
-      }
     } else if (field === "uucRepeatable") {
       setUucRepeatableValue(value);
+    }
 
-      if (currentSetpoint === "uuc") {
-        const repeatCount = parseInt(value);
-        if (!isNaN(repeatCount) && repeatCount > 0 && repeatCount <= 20) {
-          const newRows2 = [];
-          for (let i = 1; i <= repeatCount; i++) {
-            const existingRow = rows2.find((row) => row.id === i);
-            if (existingRow) {
-              newRows2.push(existingRow);
-            } else {
-              newRows2.push(createEmptyRow2(i, "uuc"));
-            }
-          }
-          setRows2(newRows2);
-        } else if (value === "" || repeatCount === 0) {
-          setRows2([createEmptyRow2(1, "uuc")]);
+    if (currentSetpoint === "master" && field === "masterRepeatable") {
+      const repeatCount = parseInt(value) || 0;
+      if (repeatCount > 0 && repeatCount <= 20) {
+        const newRows2 = [];
+        for (let i = 1; i <= repeatCount; i++) {
+          newRows2.push(rows2.find((row) => row.id === i) || createEmptyRow2(i, "master"));
         }
+        setRows2(newRows2);
+      } else {
+        setRows2([createEmptyRow2(1, "master")]);
+      }
+    } else if (currentSetpoint === "uuc" && field === "uucRepeatable") {
+      const repeatCount = parseInt(value) || 0;
+      if (repeatCount > 0 && repeatCount <= 20) {
+        const newRows2 = [];
+        for (let i = 1; i <= repeatCount; i++) {
+          newRows2.push(rows2.find((row) => row.id === i) || createEmptyRow2(i, "uuc"));
+        }
+        setRows2(newRows2);
+      } else {
+        setRows2([createEmptyRow2(1, "uuc")]);
+      }
+    } else if (currentSetpoint === "separate" && (field === "masterRepeatable" || field === "uucRepeatable")) {
+      const mRepeat = parseInt(newMasterVal) || 0;
+      const uRepeat = parseInt(newUucVal) || 0;
+      const repeatCount = mRepeat + uRepeat;
+      
+      if (repeatCount > 0 && repeatCount <= 40) {
+        const newRows2 = [];
+        let currentId = 1;
+        
+        // Add Master rows
+        for (let i = 1; i <= mRepeat; i++) {
+          const row = rows2.find((r) => r.id === currentId && r.fieldname.includes("Master")) 
+            || createEmptyRow2(currentId, "master");
+          row.id = currentId;
+          row.fieldname = `Master Observation ${i}`;
+          row.setvariable = `master_obs${i}`;
+          row.fieldHeading = row.fieldname;
+          newRows2.push(row);
+          currentId++;
+        }
+        
+        // Add UUC rows
+        for (let i = 1; i <= uRepeat; i++) {
+          const row = rows2.find((r) => r.id === currentId && r.fieldname.includes("UUC")) 
+            || createEmptyRow2(currentId, "uuc");
+          row.id = currentId;
+          row.fieldname = `UUC Observation ${i}`;
+          row.setvariable = `uuc_obs${i}`;
+          row.fieldHeading = row.fieldname;
+          newRows2.push(row);
+          currentId++;
+        }
+        
+        setRows2(newRows2);
+      } else {
+        setRows2([createEmptyRow2(1, "separate")]);
       }
     }
 
@@ -669,6 +697,54 @@ export default function AddCalibration({
         row.id === id ? { ...row, [field]: selectedOption } : row,
       ),
     );
+
+    if (field === "setpoint") {
+      const type = selectedOption ? selectedOption.value : "uuc";
+      let repeatCount = 1;
+      
+      if (type === "master") {
+        repeatCount = parseInt(masterRepeatableValue) || 1;
+        const newRows2 = [];
+        for (let i = 1; i <= repeatCount; i++) {
+          newRows2.push(createEmptyRow2(i, "master"));
+        }
+        setRows2(newRows2);
+      } else if (type === "uuc") {
+        repeatCount = parseInt(uucRepeatableValue) || 1;
+        const newRows2 = [];
+        for (let i = 1; i <= repeatCount; i++) {
+          newRows2.push(createEmptyRow2(i, "uuc"));
+        }
+        setRows2(newRows2);
+      } else if (type === "separate") {
+        const m = parseInt(masterRepeatableValue) || 0;
+        const u = parseInt(uucRepeatableValue) || 0;
+        
+        if (m + u === 0) {
+          setRows2([createEmptyRow2(1, "separate")]);
+        } else {
+          const newRows2 = [];
+          let currentId = 1;
+          for (let i = 1; i <= m; i++) {
+            const row = createEmptyRow2(currentId, "master");
+            row.fieldname = `Master Observation ${i}`;
+            row.setvariable = `master_obs${i}`;
+            row.fieldHeading = row.fieldname;
+            newRows2.push(row);
+            currentId++;
+          }
+          for (let i = 1; i <= u; i++) {
+            const row = createEmptyRow2(currentId, "uuc");
+            row.fieldname = `UUC Observation ${i}`;
+            row.setvariable = `uuc_obs${i}`;
+            row.fieldHeading = row.fieldname;
+            newRows2.push(row);
+            currentId++;
+          }
+          setRows2(newRows2);
+        }
+      }
+    }
   };
 
   const getRequiredRowsCount = () => {
@@ -681,7 +757,10 @@ export default function AddCalibration({
       const count = parseInt(uucRepeatableValue);
       return isNaN(count) || count <= 0 ? 1 : count;
     } else if (currentSetpoint === "separate") {
-      return 0;
+      const m = parseInt(masterRepeatableValue) || 0;
+      const u = parseInt(uucRepeatableValue) || 0;
+      const count = m + u;
+      return count <= 0 ? 1 : count;
     }
     return 1;
   };
@@ -1095,7 +1174,7 @@ export default function AddCalibration({
                           />
                         </td>
                         {/* Formula */}
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 min-w-[350px]">
                           <input
                             type="text"
                             value={row.formula}
@@ -1106,7 +1185,7 @@ export default function AddCalibration({
                                 e.target.value,
                               )
                             }
-                            className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            className="w-full h-14 rounded-md border px-4 py-3 text-base shadow-[0_0_8px_rgba(0,0,0,0.05)] focus:ring-2 focus:ring-blue-500"
                             placeholder="Formula"
                           />
                         </td>
