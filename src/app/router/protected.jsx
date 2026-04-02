@@ -11,16 +11,37 @@ import AuthGuard from "middleware/AuthGuard";
 
 // ----------------------------------------------------------------------
 
+import { useLabsContext } from "app/contexts/labs/context";
+
 function DashboardPermissionGuard() {
   const outlet = useOutlet();
   const { pathname, search } = useLocation();
   const permissions = getStoredPermissions();
+  const { labs, loading } = useLabsContext();
+  const employeeId = Number(localStorage.getItem("userId") || 0);
+
+  if (loading) {
+    return null; // Or a loading spinner, but null is fine to defer rendering
+  }
 
   if (
     pathname.startsWith("/dashboards") &&
     !canAccessDashboardsRoute({ pathname, search, permissions })
   ) {
     throw new Response("Unauthorized", { status: 401 });
+  }
+
+  // Check dynamic lab permissions
+  if (pathname.startsWith("/dashboards/material-list/")) {
+    const segments = pathname.split("/");
+    if (segments.length >= 4) {
+      const labSlug = segments[3];
+      const matchedLab = labs.find((lab) => lab.slug === labSlug);
+      
+      if (!matchedLab || !matchedLab.users?.includes(employeeId)) {
+        throw new Response("Unauthorized", { status: 401 });
+      }
+    }
   }
 
   return <>{outlet}</>;

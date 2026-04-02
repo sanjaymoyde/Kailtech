@@ -278,16 +278,27 @@ export const normalizePermissions = (rawPermissions) => {
     return Number.isFinite(rawPermissions) ? [rawPermissions] : [];
   }
 
-  const rawValue = String(rawPermissions).trim();
+  let rawValue = String(rawPermissions).trim();
   if (!rawValue) return [];
 
+  // If encased in quotes entirely (e.g., `"1,2,3"`), strip them.
+  if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
+    rawValue = rawValue.slice(1, -1);
+  } else if (rawValue.startsWith("'") && rawValue.endsWith("'")) {
+    rawValue = rawValue.slice(1, -1);
+  }
+
   try {
+    // If it was already a valid JSON array string
     const parsed = JSON.parse(rawValue);
     if (Array.isArray(parsed)) {
       return [...new Set(parsed.map(normalizePermissionValue).filter(Boolean))];
     }
     if (typeof parsed === "number" && Number.isFinite(parsed)) {
       return [parsed];
+    }
+    if (typeof parsed === "string") {
+      rawValue = parsed.trim();
     }
   } catch {
     // Fallback to CSV-style parsing.
@@ -392,14 +403,18 @@ export const canAccessDashboardsRoute = ({
 // Function to generate dynamic dashboard config
 export const generateDashboardsConfig = (labs = [], userPermissions = []) => {
   const permissions = normalizePermissions(userPermissions);
+  const employeeId = Number(localStorage.getItem("userId") || 0);
+
   // Generate child items dynamically from API data
-  const materialListChildren = labs.map((lab) => ({
-    id: `dashboards.${lab.slug}`,
-    type: NAV_TYPE_ITEM,
-    path: path(ROOT_DASHBOARDS, `/material-list/${lab.slug}?labId=${lab.id}`),
-    title: lab.name,
-    // transKey: `nav.dashboards.${lab.slug}`,
-  }));
+  const materialListChildren = labs
+    .filter((lab) => lab.users && lab.users.includes(employeeId))
+    .map((lab) => ({
+      id: `dashboards.${lab.slug}`,
+      type: NAV_TYPE_ITEM,
+      path: path(ROOT_DASHBOARDS, `/material-list/${lab.slug}?labId=${lab.id}`),
+      title: lab.name,
+      // transKey: `nav.dashboards.${lab.slug}`,
+    }));
 
   const dashboardsConfig = {
     id: "dashboards",

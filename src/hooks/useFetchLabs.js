@@ -38,6 +38,7 @@ export const useFetchLabs = () => {
             id: lab.id,
             name: lab.name || 'Unknown Lab',
             slug: slug || `lab-${lab.id}`,
+            users: lab.users ? lab.users.split(',').map(Number) : [],
           };
         });
         
