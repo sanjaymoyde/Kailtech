@@ -30,8 +30,8 @@ export default function CloneInstrument() {
     typeofsupport: [],
     typeofmaster: [],
     description: "",
-    discipline: "",
-    groups: "",
+    discipline: [],
+    groups: [],
     remark: "",
     range: "",
     leastcount: "",
@@ -87,6 +87,8 @@ export default function CloneInstrument() {
   const [priceLists, setPriceLists] = useState([]);
   const [sopOptions, setSopOptions] = useState([]);
   const [standardOptions, setStandardOptions] = useState([]);
+  const [disciplineOptions, setDisciplineOptions] = useState([]);
+  const [groupOptions, setGroupOptions] = useState([]);
   const [subcategoryOne, setSubcategoryOne] = useState([]);
   const [subcategoryTwo, setSubcategoryTwo] = useState([]);
   const [formateOptions, setFormateOptions] = useState([]);
@@ -152,6 +154,7 @@ export default function CloneInstrument() {
           unitTypeRes,
           unitRes,
           modeRes,
+          disciplineRes,
         ] = await Promise.all([
           axios.get("/calibrationoperations/calibration-method-list"),
           axios.get("/calibrationoperations/calibration-standard-list"),
@@ -163,6 +166,7 @@ export default function CloneInstrument() {
           axios.get("/master/unit-type-list"),
           axios.get("/master/units-list"),
           axios.get("/master/mode-list"),
+          axios.get("/calibrationoperations/get-disciplines"),
         ]);
 
         const safeArray = (data) => (Array.isArray(data) ? data : []);
@@ -179,6 +183,14 @@ export default function CloneInstrument() {
             value: item.id.toString(),
           }))
         );
+        if (disciplineRes?.data?.data) {
+          setDisciplineOptions(
+            safeArray(disciplineRes.data.data).map((item) => ({
+              label: item.name || item.discipline_name,
+              value: (item.id || item.discipline_id || item.name)?.toString(),
+            }))
+          );
+        }
         setSubcategoryOne(
           safeArray(subcategoryoneRes.data.data).map((item) => ({
             label: item.name,
@@ -248,6 +260,13 @@ export default function CloneInstrument() {
 
         // Find matching format
         const savedSuffix = safeString(instrumentData.instrument.suffix);
+        const toArray = (value) =>
+          value != null && String(value).trim() !== ""
+            ? String(value)
+                .split(",")
+                .map((v) => v.trim())
+                .filter(Boolean)
+            : [];
         const matchingFormat = formattedOptions.find(
           (opt) => opt.value === savedSuffix
         );
@@ -261,8 +280,8 @@ export default function CloneInstrument() {
           typeofsupport: safeArrayData(instrumentData.instrument.typeofsupport),
           typeofmaster: safeArrayData(instrumentData.instrument.typeofmaster),
           description: safeString(instrumentData.instrument.description),
-          discipline: safeString(instrumentData.instrument.discipline),
-          groups: safeString(instrumentData.instrument.groups),
+          discipline: toArray(instrumentData.instrument.discipline),
+          groups: toArray(instrumentData.instrument.groups),
           remark: safeString(instrumentData.instrument.remark),
           range: safeString(instrumentData.instrument.range),
           leastcount: safeString(instrumentData.instrument.leastcount),
@@ -578,12 +597,18 @@ export default function CloneInstrument() {
     const newErrors = {};
 
     Object.keys(requiredFields).forEach((field) => {
-      if (field === "sop") {
-        if (!formData[field] || formData[field].length === 0) {
+      const value = formData[field];
+      const isArray = Array.isArray(value);
+      const isEmptyArray = isArray && value.length === 0;
+      const isEmptyString =
+        typeof value === "string" && value.toString().trim() === "";
+
+      if (field === "sop" || field === "discipline" || field === "groups") {
+        if (isEmptyArray || value == null) {
           newErrors[field] = true;
         }
       } else {
-        if (!formData[field] || formData[field].toString().trim() === "") {
+        if (isEmptyArray || isEmptyString || value == null) {
           newErrors[field] = true;
         }
       }
@@ -634,6 +659,12 @@ export default function CloneInstrument() {
     try {
       const payload = {
         ...formData,
+        discipline: Array.isArray(formData.discipline)
+          ? formData.discipline.join(",")
+          : formData.discipline || "",
+        groups: Array.isArray(formData.groups)
+          ? formData.groups.join(",")
+          : formData.groups || "",
         suffix: Array.isArray(formData.suffix)
           ? formData.suffix[0] || ""
           : formData.suffix || "",
@@ -845,6 +876,8 @@ export default function CloneInstrument() {
               handleMultiSelectChange={handleMultiSelectChange}
               sopOptions={sopOptions}
               standardOptions={standardOptions}
+              disciplineOptions={disciplineOptions}
+              groupOptions={groupOptions}
             />
 
             <ValidationFields

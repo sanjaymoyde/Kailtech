@@ -1,5 +1,5 @@
 // Import Dependencies
-import { Link } from "react-router"; 
+import { Link } from "react-router";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
@@ -20,10 +20,10 @@ export default function SignIn() {
   const { login } = useAuthContext();
 
   // ── Brute Force Mitigation State ──
-  const [failedAttempts, setFailedAttempts] = useState(() => 
+  const [failedAttempts, setFailedAttempts] = useState(() =>
     Number(localStorage.getItem("login_failed_attempts") || 0)
   );
-  const [lockoutTime, setLockoutTime] = useState(() => 
+  const [lockoutTime, setLockoutTime] = useState(() =>
     Number(localStorage.getItem("login_lockout_until") || 0)
   );
   const [timeLeft, setTimeLeft] = useState(0);
@@ -50,7 +50,7 @@ export default function SignIn() {
     defaultValues: {
       username: "",
       password: "",
-      fiscalYear: "2025-26",
+      fiscalYear: "2026-27",
     },
   });
 
@@ -169,6 +169,7 @@ export default function SignIn() {
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-dark-300 dark:bg-dark-600 dark:text-dark-100 disabled:opacity-60"
                   {...register("fiscalYear")}
                 >
+                  <option value="2026-27">FY 2026-27</option>
                   <option value="2025-26">FY 2025-26</option>
                   <option value="2024-25">FY 2024-25</option>
                   <option value="2023-24">FY 2023-24</option>
@@ -188,10 +189,10 @@ export default function SignIn() {
                 </a>
               </div>
 
-              <Button 
-                type="submit" 
-                className="mt-5 w-full" 
-                color="primary" 
+              <Button
+                type="submit"
+                className="mt-5 w-full"
+                color="primary"
                 disabled={isLocked}
               >
                 {isLocked ? `Locked (${timeLeft}s)` : "Sign In"}

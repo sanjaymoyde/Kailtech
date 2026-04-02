@@ -30,8 +30,8 @@ export default function EditCalibrationInstrumnet() {
     typeofsupport: [],
     typeofmaster: [],
     description: "",
-    discipline: "",
-    groups: "",
+    discipline: [],
+    groups: [],
     remark: "",
     range: "",
     leastcount: "",
@@ -87,6 +87,8 @@ export default function EditCalibrationInstrumnet() {
   const [priceLists, setPriceLists] = useState([]);
   const [sopOptions, setSopOptions] = useState([]);
   const [standardOptions, setStandardOptions] = useState([]);
+  const [disciplineOptions, setDisciplineOptions] = useState([]);
+  const [groupOptions] = useState([]);
   const [subcategoryOne, setSubcategoryOne] = useState([]);
   const [subcategoryTwo, setSubcategoryTwo] = useState([]);
   const [formateOptions, setFormateOptions] = useState([]);
@@ -145,6 +147,7 @@ export default function EditCalibrationInstrumnet() {
           unitTypeRes,
           unitRes,
           modeRes,
+          disciplineRes,
         ] = await Promise.all([
           axios.get("/calibrationoperations/calibration-method-list"),
           axios.get("/calibrationoperations/calibration-standard-list"),
@@ -156,6 +159,7 @@ export default function EditCalibrationInstrumnet() {
           axios.get("/master/unit-type-list"),
           axios.get("/master/units-list"),
           axios.get("/master/mode-list"),
+          axios.get("/calibrationoperations/get-disciplines"),
         ]);
 
         const safeArray = (data) => (Array.isArray(data) ? data : []);
@@ -173,6 +177,14 @@ export default function EditCalibrationInstrumnet() {
             value: item.id.toString(),
           })),
         );
+        if (disciplineRes?.data?.data) {
+          setDisciplineOptions(
+            safeArray(disciplineRes.data.data).map((item) => ({
+              label: item.name || item.discipline_name,
+              value: (item.id || item.discipline_id || item.name)?.toString(),
+            })),
+          );
+        }
         setSubcategoryOne(
           safeArray(subcategoryoneRes.data.data).map((item) => ({
             label: item.name,
@@ -247,6 +259,13 @@ export default function EditCalibrationInstrumnet() {
               ? value.split(",")
               : [];
         const safeString = (value) => (value != null ? String(value) : "");
+        const toArray = (value) =>
+          value != null && String(value).trim() !== ""
+            ? String(value)
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean)
+            : [];
 
         // ✅ Find matching format by description
         const savedSuffix = safeString(instrumentData.instrument.suffix);
@@ -265,8 +284,8 @@ export default function EditCalibrationInstrumnet() {
           typeofsupport: safeArrayData(instrumentData.instrument.typeofsupport),
           typeofmaster: safeArrayData(instrumentData.instrument.typeofmaster),
           description: safeString(instrumentData.instrument.description),
-          discipline: safeString(instrumentData.instrument.discipline),
-          groups: safeString(instrumentData.instrument.groups),
+          discipline: toArray(instrumentData.instrument.discipline),
+          groups: toArray(instrumentData.instrument.groups),
           remark: safeString(instrumentData.instrument.remark),
           range: safeString(instrumentData.instrument.range),
           leastcount: safeString(instrumentData.instrument.leastcount),
@@ -547,6 +566,8 @@ export default function EditCalibrationInstrumnet() {
 
       const newMatrix = {
         id: "",
+        discipline: "",
+        group: "",
         unittype: "",
         unit: "",
         mode: "",
@@ -555,14 +576,6 @@ export default function EditCalibrationInstrumnet() {
         tolerance: "",
         tolerancetype: "",
       };
-
-      if (
-        newMatrices.length > 0 &&
-        JSON.stringify(newMatrices[newMatrices.length - 1]) ===
-        JSON.stringify(newMatrix)
-      ) {
-        return prev;
-      }
 
       newMatrices.push(newMatrix);
       selectedPrice.matrices = newMatrices;
@@ -607,12 +620,18 @@ export default function EditCalibrationInstrumnet() {
     const newErrors = {};
 
     Object.keys(requiredFields).forEach((field) => {
-      if (field === "sop") {
-        if (!formData[field] || formData[field].length === 0) {
+      const value = formData[field];
+      const isArray = Array.isArray(value);
+      const isEmptyArray = isArray && value.length === 0;
+      const isEmptyString =
+        typeof value === "string" && value.toString().trim() === "";
+
+      if (field === "sop" || field === "discipline" || field === "groups") {
+        if (isEmptyArray || value == null) {
           newErrors[field] = true;
         }
       } else {
-        if (!formData[field] || formData[field].toString().trim() === "") {
+        if (isEmptyArray || isEmptyString || value == null) {
           newErrors[field] = true;
         }
       }
@@ -664,6 +683,12 @@ export default function EditCalibrationInstrumnet() {
     try {
       const payload = {
         ...formData,
+        discipline: Array.isArray(formData.discipline)
+          ? formData.discipline.join(",")
+          : formData.discipline || "",
+        groups: Array.isArray(formData.groups)
+          ? formData.groups.join(",")
+          : formData.groups || "",
         suffix: Array.isArray(formData.suffix)
           ? formData.suffix[0] || ""
           : formData.suffix || "",
@@ -867,12 +892,12 @@ export default function EditCalibrationInstrumnet() {
                   type="button"
                   onClick={() => isClickable && handleStepClick(step)}
                   className={`flex h-10 w-10 items-center justify-center rounded-full transition-all duration-200 ${currentStep >= step
-                      ? isClickable
-                        ? "cursor-pointer bg-blue-600 text-white hover:bg-blue-700"
-                        : "cursor-default bg-blue-600 text-white"
-                      : isClickable
-                        ? "cursor-pointer bg-gray-300 text-gray-600 hover:bg-gray-400"
-                        : "cursor-not-allowed bg-gray-300 text-gray-600"
+                    ? isClickable
+                      ? "cursor-pointer bg-blue-600 text-white hover:bg-blue-700"
+                      : "cursor-default bg-blue-600 text-white"
+                    : isClickable
+                      ? "cursor-pointer bg-gray-300 text-gray-600 hover:bg-gray-400"
+                      : "cursor-not-allowed bg-gray-300 text-gray-600"
                     } ${currentStep === step ? "ring-2 ring-blue-400 ring-offset-2" : ""}`}
                   disabled={!isClickable}
                   title={
@@ -976,6 +1001,8 @@ export default function EditCalibrationInstrumnet() {
               handleMultiSelectChange={handleMultiSelectChange}
               sopOptions={sopOptions}
               standardOptions={standardOptions}
+              disciplineOptions={disciplineOptions}
+              groupOptions={groupOptions}
             />
 
             <ValidationFields

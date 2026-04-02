@@ -257,6 +257,22 @@ function PriceListSection({
                       placeholder="Select Tolerance Type"
                     />
                   </div>
+
+                  <Input
+                    label="Discipline"
+                    placeholder="Enter Discipline"
+                    name="discipline"
+                    value={matrix.discipline || ''}
+                    onChange={(e) => handleMatrixChange(priceIndex, matrixIndex, e)}
+                  />
+
+                  <Input
+                    label="Group"
+                    placeholder="Enter Group"
+                    name="group"
+                    value={matrix.group || ''}
+                    onChange={(e) => handleMatrixChange(priceIndex, matrixIndex, e)}
+                  />
                 </div>
               </div>
             ))}

@@ -1,8 +1,25 @@
 
 import { Input } from "components/ui";
 import ReactSelect from "react-select";
+import CreatableSelect from "react-select/creatable";
 
-function Instrument({ formData, errors, handleInputChange, handleMultiSelectChange, sopOptions, standardOptions }) {
+function Instrument({
+  formData,
+  errors,
+  handleInputChange,
+  handleMultiSelectChange,
+  sopOptions,
+  standardOptions,
+  disciplineOptions = [],
+  groupOptions = [],
+}) {
+  const toValueArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === "string" && value.trim() !== "") {
+      return value.split(",").map((v) => v.trim()).filter(Boolean);
+    }
+    return [];
+  };
   return (
     <>
       <div>
@@ -68,13 +85,17 @@ function Instrument({ formData, errors, handleInputChange, handleMultiSelectChan
       <input type="hidden" name="vertical" value={formData.vertical} />
 
       <div>
-        <Input
-          label="Discipline"
+        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-white">
+          Discipline
+        </label>
+        <CreatableSelect
+          isMulti
           name="discipline"
-          placeholder="Enter Discipline"
-          value={formData.discipline}
-          onChange={handleInputChange}
-          className={errors.discipline ? "border-red-500 bg-red-50" : ""}
+          options={disciplineOptions}
+          value={toValueArray(formData.discipline).map((v) => ({ value: v, label: v }))}
+          onChange={(selected) => handleMultiSelectChange(selected, "discipline")}
+          placeholder="Select Discipline"
+          className={errors.discipline ? "react-select-error" : ""}
         />
         {errors.discipline && (
           <p className="text-red-600 text-sm mt-1">This field is required</p>
@@ -82,13 +103,17 @@ function Instrument({ formData, errors, handleInputChange, handleMultiSelectChan
       </div>
 
       <div>
-        <Input
-          label="Group"
+        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-white">
+          Group
+        </label>
+        <CreatableSelect
+          isMulti
           name="groups"
-          placeholder="Enter Group"
-          value={formData.groups}
-          onChange={handleInputChange}
-          className={errors.groups ? "border-red-500 bg-red-50" : ""}
+          options={groupOptions}
+          value={toValueArray(formData.groups).map((v) => ({ value: v, label: v }))}
+          onChange={(selected) => handleMultiSelectChange(selected, "groups")}
+          placeholder="Select Group"
+          className={errors.groups ? "react-select-error" : ""}
         />
         {errors.groups && (
           <p className="text-red-600 text-sm mt-1">This field is required</p>

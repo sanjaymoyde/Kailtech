@@ -28,7 +28,11 @@ export default function AddUncertainty({
   ];
 
   // ✅ States
-  const [rows, setRows] = useState([]);
+  const [tables, setTables] = useState([{
+    id: Date.now(),
+    tableName: "",
+    rows: []
+  }]);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -106,6 +110,24 @@ export default function AddUncertainty({
     fieldPosition: "",
     fieldnameOptions: [],
   });
+
+  // ✅ Table management functions
+  const addTable = () => {
+    setTables([...tables, {
+      id: Date.now(),
+      tableName: "",
+      rows: [createEmptyRow(1)]
+    }]);
+  };
+
+  const removeTable = (tableId) => {
+    if (tables.length === 1) return;
+    setTables(tables.filter(t => t.id !== tableId));
+  };
+
+  const handleTableNameChange = (tableId, value) => {
+    setTables(prev => prev.map(t => t.id === tableId ? { ...t, tableName: value } : t));
+  };
 
   // ✅ Auto-fetch data when formatId is available
   useEffect(() => {
@@ -223,16 +245,32 @@ export default function AddUncertainty({
               },
             ),
           );
-          setRows(uncertaintyData);
+          setTables([{
+            id: Date.now(),
+            tableName: "Uncertainty Table",
+            rows: uncertaintyData
+          }]);
         } else {
-          setRows([createEmptyRow(1)]);
+          setTables([{
+            id: Date.now(),
+            tableName: "",
+            rows: [createEmptyRow(1)]
+          }]);
         }
       } else {
-        setRows([createEmptyRow(1)]);
+        setTables([{
+          id: Date.now(),
+          tableName: "",
+          rows: [createEmptyRow(1)]
+        }]);
       }
     } catch (error) {
       console.error("Error fetching uncertainty settings:", error);
-      setRows([createEmptyRow(1)]);
+      setTables([{
+        id: Date.now(),
+        tableName: "",
+        rows: [createEmptyRow(1)]
+      }]);
     } finally {
       setLoading(false);
     }
@@ -256,9 +294,10 @@ export default function AddUncertainty({
   };
 
   // ✅ Handlers
-  const handleCheckbox = (id) => {
-    setRows((prevRows) =>
-      prevRows.map((row) => {
+  const handleCheckbox = (tableId, id) => {
+    setTables(prev => prev.map(t => t.id === tableId ? {
+      ...t,
+      rows: t.rows.map((row) => {
         if (row.id === id) {
           const newChecked = !row.checked;
           return {
@@ -268,26 +307,28 @@ export default function AddUncertainty({
               ? row.fieldPosition === "0" || row.fieldPosition === 0
                 ? "1"
                 : row.fieldPosition
-              : "0", // ✅ Uncheck → position = 0
+              : "0",
           };
         }
         return row;
-      }),
-    );
+      })
+    } : t));
   };
 
-  const handleInputChange = (id, field, value) => {
-    setRows((prevRows) =>
-      prevRows.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
-    );
+  const handleInputChange = (tableId, id, field, value) => {
+    setTables(prev => prev.map(t => t.id === tableId ? {
+      ...t,
+      rows: t.rows.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+    } : t));
   };
 
-  const handleTableSelection = async (id, selectedOption) => {
+  const handleTableSelection = async (tableId, id, selectedOption) => {
     if (selectedOption) {
       const options = await fetchFieldnameOptions(selectedOption.value);
 
-      setRows((prevRows) =>
-        prevRows.map((row) =>
+      setTables(prev => prev.map(t => t.id === tableId ? {
+        ...t,
+        rows: t.rows.map((row) =>
           row.id === id
             ? {
               ...row,
@@ -296,12 +337,13 @@ export default function AddUncertainty({
               fieldname: null,
               fieldnameOptions: options,
             }
-            : row,
-        ),
-      );
+            : row
+        )
+      } : t));
     } else {
-      setRows((prevRows) =>
-        prevRows.map((row) =>
+      setTables(prev => prev.map(t => t.id === tableId ? {
+        ...t,
+        rows: t.rows.map((row) =>
           row.id === id
             ? {
               ...row,
@@ -310,31 +352,42 @@ export default function AddUncertainty({
               fieldname: null,
               fieldnameOptions: [],
             }
-            : row,
-        ),
-      );
+            : row
+        )
+      } : t));
     }
   };
 
-  const handleFieldnameChange = (id, selectedOption) => {
-    setRows((prevRows) =>
-      prevRows.map((row) =>
-        row.id === id ? { ...row, fieldname: selectedOption } : row,
-      ),
-    );
+  const handleFieldnameChange = (tableId, id, selectedOption) => {
+    setTables(prev => prev.map(t => t.id === tableId ? {
+      ...t,
+      rows: t.rows.map((row) =>
+        row.id === id ? { ...row, fieldname: selectedOption } : row
+      )
+    } : t));
   };
 
-  const addRow = () => {
-    const newId = rows.length > 0 ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-    setRows([...rows, createEmptyRow(newId)]);
+  const addRow = (tableId) => {
+    setTables(prev => prev.map(t => {
+      if (t.id === tableId) {
+        const newId = t.rows.length > 0 ? Math.max(...t.rows.map((r) => r.id)) + 1 : 1;
+        return { ...t, rows: [...t.rows, createEmptyRow(newId)] };
+      }
+      return t;
+    }));
   };
 
-  const removeRow = (id) => {
-    if (rows.length === 1) {
-      alert("At least one row is required!");
-      return;
-    }
-    setRows((prevRows) => prevRows.filter((row) => row.id !== id));
+  const removeRow = (tableId, id) => {
+    setTables(prev => prev.map(t => {
+      if (t.id === tableId) {
+        if (t.rows.length === 1) {
+          alert("At least one row is required!");
+          return t;
+        }
+        return { ...t, rows: t.rows.filter((row) => row.id !== id) };
+      }
+      return t;
+    }));
   };
 
   // const handleBack = () => {
@@ -343,8 +396,6 @@ export default function AddUncertainty({
 
   // ✅ Save handler - EXACTLY like cURL API
   const handleSave = async () => {
-    toast.success("Uncertainty settings saved!");
-    onComplete(); // Complete all steps
     if (!formatId) {
       alert("Format ID is missing! Please check the URL parameter.");
       return;
@@ -360,8 +411,11 @@ export default function AddUncertainty({
         return;
       }
 
+      // ✅ Collect all rows from all tables
+      const allRows = tables.flatMap(table => table.rows);
+
       // ✅ Filter and map rows - allowing empty fieldfrom/fieldname like in cURL
-      const uncertaintysetting = rows.map((row) => ({
+      const uncertaintysetting = allRows.map((row) => ({
         fieldfrom: row.fieldfrom || "",
         fieldname: row.fieldname?.value || "",
         variable: row.setVariable || "",
@@ -401,6 +455,8 @@ export default function AddUncertainty({
         setSuccessMessage("Observation setting updated successfully!");
         setTimeout(() => setSuccessMessage(""), 3000);
         fetchUncertaintySettings(formatId);
+        toast.success("Uncertainty settings saved!");
+        onComplete(); // Complete all steps
       } else {
         alert("Failed to save data. Please try again.");
       }
@@ -499,18 +555,66 @@ export default function AddUncertainty({
         )}
 
         {/* Table Component */}
-        <UncertaintyTable
-          rows={rows}
-          tableList={tableList}
-          customSelectStyles={customSelectStyles}
-          handleCheckbox={handleCheckbox}
-          handleInputChange={handleInputChange}
-          handleTableSelection={handleTableSelection}
-          handleFieldnameChange={handleFieldnameChange}
-          addRow={addRow}
-          removeRow={removeRow}
-          loading={loading}
-        />
+        <div className="space-y-6">
+          <div className="px-4 flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-800">Uncertainty Tables</h2>
+            <button
+              onClick={addTable}
+              className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+              title="Add new table"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Table
+            </button>
+          </div>
+
+          {tables.map((table, tableIdx) => (
+            <div key={table.id} className="overflow-hidden rounded-lg bg-white shadow-md border border-gray-200">
+              <div className="border-b border-gray-200 p-4 bg-gray-50">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="whitespace-nowrap text-xl font-bold text-gray-800">
+                      Table {tableIdx + 1}
+                    </h3>
+                    <input
+                      type="text"
+                      value={table.tableName || ""}
+                      onChange={(e) => handleTableNameChange(table.id, e.target.value)}
+                      className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter table name..."
+                    />
+                  </div>
+                  {tableIdx > 0 && (
+                    <button
+                      onClick={() => removeTable(table.id)}
+                      className="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Remove Table
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <UncertaintyTable
+                rows={table.rows}
+                tableList={tableList}
+                customSelectStyles={customSelectStyles}
+                handleCheckbox={(id) => handleCheckbox(table.id, id)}
+                handleInputChange={(id, field, value) => handleInputChange(table.id, id, field, value)}
+                handleTableSelection={(id, selectedOption) => handleTableSelection(table.id, id, selectedOption)}
+                handleFieldnameChange={(id, selectedOption) => handleFieldnameChange(table.id, id, selectedOption)}
+                addRow={() => addRow(table.id)}
+                removeRow={(id) => removeRow(table.id, id)}
+                loading={loading}
+              />
+            </div>
+          ))}
+        </div>
 
         {/* Save Button */}
         <div className="mt-4 flex flex-row items-center justify-between gap-2">

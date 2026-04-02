@@ -13,7 +13,16 @@ export default function AddCalibration({
   onNext,
   onBack,
 }) {
-  const [tables1, setTables1] = useState([{ id: Date.now(), tableName: "", rows: [] }]);
+  const [tables1, setTables1] = useState([{
+    id: Date.now(),
+    tableName: "",
+    setpoint: null,
+    masterRepeatable: "",
+    uucRepeatable: "",
+    fixedRepeatable: "",
+    rows: [],
+    observationRows: []
+  }]);
   const [rows2, setRows2] = useState([]);
   const [rows3, setRows3] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,10 +30,25 @@ export default function AddCalibration({
   const [labToCalibrateOptions, setLabToCalibrateOptions] = useState([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [uucRepeatableValue, setUucRepeatableValue] = useState("");
-  const [masterRepeatableValue, setMasterRepeatableValue] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [functionOptions, setFunctionOptions] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [allFunctionsData, setAllFunctionsData] = useState({});
+
+  // Prevent number input scroll behavior
+  useEffect(() => {
+    const preventNumberInputScroll = (e) => {
+      if (e.target.type === 'number') {
+        e.preventDefault();
+      }
+    };
+    
+    document.addEventListener('wheel', preventNumberInputScroll, { passive: false });
+    
+    return () => {
+      document.removeEventListener('wheel', preventNumberInputScroll);
+    };
+  }, []);
 
   // ✅ Source table list for two-tier dropdown
   const tableList = [
@@ -110,7 +134,16 @@ export default function AddCalibration({
   };
 
   const addTable1 = () => {
-    setTables1([...tables1, { id: Date.now(), tableName: "", rows: [createEmptyRow1(1)] }]);
+    setTables1([...tables1, {
+      id: Date.now(),
+      tableName: "",
+      setpoint: null,
+      masterRepeatable: "",
+      uucRepeatable: "",
+      fixedRepeatable: "",
+      rows: [createEmptyRow1(1)],
+      observationRows: [createEmptyRow2(1, "uuc")]
+    }]);
   };
 
   const removeTable1 = (tableId) => {
@@ -118,6 +151,7 @@ export default function AddCalibration({
     setTables1(tables1.filter(t => t.id !== tableId));
   };
 
+  // eslint-disable-next-line no-unused-vars
   const removeRow2 = (id) => {
     if (rows2.length === 1) {
       alert("At least one row is required!");
@@ -130,6 +164,7 @@ export default function AddCalibration({
     { value: "uuc", label: "uuc" },
     { value: "master", label: "master" },
     { value: "separate", label: "separate" },
+    { value: "fixed", label: "fixed" },
   ];
 
   // CHANGE KARO - customSelectStyles mein menu property
@@ -160,98 +195,8 @@ export default function AddCalibration({
       fetchObservationSettings(instrumentId);
     }
     fetchLabOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instrumentId, formatId]);
-
-  useEffect(() => {
-    const setpointVal = rows3[0]?.setpoint?.value;
-    if (!setpointVal) return;
-
-    if (setpointVal === "master") {
-      handleMasterMode();
-    } else if (setpointVal === "uuc") {
-      handleUucMode();
-    } else if (setpointVal === "separate") {
-      handleSeparateMode();
-    }
-  }, [rows3[0]?.setpoint?.value, masterRepeatableValue, uucRepeatableValue]);
-
-  useEffect(() => {
-    const currentSetpoint = rows3[0]?.setpoint?.value;
-    const repeatable =
-      currentSetpoint === "master" ? masterRepeatableValue : uucRepeatableValue;
-
-    if (currentSetpoint && repeatable && repeatable > 0) {
-      fetchFunctionFormulas(currentSetpoint, repeatable);
-    }
-  }, [rows3[0]?.setpoint?.value, masterRepeatableValue, uucRepeatableValue]);
-
-  const fetchFunctionFormulas = async (setpoint, repeatable) => {
-    if (!setpoint || !repeatable) return;
-    try {
-      const authToken = localStorage.getItem("authToken");
-      const response = await axios.get(
-        `/observationsetting/get-function-formula?setpoint=${setpoint}&repeatable=${repeatable}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-      if (response.data.success) {
-        setAllFunctionsData(response.data.functions);
-        const options = Object.keys(response.data.functions).map((key) => ({
-          value: key,
-          label: key,
-        }));
-        setFunctionOptions(options);
-      }
-    } catch (error) {
-      console.error("Error fetching function formulas:", error);
-    }
-  };
-
-  const handleMasterMode = () => {
-    if (!masterRepeatableValue) {
-      setRows2([createEmptyRow2(1, "master")]);
-      return;
-    }
-
-    const repeatCount = parseInt(masterRepeatableValue);
-    if (!isNaN(repeatCount) && repeatCount > 0) {
-      const newRows = [];
-      for (let i = 1; i <= repeatCount; i++) {
-        newRows.push(createEmptyRow2(i, "master"));
-      }
-      setRows2(newRows);
-    } else {
-      setRows2([createEmptyRow2(1, "master")]);
-    }
-  };
-
-  const handleUucMode = () => {
-    if (!uucRepeatableValue) {
-      setRows2([createEmptyRow2(1, "uuc")]);
-      return;
-    }
-
-    const repeatCount = parseInt(uucRepeatableValue);
-    if (!isNaN(repeatCount) && repeatCount > 0) {
-      const newRows = [];
-      for (let i = 1; i <= repeatCount; i++) {
-        newRows.push(createEmptyRow2(i, "uuc"));
-      }
-      setRows2(newRows);
-    } else {
-      setRows2([createEmptyRow2(1, "uuc")]);
-    }
-  };
-
-  const handleSeparateMode = () => {
-    if (rows2.length === 0) {
-      setRows2([createEmptyRow2(1, "separate")]);
-    }
-  };
 
   const fetchLabOptions = async () => {
     try {
@@ -386,6 +331,9 @@ export default function AddCalibration({
               fieldHeading: item.field_heading || "",
               SetVariable: item.SetVariable || "",
               formula: item.formula || "",
+              formulaList: item.formula
+                ? item.formula.split("|").map((f) => f.trim())
+                : [item.formula || ""],
               fieldPosition: item.field_position != null ? item.field_position.toString() : "",
               selectedFunction: null,
               table_index: item.table_index || 0,
@@ -406,9 +354,21 @@ export default function AddCalibration({
           ? groupedTables.map((rows, idx) => ({
             id: Date.now() + idx,
             tableName: rows[0]?.table_name || "",
-            rows
+            setpoint: null,
+            masterRepeatable: "",
+            uucRepeatable: "",
+            fixedRepeatable: "",
+            rows,
           }))
-          : [{ id: Date.now(), tableName: "", rows: [createEmptyRow1(1)] }];
+          : [{
+            id: Date.now(),
+            tableName: "",
+            setpoint: null,
+            masterRepeatable: "",
+            uucRepeatable: "",
+            fixedRepeatable: "",
+            rows: [createEmptyRow1(1)],
+          }];
 
         setTables1(initialTables);
 
@@ -453,10 +413,6 @@ export default function AddCalibration({
         );
         setRows3([table3Data]);
 
-        // Set repeatable values
-        setMasterRepeatableValue(data.master?.toString() || "");
-        setUucRepeatableValue(data.uuc?.toString() || "");
-
         if (data.setpoint) {
           if (data.setpoint === "master" && data.master) {
             const masterCount = parseInt(data.master);
@@ -490,13 +446,29 @@ export default function AddCalibration({
           }
         }
       } else {
-        setTables1([{ id: Date.now(), rows: [createEmptyRow1(1)] }]);
+        setTables1([{
+          id: Date.now(),
+          tableName: "",
+          setpoint: null,
+          masterRepeatable: "",
+          uucRepeatable: "",
+          fixedRepeatable: "",
+          rows: [createEmptyRow1(1)],
+        }]);
         setRows2([createEmptyRow2(1, "uuc")]);
         setRows3([createEmptyRow3(1)]);
       }
     } catch (error) {
       console.error("Error fetching observation settings:", error);
-      setTables1([{ id: Date.now(), rows: [createEmptyRow1(1)] }]);
+      setTables1([{
+        id: Date.now(),
+        tableName: "",
+        setpoint: null,
+        masterRepeatable: "",
+        uucRepeatable: "",
+        fixedRepeatable: "",
+        rows: [createEmptyRow1(1)],
+      }]);
       setRows2([createEmptyRow2(1, "uuc")]);
       setRows3([createEmptyRow3(1)]);
     } finally {
@@ -514,6 +486,7 @@ export default function AddCalibration({
     fieldHeading: "",
     SetVariable: "",
     formula: "",
+    formulaList: [""],
     fieldPosition: "",
     selectedFunction: null,
   });
@@ -564,9 +537,35 @@ export default function AddCalibration({
     } : t));
   };
 
+  const buildFormulaList = (count, existingList = []) => {
+    const parsed = parseInt(count, 10);
+    const target = !isNaN(parsed) && parsed > 0 ? parsed : 1;
+    const base = Array.isArray(existingList) ? [...existingList] : [];
+    const trimmed = base.slice(0, target);
+    while (trimmed.length < target) trimmed.push("");
+    return trimmed;
+  };
+
   const handleInputChange1 = (tableId, rowId, field, value) => {
     setTables1(prev => prev.map(t => t.id === tableId ? {
-      ...t, rows: t.rows.map(r => r.id === rowId ? { ...r, [field]: value } : r)
+      ...t, rows: t.rows.map(r => {
+        if (r.id !== rowId) return r;
+        if (field === "formula") {
+          return { ...r, formula: value, formulaList: [value] };
+        }
+        return { ...r, [field]: value };
+      })
+    } : t));
+  };
+
+  const handleFormulaListChange = (tableId, rowId, index, value) => {
+    setTables1(prev => prev.map(t => t.id === tableId ? {
+      ...t, rows: t.rows.map(r => {
+        if (r.id !== rowId) return r;
+        const updatedList = [...(r.formulaList || [])];
+        updatedList[index] = value;
+        return { ...r, formulaList: updatedList, formula: updatedList.join(" | ") };
+      })
     } : t));
   };
 
@@ -632,6 +631,7 @@ export default function AddCalibration({
     }));
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleCheckbox2 = (id) => {
     setRows2(
       rows2.map((row) =>
@@ -640,6 +640,7 @@ export default function AddCalibration({
     );
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleInputChange2 = (id, field, value) => {
     setRows2(
       rows2.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
@@ -650,90 +651,177 @@ export default function AddCalibration({
     setTables1(prev => prev.map(t => t.id === tableId ? { ...t, tableName: value } : t));
   };
 
+  const handleTableSetpointChange = (tableId, selectedOption) => {
+    setTables1(prev => prev.map(t => {
+      if (t.id !== tableId) return t;
+      const resetRows = t.rows.map(r => {
+        const list = buildFormulaList(
+          selectedOption?.value === "fixed" ? (t.fixedRepeatable || 1) : 1,
+          r.formulaList || [r.formula || ""],
+        );
+        return {
+          ...r,
+          formulaList: list,
+          formula: list.join(" | "),
+        };
+      });
+      
+      // Generate observation rows based on setpoint
+      let newObservationRows = [];
+      const setpointValue = selectedOption?.value;
+      
+      if (setpointValue === "master" && t.masterRepeatable) {
+        const count = parseInt(t.masterRepeatable) || 1;
+        newObservationRows = Array.from({ length: count }, (_, index) => ({
+          ...createEmptyRow2(index + 1, "master"),
+          fieldname: `Master Observation ${index + 1}`,
+          setvariable: `master_obs${index + 1}`,
+          fieldHeading: `Master Observation ${index + 1}`,
+        }));
+      } else if (setpointValue === "uuc" && t.uucRepeatable) {
+        const count = parseInt(t.uucRepeatable) || 1;
+        newObservationRows = Array.from({ length: count }, (_, index) => ({
+          ...createEmptyRow2(index + 1, "uuc"),
+          fieldname: `UUC Observation ${index + 1}`,
+          setvariable: `uuc_obs${index + 1}`,
+          fieldHeading: `UUC Observation ${index + 1}`,
+        }));
+      } else if (setpointValue === "separate") {
+        const masterCount = parseInt(t.masterRepeatable) || 0;
+        const uucCount = parseInt(t.uucRepeatable) || 0;
+        const masterRows = Array.from({ length: masterCount }, (_, index) => ({
+          ...createEmptyRow2(index + 1, "master"),
+          fieldname: `Master Observation ${index + 1}`,
+          setvariable: `master_obs${index + 1}`,
+          fieldHeading: `Master Observation ${index + 1}`,
+        }));
+        const uucRows = Array.from({ length: uucCount }, (_, index) => ({
+          ...createEmptyRow2(masterCount + index + 1, "uuc"),
+          fieldname: `UUC Observation ${index + 1}`,
+          setvariable: `uuc_obs${index + 1}`,
+          fieldHeading: `UUC Observation ${index + 1}`,
+        }));
+        newObservationRows = [...masterRows, ...uucRows];
+      } else {
+        // Default: create one observation row
+        newObservationRows = [createEmptyRow2(1, setpointValue || "uuc")];
+      }
+      
+      return {
+        ...t,
+        setpoint: selectedOption,
+        fixedRepeatable: selectedOption?.value === "fixed" ? (t.fixedRepeatable || "") : "",
+        rows: resetRows,
+        observationRows: newObservationRows.length > 0 ? newObservationRows : t.observationRows,
+      };
+    }));
+  };
+
+  const handleFixedRepeatableChange = (tableId, value) => {
+    setTables1(prev => prev.map(t => {
+      if (t.id !== tableId) return t;
+      const listCount = parseInt(value, 10);
+      const adjustedRows = t.rows.map(r => {
+        const list = buildFormulaList(listCount, r.formulaList || [r.formula || ""]);
+        return { ...r, formulaList: list, formula: list.join(" | ") };
+      });
+      return { ...t, fixedRepeatable: value, rows: adjustedRows };
+    }));
+  };
+
+  const handleTableRepeatableChange = (tableId, field, value) => {
+    setTables1(prev => prev.map(t => {
+      if (t.id !== tableId) return t;
+      
+      const updatedTable = { ...t, [field]: value };
+      
+      // Regenerate observation rows based on new repeatable value
+      let newObservationRows = [...t.observationRows];
+      const setpointValue = t.setpoint?.value;
+      
+      if (setpointValue === "master" && field === "masterRepeatable") {
+        const count = parseInt(value) || 1;
+        newObservationRows = Array.from({ length: count }, (_, index) => ({
+          ...createEmptyRow2(index + 1, "master"),
+          fieldname: `Master Observation ${index + 1}`,
+          setvariable: `master_obs${index + 1}`,
+          fieldHeading: `Master Observation ${index + 1}`,
+        }));
+      } else if (setpointValue === "uuc" && field === "uucRepeatable") {
+        const count = parseInt(value) || 1;
+        newObservationRows = Array.from({ length: count }, (_, index) => ({
+          ...createEmptyRow2(index + 1, "uuc"),
+          fieldname: `UUC Observation ${index + 1}`,
+          setvariable: `uuc_obs${index + 1}`,
+          fieldHeading: `UUC Observation ${index + 1}`,
+        }));
+      } else if (setpointValue === "separate") {
+        const masterCount = parseInt(field === "masterRepeatable" ? value : t.masterRepeatable) || 0;
+        const uucCount = parseInt(field === "uucRepeatable" ? value : t.uucRepeatable) || 0;
+        const masterRows = Array.from({ length: masterCount }, (_, index) => ({
+          ...createEmptyRow2(index + 1, "master"),
+          fieldname: `Master Observation ${index + 1}`,
+          setvariable: `master_obs${index + 1}`,
+          fieldHeading: `Master Observation ${index + 1}`,
+        }));
+        const uucRows = Array.from({ length: uucCount }, (_, index) => ({
+          ...createEmptyRow2(masterCount + index + 1, "uuc"),
+          fieldname: `UUC Observation ${index + 1}`,
+          setvariable: `uuc_obs${index + 1}`,
+          fieldHeading: `UUC Observation ${index + 1}`,
+        }));
+        newObservationRows = [...masterRows, ...uucRows];
+      }
+      
+      return { ...updatedTable, observationRows: newObservationRows };
+    }));
+  };
+
+  // eslint-disable-next-line no-unused-vars
   const addRow2 = () => {
     const newId =
       rows2.length > 0 ? Math.max(...rows2.map((r) => r.id)) + 1 : 1;
 
-    const currentSetpoint = rows3[0]?.setpoint?.value || "uuc";
-    setRows2([...rows2, createEmptyRow2(newId, currentSetpoint)]);
+    setRows2([...rows2, createEmptyRow2(newId, "uuc")]);
   };
 
-  const handleInputChange3 = (id, field, value) => {
-    const currentSetpoint = rows3[0]?.setpoint?.value;
+  // Table-specific observation row handlers
+  const handleTableObservationCheckbox = (tableId, rowId) => {
+    setTables1(prev => prev.map(t => t.id === tableId ? {
+      ...t,
+      observationRows: t.observationRows.map(r => r.id === rowId ? { ...r, checked: !r.checked } : r)
+    } : t));
+  };
 
-    let newMasterVal = field === "masterRepeatable" ? value : masterRepeatableValue;
-    let newUucVal = field === "uucRepeatable" ? value : uucRepeatableValue;
+  const handleTableObservationInputChange = (tableId, rowId, field, value) => {
+    setTables1(prev => prev.map(t => t.id === tableId ? {
+      ...t,
+      observationRows: t.observationRows.map(r => r.id === rowId ? { ...r, [field]: value } : r)
+    } : t));
+  };
 
-    if (field === "masterRepeatable") {
-      setMasterRepeatableValue(value);
-    } else if (field === "uucRepeatable") {
-      setUucRepeatableValue(value);
-    }
-
-    if (currentSetpoint === "master" && field === "masterRepeatable") {
-      const repeatCount = parseInt(value) || 0;
-      if (repeatCount > 0 && repeatCount <= 20) {
-        const newRows2 = [];
-        for (let i = 1; i <= repeatCount; i++) {
-          newRows2.push(rows2.find((row) => row.id === i) || createEmptyRow2(i, "master"));
-        }
-        setRows2(newRows2);
-      } else {
-        setRows2([createEmptyRow2(1, "master")]);
+  const addTableObservationRow = (tableId) => {
+    setTables1(prev => prev.map(t => {
+      if (t.id === tableId) {
+        const newId = t.observationRows.length > 0 ? Math.max(...t.observationRows.map(r => r.id)) + 1 : 1;
+        const type = t.setpoint?.value || "uuc";
+        return { ...t, observationRows: [...t.observationRows, createEmptyRow2(newId, type)] };
       }
-    } else if (currentSetpoint === "uuc" && field === "uucRepeatable") {
-      const repeatCount = parseInt(value) || 0;
-      if (repeatCount > 0 && repeatCount <= 20) {
-        const newRows2 = [];
-        for (let i = 1; i <= repeatCount; i++) {
-          newRows2.push(rows2.find((row) => row.id === i) || createEmptyRow2(i, "uuc"));
+      return t;
+    }));
+  };
+
+  const removeTableObservationRow = (tableId, rowId) => {
+    setTables1(prev => prev.map(t => {
+      if (t.id === tableId) {
+        if (t.observationRows.length === 1) {
+          alert("At least one observation row is required!");
+          return t;
         }
-        setRows2(newRows2);
-      } else {
-        setRows2([createEmptyRow2(1, "uuc")]);
+        return { ...t, observationRows: t.observationRows.filter(r => r.id !== rowId) };
       }
-    } else if (currentSetpoint === "separate" && (field === "masterRepeatable" || field === "uucRepeatable")) {
-      const mRepeat = parseInt(newMasterVal) || 0;
-      const uRepeat = parseInt(newUucVal) || 0;
-      const repeatCount = mRepeat + uRepeat;
-
-      if (repeatCount > 0 && repeatCount <= 40) {
-        const newRows2 = [];
-        let currentId = 1;
-
-        // Add Master rows
-        for (let i = 1; i <= mRepeat; i++) {
-          const row = rows2.find((r) => r.id === currentId && r.fieldname.includes("Master"))
-            || createEmptyRow2(currentId, "master");
-          row.id = currentId;
-          row.fieldname = `Master Observation ${i}`;
-          row.setvariable = `master_obs${i}`;
-          row.fieldHeading = row.fieldname;
-          newRows2.push(row);
-          currentId++;
-        }
-
-        // Add UUC rows
-        for (let i = 1; i <= uRepeat; i++) {
-          const row = rows2.find((r) => r.id === currentId && r.fieldname.includes("UUC"))
-            || createEmptyRow2(currentId, "uuc");
-          row.id = currentId;
-          row.fieldname = `UUC Observation ${i}`;
-          row.setvariable = `uuc_obs${i}`;
-          row.fieldHeading = row.fieldname;
-          newRows2.push(row);
-          currentId++;
-        }
-
-        setRows2(newRows2);
-      } else {
-        setRows2([createEmptyRow2(1, "separate")]);
-      }
-    }
-
-    setRows3(
-      rows3.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
-    );
+      return t;
+    }));
   };
 
   const handleSelectChange3 = (id, field, selectedOption) => {
@@ -742,72 +830,6 @@ export default function AddCalibration({
         row.id === id ? { ...row, [field]: selectedOption } : row,
       ),
     );
-
-    if (field === "setpoint") {
-      const type = selectedOption ? selectedOption.value : "uuc";
-      let repeatCount = 1;
-
-      if (type === "master") {
-        repeatCount = parseInt(masterRepeatableValue) || 1;
-        const newRows2 = [];
-        for (let i = 1; i <= repeatCount; i++) {
-          newRows2.push(createEmptyRow2(i, "master"));
-        }
-        setRows2(newRows2);
-      } else if (type === "uuc") {
-        repeatCount = parseInt(uucRepeatableValue) || 1;
-        const newRows2 = [];
-        for (let i = 1; i <= repeatCount; i++) {
-          newRows2.push(createEmptyRow2(i, "uuc"));
-        }
-        setRows2(newRows2);
-      } else if (type === "separate") {
-        const m = parseInt(masterRepeatableValue) || 0;
-        const u = parseInt(uucRepeatableValue) || 0;
-
-        if (m + u === 0) {
-          setRows2([createEmptyRow2(1, "separate")]);
-        } else {
-          const newRows2 = [];
-          let currentId = 1;
-          for (let i = 1; i <= m; i++) {
-            const row = createEmptyRow2(currentId, "master");
-            row.fieldname = `Master Observation ${i}`;
-            row.setvariable = `master_obs${i}`;
-            row.fieldHeading = row.fieldname;
-            newRows2.push(row);
-            currentId++;
-          }
-          for (let i = 1; i <= u; i++) {
-            const row = createEmptyRow2(currentId, "uuc");
-            row.fieldname = `UUC Observation ${i}`;
-            row.setvariable = `uuc_obs${i}`;
-            row.fieldHeading = row.fieldname;
-            newRows2.push(row);
-            currentId++;
-          }
-          setRows2(newRows2);
-        }
-      }
-    }
-  };
-
-  const getRequiredRowsCount = () => {
-    const currentSetpoint = rows3[0]?.setpoint?.value;
-
-    if (currentSetpoint === "master") {
-      const count = parseInt(masterRepeatableValue);
-      return isNaN(count) || count <= 0 ? 1 : count;
-    } else if (currentSetpoint === "uuc") {
-      const count = parseInt(uucRepeatableValue);
-      return isNaN(count) || count <= 0 ? 1 : count;
-    } else if (currentSetpoint === "separate") {
-      const m = parseInt(masterRepeatableValue) || 0;
-      const u = parseInt(uucRepeatableValue) || 0;
-      const count = m + u;
-      return count <= 0 ? 1 : count;
-    }
-    return 1;
   };
 
   const handleSave = async () => {
@@ -826,10 +848,10 @@ export default function AddCalibration({
       const dynamic_calibration_settings = {};
 
       tables1.forEach((table, tIdx) => {
-        const tName = table.tableName && table.tableName.trim() !== "" 
-            ? table.tableName.trim() 
-            : `calibration_settings_${tIdx + 1}`; // fallback
-            
+        const tName = table.tableName && table.tableName.trim() !== ""
+          ? table.tableName.trim()
+          : `calibration_settings_${tIdx + 1}`; // fallback
+
         const tableRows = table.rows
           .filter((row) => row.fieldname && row.fieldname.value)
           .map((row) => ({
@@ -905,10 +927,6 @@ export default function AddCalibration({
   if (!formatId) {
     return <div className="p-6 text-red-600">Invalid format ID.</div>;
   }
-
-  const currentSetpoint = rows3[0]?.setpoint?.value;
-  const requiredRowsCount = getRequiredRowsCount();
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -975,91 +993,6 @@ export default function AddCalibration({
           ) : (
             <div className="p-4">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {/* Setpoint Dropdown */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Setpoint
-                  </label>
-                  <Select
-                    value={rows3[0]?.setpoint}
-                    onChange={(selectedOption) =>
-                      handleSelectChange3(
-                        rows3[0]?.id,
-                        "setpoint",
-                        selectedOption,
-                      )
-                    }
-                    options={setpointOptions}
-                    placeholder="Select..."
-                    isClearable
-                    styles={customSelectStyles}
-                    menuPortalTarget={document.body}
-                    menuPosition="fixed"
-                  />
-                </div>
-
-                {/* Master Repeatable Field - Always show if setpoint is master or separate */}
-                {(currentSetpoint === "master" ||
-                  currentSetpoint === "separate") && (
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Master Repeatable
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={rows3[0]?.masterRepeatable || ""}
-                        onChange={(e) =>
-                          handleInputChange3(
-                            rows3[0]?.id,
-                            "masterRepeatable",
-                            e.target.value,
-                          )
-                        }
-                        className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                        placeholder="Master Repeatable"
-                        title="Enter number of master observation rows"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        {currentSetpoint === "master"
-                          ? "Number of observation rows for Master"
-                          : "Master observation rows (for separate mode)"}
-                      </p>
-                    </div>
-                  )}
-
-                {/* UUC Repeatable Field - Always show if setpoint is uuc or separate */}
-                {(currentSetpoint === "uuc" ||
-                  currentSetpoint === "separate") && (
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        UUC Repeatable
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={rows3[0]?.uucRepeatable || ""}
-                        onChange={(e) =>
-                          handleInputChange3(
-                            rows3[0]?.id,
-                            "uucRepeatable",
-                            e.target.value,
-                          )
-                        }
-                        className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                        placeholder="UUC Repeatable"
-                        title="Enter number of UUC observation rows"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">
-                        {currentSetpoint === "uuc"
-                          ? "Number of observation rows for UUC"
-                          : "UUC observation rows (for separate mode)"}
-                      </p>
-                    </div>
-                  )}
-
                 {/* Lab to Calibrate */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -1091,44 +1024,232 @@ export default function AddCalibration({
           <div className="rounded-lg bg-white p-8 text-center text-gray-500 shadow-md">Loading...</div>
         ) : (
           <div className="space-y-6">
-            <div className="px-4">
+            <div className="px-4 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800">Calibration Settings</h2>
+              <button
+                onClick={addTable1}
+                className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                title="Add new table"
+              >
+                <PlusCircleIcon className="h-5 w-5" />
+                Add Table
+              </button>
             </div>
             {tables1.map((table, tableIdx) => (
               <div key={table.id} className="overflow-hidden rounded-lg bg-white shadow-md border border-gray-200">
-                <div className="border-b border-gray-200 p-4 flex items-center justify-between bg-gray-50">
-                  <div className="flex items-center gap-4">
-                    <h3 className="whitespace-nowrap text-xl font-bold text-gray-800">
-                      table {tableIdx + 1}
-                    </h3>
-                    <input
-                      type="text"
-                      value={table.tableName || ""}
-                      onChange={(e) => handleTableNameChange1(table.id, e.target.value)}
-                      className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter table name..."
-                    />
+                <div className="border-b border-gray-200 p-4 bg-gray-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <h3 className="whitespace-nowrap text-xl font-bold text-gray-800">
+                        Table {tableIdx + 1}
+                      </h3>
+                      <input
+                        type="text"
+                        value={table.tableName || ""}
+                        onChange={(e) => handleTableNameChange1(table.id, e.target.value)}
+                        className="w-64 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter table name..."
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      {tableIdx > 0 && (
+                        <button
+                          onClick={() => removeTable1(table.id)}
+                          className="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                          Remove Table
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {tableIdx === 0 && (
-                      <button
-                        onClick={addTable1}
-                        className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700"
-                        title="Add new table"
-                      >
-                        <PlusCircleIcon className="h-5 w-5" />
-                        Add Table
-                      </button>
+
+                  {/* Setpoint and Repeatable fields for each table */}
+                  <div className="flex flex-wrap items-start gap-4 md:flex-nowrap">
+                    <div className="min-w-[220px] flex-1 md:flex-none">
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Setpoint
+                      </label>
+                      <Select
+                        value={table.setpoint}
+                        onChange={(selectedOption) => handleTableSetpointChange(table.id, selectedOption)}
+                        options={setpointOptions}
+                        placeholder="Select..."
+                        isClearable
+                        styles={customSelectStyles}
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                      />
+                    </div>
+
+                    {(table.setpoint?.value === "master" || table.setpoint?.value === "separate") && (
+                      <div className="min-w-[220px] flex-1 md:flex-none">
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                          Master Repeatable
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={table.masterRepeatable || ""}
+                          onChange={(e) => handleTableRepeatableChange(table.id, "masterRepeatable", e.target.value)}
+                          onWheel={(e) => e.preventDefault()}
+                          onFocus={(e) => e.target.addEventListener('wheel', (evt) => evt.preventDefault(), { passive: false })}
+                          className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                          placeholder="Master Repeatable"
+                          title="Enter number of master observation rows"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          {table.setpoint?.value === "master"
+                            ? "Number of observation rows for Master"
+                            : "Master observation rows (for separate mode)"}
+                        </p>
+                      </div>
                     )}
-                    {tableIdx > 0 && (
-                      <button
-                        onClick={() => removeTable1(table.id)}
-                        className="flex items-center gap-1 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-700"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                        Remove Table
-                      </button>
+
+                    {(table.setpoint?.value === "uuc" || table.setpoint?.value === "separate") && (
+                      <div className="min-w-[220px] flex-1 md:flex-none">
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                          UUC Repeatable
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={table.uucRepeatable || ""}
+                          onChange={(e) => handleTableRepeatableChange(table.id, "uucRepeatable", e.target.value)}
+                          onWheel={(e) => e.preventDefault()}
+                          onFocus={(e) => e.target.addEventListener('wheel', (evt) => evt.preventDefault(), { passive: false })}
+                          className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                          placeholder="UUC Repeatable"
+                          title="Enter number of UUC observation rows"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          {table.setpoint?.value === "uuc"
+                            ? "Number of observation rows for UUC"
+                            : "UUC observation rows (for separate mode)"}
+                        </p>
+                      </div>
                     )}
+
+                    {table.setpoint?.value === "fixed" && (
+                      <div className="min-w-[220px] flex-1 md:flex-none">
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                          No of rows
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={table.fixedRepeatable || ""}
+                          onChange={(e) => handleFixedRepeatableChange(table.id, e.target.value)}
+                          onWheel={(e) => e.preventDefault()}
+                          onFocus={(e) => e.target.addEventListener('wheel', (evt) => evt.preventDefault(), { passive: false })}
+                          className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                          placeholder="No of rows"
+                          title="Number of formula rows to show"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          Controls how many formula inputs appear in each row.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Observation Setting Table */}
+                <div className="border-t border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-gray-800">Observation Setting</h3>
+                    <div className="text-sm text-gray-500">
+                      Rows: <span className="font-semibold">{table.observationRows?.length || 0}</span>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full border border-gray-200 rounded">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">S. No.</th>
+                          <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Checkbox</th>
+                          <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Observation Setting</th>
+                          <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Set Variable</th>
+                          <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Field Heading</th>
+                          <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Formula/Value</th>
+                          <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(table.observationRows || []).map((row) => (
+                          <tr key={row.id} className="border-b hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm">{row.id}</td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="checkbox"
+                                checked={row.checked}
+                                onChange={() => handleTableObservationCheckbox(table.id, row.id)}
+                                className="h-4 w-4 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={row.fieldname}
+                                onChange={(e) => handleTableObservationInputChange(table.id, row.id, "fieldname", e.target.value)}
+                                className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                placeholder="Observation Setting Name"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={row.setvariable}
+                                onChange={(e) => handleTableObservationInputChange(table.id, row.id, "setvariable", e.target.value)}
+                                className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                placeholder="Set Variable"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={row.fieldHeading}
+                                onChange={(e) => handleTableObservationInputChange(table.id, row.id, "fieldHeading", e.target.value)}
+                                className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                placeholder="Field Heading"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={row.formula}
+                                onChange={(e) => handleTableObservationInputChange(table.id, row.id, "formula", e.target.value)}
+                                className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                placeholder="Formula/Value"
+                              />
+                            </td>
+                            <td className="w-[80px] px-2 py-3 text-center">
+                              <button
+                                onClick={() => removeTableObservationRow(table.id, row.id)}
+                                disabled={(table.observationRows || []).length === 1}
+                                className="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Delete row"
+                              >
+                                <TrashIcon className="size-4.5 stroke-1" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex justify-end mt-4">
+                    <button
+                      onClick={() => addTableObservationRow(table.id)}
+                      className="rounded-md bg-green-600 px-6 py-2 font-medium text-white transition hover:bg-green-700"
+                    >
+                      Add Row
+                    </button>
                   </div>
                 </div>
 
@@ -1142,7 +1263,7 @@ export default function AddCalibration({
                         <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Set Variable</th>
                         <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Field Heading</th>
                         <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Field Position</th>
-                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Formula</th>
+                        <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Formula/Value</th>
                         <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">Action</th>
                       </tr>
                     </thead>
@@ -1219,13 +1340,28 @@ export default function AddCalibration({
                             />
                           </td>
                           <td className="px-4 py-3 min-w-[350px]">
-                            <input
-                              type="text"
-                              value={row.formula}
-                              onChange={(e) => handleInputChange1(table.id, row.id, "formula", e.target.value)}
-                              className="w-full h-14 rounded-md border px-4 py-3 text-base shadow-[0_0_8px_rgba(0,0,0,0.05)] focus:ring-2 focus:ring-blue-500"
-                              placeholder="Formula"
-                            />
+                            {table.setpoint?.value === "fixed" ? (
+                              <div className="flex flex-col gap-2">
+                                {buildFormulaList(table.fixedRepeatable || 1, row.formulaList).map((fVal, fIdx) => (
+                                  <input
+                                    key={`${row.id}-formula-${fIdx}`}
+                                    type="text"
+                                    value={fVal}
+                                    onChange={(e) => handleFormulaListChange(table.id, row.id, fIdx, e.target.value)}
+                                    className="w-full rounded-md border px-4 py-2 text-sm shadow-[0_0_8px_rgba(0,0,0,0.05)] focus:ring-2 focus:ring-blue-500"
+                                    placeholder={`Formula ${fIdx + 1}`}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <input
+                                type="text"
+                                value={row.formula}
+                                onChange={(e) => handleInputChange1(table.id, row.id, "formula", e.target.value)}
+                                className="w-full h-14 rounded-md border px-4 py-3 text-base shadow-[0_0_8px_rgba(0,0,0,0.05)] focus:ring-2 focus:ring-blue-500"
+                                placeholder="Formula"
+                              />
+                            )}
                           </td>
                           <td className="w-[80px] px-2 py-3 text-center">
                             <button
@@ -1254,202 +1390,6 @@ export default function AddCalibration({
             ))}
           </div>
         )}
-
-        <div className="overflow-hidden rounded-lg bg-white shadow-md">
-          <div className="border-b border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">
-                Observation Setting
-              </h2>
-              <div className="text-sm text-gray-500">
-                <div>
-                  Setpoint:{" "}
-                  <span className="font-semibold">
-                    {currentSetpoint || "Not selected"}
-                  </span>
-                </div>
-                <div>
-                  Rows: <span className="font-semibold">{rows2.length}</span>
-                </div>
-                {currentSetpoint === "master" && masterRepeatableValue && (
-                  <div>
-                    Master Repeatable:{" "}
-                    <span className="font-semibold">
-                      {masterRepeatableValue}
-                    </span>
-                  </div>
-                )}
-                {currentSetpoint === "uuc" && uucRepeatableValue && (
-                  <div>
-                    UUC Repeatable:{" "}
-                    <span className="font-semibold">{uucRepeatableValue}</span>
-                  </div>
-                )}
-                {currentSetpoint === "separate" && (
-                  <div>
-                    <span className="font-semibold">
-                      Master: {masterRepeatableValue || "0"}
-                    </span>{" "}
-                    |
-                    <span className="font-semibold">
-                      {" "}
-                      UUC: {uucRepeatableValue || "0"}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading...</div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        S. No.
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Checkbox
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Observation Setting
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Set Variable
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Field Heading
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Formula
-                      </th>
-                      <th className="border-b px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows2.map((row) => {
-                      const isRequiredRow =
-                        currentSetpoint === "master" ||
-                          currentSetpoint === "uuc"
-                          ? row.id <= requiredRowsCount
-                          : false;
-
-                      return (
-                        <tr key={row.id} className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm">{row.id}</td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="checkbox"
-                              checked={row.checked}
-                              onChange={() => handleCheckbox2(row.id)}
-                              className="h-4 w-4 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={row.fieldname}
-                              onChange={(e) =>
-                                handleInputChange2(
-                                  row.id,
-                                  "fieldname",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                              placeholder="Observation Setting Name"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={row.setvariable}
-                              onChange={(e) =>
-                                handleInputChange2(
-                                  row.id,
-                                  "setvariable",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                              placeholder="Set Variable"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={row.fieldHeading}
-                              onChange={(e) =>
-                                handleInputChange2(
-                                  row.id,
-                                  "fieldHeading",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                              placeholder="Field Heading"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={row.formula}
-                              onChange={(e) =>
-                                handleInputChange2(
-                                  row.id,
-                                  "formula",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                              placeholder="Formula"
-                            />
-                          </td>
-                          <td className="w-[80px] px-2 py-3 text-center">
-                            <button
-                              onClick={() => removeRow2(row.id)}
-                              style={{ cursor: "pointer" }}
-                              disabled={isRequiredRow && rows2.length === 1}
-                              className="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                              title={
-                                isRequiredRow
-                                  ? "Required row cannot be deleted"
-                                  : "Delete row"
-                              }
-                            >
-                              <TrashIcon className="size-4.5 stroke-1" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {(currentSetpoint === "separate" ||
-                rows2.length < requiredRowsCount) && (
-                  <div className="flex justify-end border-t p-4">
-                    <button
-                      style={{ cursor: "pointer" }}
-                      onClick={addRow2}
-                      className="rounded-md bg-green-600 px-6 py-2 font-medium text-white transition hover:bg-green-700"
-                    >
-                      {currentSetpoint === "separate"
-                        ? "Add Row"
-                        : `Add Row (Auto: ${requiredRowsCount})`}
-                    </button>
-                  </div>
-                )}
-            </>
-          )}
-        </div>
 
         <div className="mt-4 flex flex-row items-center justify-between gap-2">
           <Button
