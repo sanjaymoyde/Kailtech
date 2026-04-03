@@ -88,6 +88,7 @@ export default function CloneInstrument() {
   const [sopOptions, setSopOptions] = useState([]);
   const [standardOptions, setStandardOptions] = useState([]);
   const [disciplineOptions, setDisciplineOptions] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [groupOptions, setGroupOptions] = useState([]);
   const [subcategoryOne, setSubcategoryOne] = useState([]);
   const [subcategoryTwo, setSubcategoryTwo] = useState([]);
@@ -448,7 +449,7 @@ export default function CloneInstrument() {
     };
 
     fetchAllData();
-  }, [id]);
+  }, [id, currencyOptions]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

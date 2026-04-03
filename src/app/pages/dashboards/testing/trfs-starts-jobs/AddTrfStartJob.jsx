@@ -964,15 +964,42 @@ export default function AddTrfStartJob() {
                       <>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
-                          <Input type="text" name="concernpersondesignation" value={formData.concernpersondesignation} onChange={handleInputChange} className="w-full" placeholder="Concern person designation" />
+                          <Input 
+                            type="text" 
+                            name="concernpersondesignation" 
+                            value={formData.concernpersondesignation} 
+                            onChange={handleInputChange} 
+                            className="w-full bg-gray-100" 
+                            placeholder="Concern person designation"
+                            disabled
+                            readOnly
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                          <Input type="email" name="concernpersonemail" value={formData.concernpersonemail} onChange={handleInputChange} className="w-full" placeholder="Concern person email" />
+                          <Input 
+                            type="email" 
+                            name="concernpersonemail" 
+                            value={formData.concernpersonemail} 
+                            onChange={handleInputChange} 
+                            className="w-full bg-gray-100" 
+                            placeholder="Concern person email"
+                            disabled
+                            readOnly
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Mobile</label>
-                          <Input type="text" name="concernpersonmobile" value={formData.concernpersonmobile} onChange={handleInputChange} className="w-full" placeholder="Concern person mobile" />
+                          <Input 
+                            type="text" 
+                            name="concernpersonmobile" 
+                            value={formData.concernpersonmobile} 
+                            onChange={handleInputChange} 
+                            className="w-full bg-gray-100" 
+                            placeholder="Concern person mobile"
+                            disabled
+                            readOnly
+                          />
                         </div>
                       </>
                     )}

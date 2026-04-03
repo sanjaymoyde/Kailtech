@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "utils/axios";
+import Select from "react-select";
 import { Page } from "components/shared/Page";
 
 // ── Permissions ───────────────────────────────────────────────────────────────
@@ -113,10 +114,26 @@ export default function PendingTechnicalAcceptance() {
     );
   }
 
-  const selectCls =
-    "rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 " +
-    "px-3 py-2 text-sm text-gray-700 dark:text-gray-300 outline-none " +
-    "focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition";
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      minHeight: "42px",
+      minWidth: "220px",
+      borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 2px rgba(59, 130, 246, 0.5)" : "none",
+      "&:hover": {
+        borderColor: "#3b82f6",
+      },
+    }),
+    menu: (base) => ({
+      ...base,
+      zIndex: 9999,
+    }),
+    menuPortal: (base) => ({
+      ...base,
+      zIndex: 9999,
+    }),
+  };
 
   return (
     <Page title="Pending Technical Acceptance">
@@ -137,16 +154,16 @@ export default function PendingTechnicalAcceptance() {
                 <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                   Customer Type
                 </label>
-                <select
-                  className={selectCls + " min-w-[220px]"}
-                  value={ctype}
-                  onChange={(e) => setCtype(e.target.value)}
-                >
-                  <option value="">Select Customer Type</option>
-                  {customerTypes.map((ct) => (
-                    <option key={ct.id} value={ct.id}>{ct.name}</option>
-                  ))}
-                </select>
+                <Select
+                  value={customerTypes.find(ct => ct.id === ctype) ? { value: ctype, label: customerTypes.find(ct => ct.id === ctype).name } : null}
+                  onChange={(selectedOption) => setCtype(selectedOption ? selectedOption.value : "")}
+                  options={customerTypes.map(ct => ({ value: ct.id, label: ct.name }))}
+                  placeholder="Select Customer Type"
+                  isClearable
+                  styles={customSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                />
               </div>
             )}
 
@@ -155,16 +172,16 @@ export default function PendingTechnicalAcceptance() {
                 <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                   Specific Purpose
                 </label>
-                <select
-                  className={selectCls + " min-w-[220px]"}
-                  value={specificpurpose}
-                  onChange={(e) => setSpecificpurpose(e.target.value)}
-                >
-                  <option value="">Select Specific Purpose</option>
-                  {specificPurposes.map((sp) => (
-                    <option key={sp.id} value={sp.id}>{sp.name}</option>
-                  ))}
-                </select>
+                <Select
+                  value={specificPurposes.find(sp => sp.id === specificpurpose) ? { value: specificpurpose, label: specificPurposes.find(sp => sp.id === specificpurpose).name } : null}
+                  onChange={(selectedOption) => setSpecificpurpose(selectedOption ? selectedOption.value : "")}
+                  options={specificPurposes.map(sp => ({ value: sp.id, label: sp.name }))}
+                  placeholder="Select Specific Purpose"
+                  isClearable
+                  styles={customSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                />
               </div>
             )}
 

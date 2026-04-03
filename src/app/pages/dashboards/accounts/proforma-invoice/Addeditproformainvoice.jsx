@@ -21,6 +21,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import Select from "react-select";
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
 import { DatePicker } from "components/shared/form/Datepicker";
@@ -32,6 +33,26 @@ const selectCls =
   "dark:bg-dark-900 dark:border-dark-500 dark:text-dark-100 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
 const labelCls =
   "dark:text-dark-300 mb-1 block text-sm font-medium text-gray-700";
+
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: "38px",
+    borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+    boxShadow: state.isFocused ? "0 0 0 1px #3b82f6" : "none",
+    "&:hover": {
+      borderColor: "#3b82f6",
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+};
 
 const COMPANY_STATE_CODE = "23";
 
@@ -603,16 +624,15 @@ export default function AddEditProformaInvoice() {
         <Card className="mb-5 p-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormRow label="Customer Name" required span2>
-              <select
-                value={form.customerid}
-                onChange={(e) => {
-                  const cid = e.target.value;
-                  const c = customers.find((c) => String(c.id) === cid);
+              <Select
+                value={customers.find(c => String(c.id) === String(form.customerid)) ? { value: form.customerid, label: customers.find(c => String(c.id) === String(form.customerid)).name } : null}
+                onChange={(selectedOption) => {
+                  const cid = selectedOption ? selectedOption.value : "";
+                  const c = customers.find((c) => String(c.id) === String(cid));
                   setField("customerid", cid);
                   setField("customername", c?.name ?? "");
                   setField("addressid", "");
                   setField("cperson", "");
-                  // statecode, gstno, pan auto-fill from customers array
                   if (c) {
                     setField("gstno", c.gstno ?? "");
                     setField("pan", c.pan ?? "");
@@ -623,31 +643,27 @@ export default function AddEditProformaInvoice() {
                     }));
                   }
                 }}
-                className={selectCls}
-              >
-                <option value="">Select</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                options={customers.map(c => ({ value: c.id, label: c.name }))}
+                placeholder="Select"
+                isClearable
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+              />
             </FormRow>
 
             <FormRow label="Customer Address" required span2>
-              <select
-                value={form.addressid}
-                onChange={(e) => setField("addressid", e.target.value)}
-                className={selectCls}
-                disabled={!form.customerid}
-              >
-                <option value="">Select Address</option>
-                {addresses.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}({a.address})
-                  </option>
-                ))}
-              </select>
+              <Select
+                value={addresses.find(a => String(a.id) === String(form.addressid)) ? { value: form.addressid, label: `${addresses.find(a => String(a.id) === String(form.addressid)).name}(${addresses.find(a => String(a.id) === String(form.addressid)).address})` } : null}
+                onChange={(selectedOption) => setField("addressid", selectedOption ? selectedOption.value : "")}
+                options={addresses.map(a => ({ value: a.id, label: `${a.name}(${a.address})` }))}
+                placeholder="Select Address"
+                isClearable
+                isDisabled={!form.customerid}
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+              />
             </FormRow>
 
             <FormRow label="Contact Person Name" span2>
@@ -794,36 +810,32 @@ export default function AddEditProformaInvoice() {
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="min-w-[180px] flex-1">
                     <label className={labelCls}>Product</label>
-                    <select
-                      value={selectedProduct}
-                      onChange={(e) => setSelectedProduct(e.target.value)}
-                      className={selectCls}
-                      id="product"
-                    >
-                      <option value="">Select Product</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Select
+                      value={products.find(p => String(p.id) === String(selectedProduct)) ? { value: selectedProduct, label: products.find(p => String(p.id) === String(selectedProduct)).name } : null}
+                      onChange={(selectedOption) => setSelectedProduct(selectedOption ? selectedOption.value : "")}
+                      options={products.map(p => ({ value: p.id, label: p.name }))}
+                      placeholder="Select Product"
+                      isClearable
+                      styles={customSelectStyles}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      inputId="product"
+                    />
                   </div>
                   <div className="min-w-[220px] flex-1">
                     <label className={labelCls}>Package</label>
-                    <select
-                      value={selectedPackage}
-                      onChange={(e) => setSelectedPackage(e.target.value)}
-                      className={selectCls}
-                      id="package"
-                      disabled={!selectedProduct}
-                    >
-                      <option value="">Select Package</option>
-                      {packages.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.package}
-                        </option>
-                      ))}
-                    </select>
+                    <Select
+                      value={packages.find(p => String(p.id) === String(selectedPackage)) ? { value: selectedPackage, label: packages.find(p => String(p.id) === String(selectedPackage)).package } : null}
+                      onChange={(selectedOption) => setSelectedPackage(selectedOption ? selectedOption.value : "")}
+                      options={packages.map(p => ({ value: p.id, label: p.package }))}
+                      placeholder="Select Package"
+                      isClearable
+                      isDisabled={!selectedProduct}
+                      styles={customSelectStyles}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      inputId="package"
+                    />
                   </div>
                   <button
                     onClick={handleAddTestingItem}
