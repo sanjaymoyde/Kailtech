@@ -21,10 +21,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import axios from "utils/axios";
 import { toast } from "sonner";
-import Select from "react-select";
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
-import { DatePicker } from "components/shared/form/Datepicker";
+import Select from "react-select";
 
 // ── Style tokens ──────────────────────────────────────────────────────────
 const inputCls =
@@ -33,26 +32,6 @@ const selectCls =
   "dark:bg-dark-900 dark:border-dark-500 dark:text-dark-100 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
 const labelCls =
   "dark:text-dark-300 mb-1 block text-sm font-medium text-gray-700";
-
-const customSelectStyles = {
-  control: (base, state) => ({
-    ...base,
-    minHeight: "38px",
-    borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
-    boxShadow: state.isFocused ? "0 0 0 1px #3b82f6" : "none",
-    "&:hover": {
-      borderColor: "#3b82f6",
-    },
-  }),
-  menu: (base) => ({
-    ...base,
-    zIndex: 9999,
-  }),
-  menuPortal: (base) => ({
-    ...base,
-    zIndex: 9999,
-  }),
-};
 
 const COMPANY_STATE_CODE = "23";
 
@@ -605,6 +584,14 @@ export default function AddEditProformaInvoice() {
 
   const isCalibration = form.typeofinvoice === "Calibration";
 
+  // Options for react-select
+  const customerOptions = customers.map(c => ({ value: c.id, label: c.name }));
+  const addressOptions = addresses.map(a => ({ value: a.id, label: `${a.name}(${a.address})` }));
+  const contactOptions = contacts.map(c => ({ value: c.id, label: c.name }));
+  const instrumentOptions = instruments.map(i => ({ value: i.id, label: i.name }));
+  const productOptions = products.map(p => ({ value: p.id, label: p.name }));
+  const packageOptions = packages.map(p => ({ value: p.id, label: p.package }));
+
   return (
     <Page title={isEdit ? "Edit Proforma Invoice" : "Add New Proforma Invoice"}>
       <div className="transition-content px-(--margin-x) pb-8">
@@ -625,14 +612,16 @@ export default function AddEditProformaInvoice() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormRow label="Customer Name" required span2>
               <Select
-                value={customers.find(c => String(c.id) === String(form.customerid)) ? { value: form.customerid, label: customers.find(c => String(c.id) === String(form.customerid)).name } : null}
-                onChange={(selectedOption) => {
-                  const cid = selectedOption ? selectedOption.value : "";
+                options={customerOptions}
+                value={customerOptions.find(o => o.value == form.customerid) || null}
+                onChange={(selected) => {
+                  const cid = selected ? selected.value : "";
                   const c = customers.find((c) => String(c.id) === String(cid));
                   setField("customerid", cid);
                   setField("customername", c?.name ?? "");
                   setField("addressid", "");
                   setField("cperson", "");
+                  // statecode, gstno, pan auto-fill from customers array
                   if (c) {
                     setField("gstno", c.gstno ?? "");
                     setField("pan", c.pan ?? "");
@@ -643,43 +632,76 @@ export default function AddEditProformaInvoice() {
                     }));
                   }
                 }}
-                options={customers.map(c => ({ value: c.id, label: c.name }))}
-                placeholder="Select"
+                placeholder="Select Customer"
                 isClearable
-                styles={customSelectStyles}
-                menuPortalTarget={document.body}
-                menuPosition="fixed"
+                className="react-select-container"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    borderColor: '#d1d5db',
+                    '&:hover': { borderColor: '#3b82f6' },
+                    boxShadow: 'none',
+                    '&:focus-within': { borderColor: '#3b82f6', boxShadow: '0 0 0 1px #3b82f6' }
+                  }),
+                  menu: (provided) => ({
+                    ...provided,
+                    zIndex: 9999
+                  })
+                }}
               />
             </FormRow>
 
             <FormRow label="Customer Address" required span2>
               <Select
-                value={addresses.find(a => String(a.id) === String(form.addressid)) ? { value: form.addressid, label: `${addresses.find(a => String(a.id) === String(form.addressid)).name}(${addresses.find(a => String(a.id) === String(form.addressid)).address})` } : null}
-                onChange={(selectedOption) => setField("addressid", selectedOption ? selectedOption.value : "")}
-                options={addresses.map(a => ({ value: a.id, label: `${a.name}(${a.address})` }))}
+                options={addressOptions}
+                value={addressOptions.find(o => o.value == form.addressid) || null}
+                onChange={(selected) => setField("addressid", selected ? selected.value : "")}
                 placeholder="Select Address"
                 isClearable
                 isDisabled={!form.customerid}
-                styles={customSelectStyles}
-                menuPortalTarget={document.body}
-                menuPosition="fixed"
+                className="react-select-container"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    borderColor: '#d1d5db',
+                    '&:hover': { borderColor: '#3b82f6' },
+                    boxShadow: 'none',
+                    '&:focus-within': { borderColor: '#3b82f6', boxShadow: '0 0 0 1px #3b82f6' }
+                  }),
+                  menu: (provided) => ({
+                    ...provided,
+                    zIndex: 9999
+                  })
+                }}
               />
             </FormRow>
 
             <FormRow label="Contact Person Name" span2>
-              <select
-                value={form.cperson}
-                onChange={(e) => setField("cperson", e.target.value)}
-                className={selectCls}
-                disabled={!form.customerid}
-              >
-                <option value="">Select Contact</option>
-                {contacts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={contactOptions}
+                value={contactOptions.find(o => o.value == form.cperson) || null}
+                onChange={(selected) => setField("cperson", selected ? selected.value : "")}
+                placeholder="Select Contact"
+                isClearable
+                isDisabled={!form.customerid}
+                className="react-select-container"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    borderColor: '#d1d5db',
+                    '&:hover': { borderColor: '#3b82f6' },
+                    boxShadow: 'none',
+                    '&:focus-within': { borderColor: '#3b82f6', boxShadow: '0 0 0 1px #3b82f6' }
+                  }),
+                  menu: (provided) => ({
+                    ...provided,
+                    zIndex: 9999
+                  })
+                }}
+              />
             </FormRow>
 
             <FormRow label="GST Number" required>
@@ -713,15 +735,10 @@ export default function AddEditProformaInvoice() {
             </FormRow>
 
             <FormRow label="Ref Date" required>
-              <DatePicker
-                options={{
-                  dateFormat: "Y-m-d",
-                  altInput: true,
-                  altFormat: "d/m/Y",
-                  allowInput: true,
-                }}
+              <input
+                type="date"
                 value={form.refdate}
-                onChange={(dates, dateStr) => setField("refdate", dateStr)}
+                onChange={(e) => setField("refdate", e.target.value)}
                 className={inputCls}
               />
             </FormRow>
@@ -771,19 +788,28 @@ export default function AddEditProformaInvoice() {
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="min-w-[220px] flex-1">
                     <label className={labelCls}>Select Instrument</label>
-                    <select
-                      value={selectedInst}
-                      onChange={(e) => setSelectedInst(e.target.value)}
-                      className={selectCls}
-                      id="getinstrument"
-                    >
-                      <option value="">Select Instrument</option>
-                      {instruments.map((i) => (
-                        <option key={i.id} value={i.id}>
-                          {i.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Select
+                      options={instrumentOptions}
+                      value={instrumentOptions.find(o => o.value == selectedInst) || null}
+                      onChange={(selected) => setSelectedInst(selected ? selected.value : "")}
+                      placeholder="Select Instrument"
+                      isClearable
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': { borderColor: '#3b82f6' },
+                          boxShadow: 'none',
+                          '&:focus-within': { borderColor: '#3b82f6', boxShadow: '0 0 0 1px #3b82f6' }
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          zIndex: 9999
+                        })
+                      }}
+                    />
                   </div>
                   <div className="w-36">
                     <label className={labelCls}>Location</label>
@@ -811,30 +837,52 @@ export default function AddEditProformaInvoice() {
                   <div className="min-w-[180px] flex-1">
                     <label className={labelCls}>Product</label>
                     <Select
-                      value={products.find(p => String(p.id) === String(selectedProduct)) ? { value: selectedProduct, label: products.find(p => String(p.id) === String(selectedProduct)).name } : null}
-                      onChange={(selectedOption) => setSelectedProduct(selectedOption ? selectedOption.value : "")}
-                      options={products.map(p => ({ value: p.id, label: p.name }))}
+                      options={productOptions}
+                      value={productOptions.find(o => o.value == selectedProduct) || null}
+                      onChange={(selected) => setSelectedProduct(selected ? selected.value : "")}
                       placeholder="Select Product"
                       isClearable
-                      styles={customSelectStyles}
-                      menuPortalTarget={document.body}
-                      menuPosition="fixed"
-                      inputId="product"
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': { borderColor: '#3b82f6' },
+                          boxShadow: 'none',
+                          '&:focus-within': { borderColor: '#3b82f6', boxShadow: '0 0 0 1px #3b82f6' }
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          zIndex: 9999
+                        })
+                      }}
                     />
                   </div>
                   <div className="min-w-[220px] flex-1">
                     <label className={labelCls}>Package</label>
                     <Select
-                      value={packages.find(p => String(p.id) === String(selectedPackage)) ? { value: selectedPackage, label: packages.find(p => String(p.id) === String(selectedPackage)).package } : null}
-                      onChange={(selectedOption) => setSelectedPackage(selectedOption ? selectedOption.value : "")}
-                      options={packages.map(p => ({ value: p.id, label: p.package }))}
+                      options={packageOptions}
+                      value={packageOptions.find(o => o.value == selectedPackage) || null}
+                      onChange={(selected) => setSelectedPackage(selected ? selected.value : "")}
                       placeholder="Select Package"
                       isClearable
                       isDisabled={!selectedProduct}
-                      styles={customSelectStyles}
-                      menuPortalTarget={document.body}
-                      menuPosition="fixed"
-                      inputId="package"
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (provided) => ({
+                          ...provided,
+                          borderColor: '#d1d5db',
+                          '&:hover': { borderColor: '#3b82f6' },
+                          boxShadow: 'none',
+                          '&:focus-within': { borderColor: '#3b82f6', boxShadow: '0 0 0 1px #3b82f6' }
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          zIndex: 9999
+                        })
+                      }}
                     />
                   </div>
                   <button

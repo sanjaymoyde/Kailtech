@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "utils/axios";
 import { toast } from "sonner";
 
@@ -10,6 +10,7 @@ import { toast } from "sonner";
  */
 export default function Slip() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [printableData, setPrintableData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -162,15 +163,26 @@ export default function Slip() {
             <p className="text-[11px] text-slate-500 font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-[300px]">ID: {id} — Customer: {customer_name}</p>
           </div>
         </div>
-        <button
-          onClick={handlePrint}
-          className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg transition-all flex items-center gap-2"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-          </svg>
-          Confirm & Print Slip
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all shadow-sm"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back
+          </button>
+          <button
+            onClick={handlePrint}
+            className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg transition-all flex items-center gap-2"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+            Confirm & Print Slip
+          </button>
+        </div>
       </div>
 
       <div className="print-slip-container content-wrapper">

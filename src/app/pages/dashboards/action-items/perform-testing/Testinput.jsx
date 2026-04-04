@@ -383,7 +383,10 @@ export default function TestInput() {
       });
 
       toast.success("Test data submitted successfully ✅");
-      navigate(`/dashboards/action-items/perform-testing/${trfproduct}`);
+      
+      // Refetch data to get updated status and show results on same page
+      await fetchData();
+      await fetchResults();
     } catch (err) {
       console.error("Submit error:", err);
       toast.error(err?.response?.data?.message ?? "Submit failed ❌");

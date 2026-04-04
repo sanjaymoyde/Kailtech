@@ -137,6 +137,7 @@ export default function AssignChemistDetail() {
   const [departments, setDepartments] = useState([]); // [{ id, label }]
   const [persons,     setPersons]     = useState([]); // [{ id, label }]
   const [rows,        setRows]        = useState([]);
+  const [minDate,     setMinDate]     = useState("");
 
   // ── Global form fields ────────────────────────────────────────────────────
   const [department,   setDepartment]   = useState("");
@@ -191,6 +192,13 @@ export default function AssignChemistDetail() {
             duedate:       "",
           }))
         );
+
+        // Min Date logic from PHP: use TRF date as min allowed
+        const trfD = d?.trf_date ?? d?.date ?? "";
+        if (trfD && trfD !== "0000-00-00 00:00:00") {
+          setMinDate(trfD.split(" ")[0]); // Extract YYYY-MM-DD
+        }
+
       } catch (err) {
         console.error("Error fetching assign chemist details:", err);
         toast.error("Failed to load data.");
@@ -354,7 +362,13 @@ export default function AssignChemistDetail() {
           <div className="grid grid-cols-2 gap-4 border-b border-gray-100 px-6 py-4 dark:border-gray-800">
             <div>
               <label className={labelCls}>Allotment Date</label>
-              <input type="date" className={inputCls} value={allo} onChange={(e) => handleAlloChange(e.target.value)} />
+              <input 
+                type="date" 
+                className={inputCls} 
+                min={minDate}
+                value={allo} 
+                onChange={(e) => handleAlloChange(e.target.value)} 
+              />
             </div>
             <div>
               <label className={labelCls}>Due Date</label>
@@ -410,7 +424,17 @@ export default function AssignChemistDetail() {
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-sm text-gray-400">Nothing to Allot</td>
+                    <td colSpan={6} className="py-12 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <svg className="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-base font-semibold text-gray-600 dark:text-dark-300">
+                          No Further Actions Required From Your End
+                        </p>
+                        <p className="text-xs text-gray-400">All parameters for this package have already been allotted.</p>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   rows.map((row, index) => (
@@ -433,6 +457,7 @@ export default function AssignChemistDetail() {
                         <input
                           type="date"
                           className={inputCls + " min-w-[140px]"}
+                          min={minDate}
                           value={row.allotmentdate}
                           onChange={(e) => updateRow(index, "allotmentdate", e.target.value)}
                         />

@@ -20,91 +20,79 @@
 //   item_assAmt = item_amount - item_discount
 //   tax on item_assAmt
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
+import { renderToStaticMarkup } from "react-dom/server";
 import axios from "utils/axios";
 import { toast } from "sonner";
 import { Page } from "components/shared/Page";
 import logo from "assets/krtc.jpg";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 
-// ─── Cross-origin image → base64 (needed so html2canvas can render them) ─────
-async function toBase64(url) {
-  if (!url) return "";
-  try {
-    const res = await fetch(url, { mode: "cors", cache: "force-cache" });
-    if (!res.ok) throw new Error();
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return "";
-  }
-}
+// ─── Open invoice in a print window → user saves as PDF ─────────────────────
+// Uses the browser's native print engine: perfect layout, no CORS issues,
+// no column-width miscalculations. User clicks Ctrl+P → Save as PDF.
+function printInvoice(templateProps, withLH, logoSrc, pageTitle) {
+  // Render the React template to a plain HTML string (no hooks / effects)
+  const bodyHtml = renderToStaticMarkup(
+    <InvoicePrintTemplate {...templateProps} withLH={withLH} logoSrc={logoSrc} />
+  );
 
-// ─── Capture a hidden ref div → multi-page PDF ───────────────────────────────
-// KEY: strips all stylesheets in onclone so Tailwind's oklch() vars don't crash
-// html2canvas. The print template uses only inline styles so this is safe.
-async function capturePdf(printRef, filename) {
-  try {
-    const el = printRef.current;
-    el.style.display = "block";
-    const canvas = await html2canvas(el, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-      onclone: (clonedDoc) => {
-        clonedDoc
-          .querySelectorAll('style, link[rel="stylesheet"]')
-          .forEach((n) => n.remove());
-        clonedDoc.documentElement.removeAttribute("style");
-      },
-    });
-    el.style.display = "none";
+  const full = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${pageTitle || templateProps.inv?.invoiceno || "Invoice"}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    @page { size: A4; margin: 10mm; }
+    body  { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; background: #fff; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    table  { border-collapse: collapse; width: 100%; margin-bottom: 8px; table-layout: fixed; }
+    th, td { border: 1px solid #000; padding: 5px 7px; font-size: 11px; vertical-align: middle; word-break: break-word; overflow: hidden; }
+    th     { background: #f3f4f6; text-align: center; font-weight: bold; }
+    td.right  { text-align: right; }
+    td.center { text-align: center; }
+    td.nob    { border: none; }
+  </style>
+</head>
+<body>${bodyHtml}</body>
+</html>`;
 
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 8;
-    const cW = pageW - margin * 2;
-    const cH = (canvas.height * cW) / canvas.width;
-    const pgH = pageH - margin * 2;
-    let srcY = 0, remaining = cH, firstPage = true;
-
-    while (remaining > 0) {
-      if (!firstPage) pdf.addPage();
-      firstPage = false;
-      const sliceH = Math.min(remaining, pgH);
-      const sc = document.createElement("canvas");
-      sc.width = canvas.width;
-      sc.height = Math.round((sliceH / cH) * canvas.height);
-      sc.getContext("2d").drawImage(canvas, 0, srcY, canvas.width, sc.height, 0, 0, canvas.width, sc.height);
-      pdf.addImage(sc.toDataURL("image/png"), "PNG", margin, margin, cW, sliceH);
-      srcY += sc.height;
-      remaining -= sliceH;
-    }
-    pdf.save(filename);
-    toast.success("PDF downloaded");
-  } catch (err) {
-    console.error("PDF error", err);
-    toast.error("Failed to generate PDF");
-  }
+  const win = window.open("", "_blank", "width=900,height=700");
+  if (!win) { toast.error("Pop-up blocked — please allow pop-ups and try again."); return; }
+  win.document.open();
+  win.document.write(full);
+  win.document.close();
+  // Close the window automatically after printing/saving (or cancelling)
+  win.onafterprint = () => {
+    try { win.close(); } catch (e) { void e; }
+  };
+  // Give the browser a moment to render images, then open the print dialog
+  win.onload = () => {
+    win.focus();
+    win.print();
+  };
+  // Fallback if onload doesn't fire (some browsers)
+  setTimeout(() => {
+    try {
+      win.focus();
+      win.print();
+    } catch (e) { void e; }
+  }, 800);
 }
 
 // ─── Shared inline style tokens (zero Tailwind / zero oklch) ─────────────────
+// NOTE: border / padding / font-size / vertical-align are handled by the
+// print-window <style> block — only layout-specific overrides go here.
 const S = {
-  wrap: { fontFamily: "Arial,Helvetica,sans-serif", fontSize: 12, color: "#111", backgroundColor: "#fff", padding: 20, width: 794 },
-  table: { width: "100%", borderCollapse: "collapse", marginBottom: 8 },
-  th: { border: "1px solid #000", padding: "4px 6px", textAlign: "center", backgroundColor: "#f3f4f6", fontSize: 11 },
-  td: { border: "1px solid #000", padding: "4px 6px", fontSize: 11, verticalAlign: "top" },
-  tdR: { border: "1px solid #000", padding: "4px 8px", fontSize: 11, verticalAlign: "top", textAlign: "right" },
-  tdC: { border: "1px solid #000", padding: "4px 6px", fontSize: 11, verticalAlign: "top", textAlign: "center" },
-  tdNB: { padding: "4px 6px", fontSize: 11, verticalAlign: "top" },
+  wrap: { fontFamily: "Arial,Helvetica,sans-serif", fontSize: 12, color: "#111", backgroundColor: "#fff", padding: "16px 20px", width: "100%" },
+  table: { width: "100%", borderCollapse: "collapse", marginBottom: 8, tableLayout: "fixed" },
+  // These are used only for on-screen preview; for print the CSS class handles alignment
+  th: { textAlign: "center", backgroundColor: "#f3f4f6" },
+  td: { verticalAlign: "middle" },
+  tdR: { textAlign: "right", verticalAlign: "middle" },
+  tdC: { textAlign: "center", verticalAlign: "middle" },
+  tdNB: { border: "none", verticalAlign: "middle" },
   label: { fontWeight: "bold" },
 };
 
@@ -139,11 +127,11 @@ function numberToWords(n) {
 }
 
 // ─── Print template — ALL inline styles, zero Tailwind, zero oklch ───────────
-// This is the div captured by html2canvas for PDF generation.
-function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl, withLH, companyInfo }) {
+function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl, withLH, companyInfo, logoSrc, states = [] }) {
   const statecode = !isNaN(inv.statecode) ? String(inv.statecode).padStart(2, "0") : inv.statecode;
   const isSGST = String(statecode) === "23";
-  const stateLabel = inv.statename ?? statecode ?? "";
+  const matchedState = states.find(s => String(s.gst_code).padStart(2, "0") === String(statecode).padStart(2, "0"));
+  const stateLabel = inv.statename ?? matchedState?.state ?? statecode ?? "";
   const finalTotal = parseFloat(inv.finaltotal ?? 0);
   const isFoc = inv.invoiceno === "FOC";
   const isNormalPo = inv.potype === "Normal";
@@ -161,28 +149,33 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
     <div style={S.wrap}>
       {/* Letterhead */}
       {withLH && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 8 }}>
-          <img src={companyInfo?.branding?.logo || logo} alt="Logo" style={{ height: 60, width: "auto" }} crossOrigin="anonymous" />
-          <div style={{ flex: 1, textAlign: "right" }}>
-            <p style={{ fontFamily: "monospace", fontSize: 10, fontStyle: "italic", color: "#555", margin: 0 }}>
-              NABL Accredited as per IS/ISO/IEC 17025 (Certificate Nos. TC-7832 &amp; CC-2348),<br />
-              BIS Recognized &amp; ISO 9001 Certified Test &amp; Calibration Laboratory
-            </p>
-            <div style={{ fontSize: 18, fontWeight: "bold", color: "navy", marginTop: 4 }}>
-              {companyInfo?.company?.name || "Kailtech Test And Research Centre Pvt. Ltd."}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 8, gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%" }}>
+            <img src={logoSrc || companyInfo?.branding?.logo || logo} alt="Logo" style={{ height: 60, width: "auto" }} />
+            <div style={{ flex: 1, textAlign: "right" }}>
+              <p style={{ fontFamily: "monospace", fontSize: 10, fontStyle: "italic", color: "#555", margin: 0 }}>
+                NABL Accredited as per IS/ISO/IEC 17025 (Certificate Nos. TC-7832 &amp; CC-2348),<br />
+                BIS Recognized &amp; ISO 9001 Certified Test &amp; Calibration Laboratory
+              </p>
             </div>
-            {companyInfo?.address?.top_address && (
-              <p style={{ fontSize: 8, color: "#777", margin: "2px 0 0 0" }}>{companyInfo.address.top_address}</p>
-            )}
           </div>
+          <div style={{ fontSize: 22, fontWeight: "bold", color: "navy", textAlign: "left", marginTop: 4 }}>
+            {companyInfo?.company?.name || "Kailtech Test And Research Centre Pvt. Ltd."}
+          </div>
+          {companyInfo?.address?.top_address && (
+            <p style={{ fontSize: 9, color: "#777", margin: 0, textAlign: "left" }}>{companyInfo.address.top_address}</p>
+          )}
         </div>
       )}
 
-      {/* Title */}
-      <div style={{ textAlign: "center", marginBottom: 8 }}>
-        <div style={{ fontSize: 14, fontWeight: "bold", textTransform: "uppercase" }}>TAX INVOICE</div>
-        <div style={{ fontSize: 12 }}>For {inv.typeofinvoice} Charges</div>
-        <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase" }}>ORIGINAL FOR RECIPIENT</div>
+      {/* Title — TAX INVOICE centered, ORIGINAL FOR RECIPIENT right */}
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+        <div style={{ flex: 1 }} />
+        <div style={{ flex: 2, textAlign: "center" }}>
+          <div style={{ fontSize: 14, fontWeight: "bold", textTransform: "uppercase" }}>TAX INVOICE</div>
+          <div style={{ fontSize: 12 }}>For {inv.typeofinvoice} Charges</div>
+        </div>
+        <div style={{ flex: 1, textAlign: "right", fontSize: 11, fontWeight: "bold", textTransform: "uppercase" }}>ORIGINAL FOR RECIPIENT</div>
       </div>
 
       {/* Customer + Invoice meta */}
@@ -220,16 +213,25 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
         </tbody>
       </table>
 
-      {/* Items */}
+      {/* Items — colgroup locks column widths for table-layout:fixed */}
       <table style={S.table}>
+        <colgroup>
+          <col style={{ width: "8%" }} />
+          <col style={{ width: isNormalPo ? "56%" : "80%" }} />
+          <col style={{ width: "10%" }} />
+          {isNormalPo && <>
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "14%" }} />
+          </>}
+        </colgroup>
         <thead>
           <tr>
-            <th style={{ ...S.th, width: "8%" }}>S. No.</th>
-            <th style={S.th}>Description</th>
-            <th style={{ ...S.th, width: "10%" }}>{hasMeter ? "Meter's" : "No's"}</th>
+            <th>S. No.</th>
+            <th>Description</th>
+            <th>{hasMeter ? "Meter's" : "No's"}</th>
             {isNormalPo && <>
-              <th style={{ ...S.th, width: "10%" }}>Rate</th>
-              <th style={{ ...S.th, width: "12%" }}>Amount</th>
+              <th>Rate</th>
+              <th>Amount</th>
             </>}
           </tr>
         </thead>
@@ -246,12 +248,12 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
             }
             return (
               <tr key={item.id ?? idx} style={{ backgroundColor: idx % 2 === 1 ? "#f9fafb" : "#fff" }}>
-                <td style={S.tdC}>{idx + 1}</td>
-                <td style={S.td}>{item.description}</td>
-                <td style={S.tdC}>{item.meter_option == 1 ? item.meter : item.qty}</td>
+                <td className="center">{idx + 1}</td>
+                <td dangerouslySetInnerHTML={{ __html: item.description }} />
+                <td className="center">{item.meter_option == 1 ? item.meter : item.qty}</td>
                 {isNormalPo && <>
-                  <td style={S.tdC}>{item.rate}</td>
-                  <td style={S.tdR}>{displayAmount}</td>
+                  <td className="center">{item.rate}</td>
+                  <td className="right">{displayAmount}</td>
                 </>}
               </tr>
             );
@@ -259,12 +261,17 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
         </tbody>
       </table>
 
-      {/* Totals + BRN + Bank */}
+      {/* Totals + BRN + Bank — colgroup: 60% left info, 25% label, 15% value */}
       <table style={S.table}>
+        <colgroup>
+          <col style={{ width: "60%" }} />
+          <col style={{ width: "25%" }} />
+          <col style={{ width: "15%" }} />
+        </colgroup>
         <tbody>
           <tr>
             {/* Left: IRN / BRN / company info */}
-            <td style={{ ...S.td, width: "60%", verticalAlign: "bottom" }} colSpan={3}
+            <td style={{ verticalAlign: "top" }} colSpan={1}
               rowSpan={4 + (parseFloat(inv.discnumber) > 0 ? 1 : 0) +
                 (parseFloat(inv.witnesscharges) > 0 ? 1 : 0) +
                 (parseFloat(inv.samplehandling) > 0 ? 1 : 0) +
@@ -285,69 +292,70 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
               <div>Udhyam Registeration No. Type of MSME : 230262102537</div>
               <div>CIN NO. {companyInfo?.company?.cin_no || "U73100MP2006PTC019006"}</div>
             </td>
-            <td style={S.td}>Subtotal</td>
-            <td style={S.tdR}>{f2(inv.subtotal)}</td>
+            <td>Subtotal</td>
+            <td className="right">{f2(inv.subtotal)}</td>
           </tr>
           {parseFloat(inv.discnumber) > 0 && <tr>
-            <td style={S.td}>Discount ({inv.discnumber}{inv.disctype === "%" ? "%" : ""})</td>
-            <td style={S.tdR}>{f2(inv.discount)}</td>
+            <td>Discount ({inv.discnumber}{inv.disctype === "%" ? "%" : ""})</td>
+            <td className="right">{f2(inv.discount)}</td>
           </tr>}
           {parseFloat(inv.witnesscharges) > 0 && <tr>
-            <td style={S.td}>Witness Charges ({inv.witnessnumber}{inv.witnesstype === "%" ? "%" : ""})</td>
-            <td style={S.tdR}>{f2(inv.witnesscharges)}</td>
+            <td>Witness Charges ({inv.witnessnumber}{inv.witnesstype === "%" ? "%" : ""})</td>
+            <td className="right">{f2(inv.witnesscharges)}</td>
           </tr>}
           {parseFloat(inv.samplehandling) > 0 && <tr>
-            <td style={S.td}>Sample Handling</td>
-            <td style={S.tdR}>{f2(inv.samplehandling)}</td>
+            <td>Sample Handling</td>
+            <td className="right">{f2(inv.samplehandling)}</td>
           </tr>}
           {parseFloat(inv.sampleprep) > 0 && <tr>
-            <td style={S.td}>Sample Preparation Charges</td>
-            <td style={S.tdR}>{f2(inv.sampleprep)}</td>
+            <td>Sample Preparation Charges</td>
+            <td className="right">{f2(inv.sampleprep)}</td>
           </tr>}
           {parseFloat(inv.freight) > 0 && <tr>
-            <td style={S.td}>Freight Charges</td>
-            <td style={S.tdR}>{f2(inv.freight)}</td>
+            <td>Freight Charges</td>
+            <td className="right">{f2(inv.freight)}</td>
           </tr>}
           {parseFloat(inv.mobilisation) > 0 && <tr>
-            <td style={S.td}>Mobilization and Demobilization Charges</td>
-            <td style={S.tdR}>{f2(inv.mobilisation)}</td>
+            <td>Mobilization and Demobilization Charges</td>
+            <td className="right">{f2(inv.mobilisation)}</td>
           </tr>}
           <tr>
-            <td style={S.td}>Total</td>
-            <td style={S.tdR}>{f2(inv.subtotal2)}</td>
+            <td>Total</td>
+            <td className="right">{f2(inv.subtotal2)}</td>
           </tr>
           {isSGST ? (<>
-            <tr><td style={S.td}>CGST {inv.cgstper}%</td><td style={S.tdR}>{f2(inv.cgstamount)}</td></tr>
-            <tr><td style={S.td}>SGST {inv.sgstper}%</td><td style={S.tdR}>{f2(inv.sgstamount)}</td></tr>
+            <tr><td>CGST {inv.cgstper}%</td><td className="right">{f2(inv.cgstamount)}</td></tr>
+            <tr><td>SGST {inv.sgstper}%</td><td className="right">{f2(inv.sgstamount)}</td></tr>
           </>) : (
-            <tr><td style={S.td}>IGST {inv.igstper}%</td><td style={S.tdR}>{f2(inv.igstamount)}</td></tr>
+            <tr><td>IGST {inv.igstper}%</td><td className="right">{f2(inv.igstamount)}</td></tr>
           )}
           <tr>
-            <td style={S.td}>Total Charges With tax</td>
-            <td style={S.tdR}>{f2(inv.total)}</td>
+            <td>Total Charges With tax</td>
+            <td className="right">{f2(inv.total)}</td>
           </tr>
           <tr>
-            <td style={S.td}>Round off</td>
-            <td style={S.tdR}>{f2(inv.roundoff)}</td>
+            <td>Round off</td>
+            <td className="right">{f2(inv.roundoff)}</td>
           </tr>
           {/* In words + final total */}
           <tr>
-            <td style={{ ...S.td, borderRight: "none" }} colSpan={3}>
+            <td colSpan={2} style={{ borderRight: "none" }}>
               <strong>(IN WORDS):</strong> Rs. {numberToWords(Math.round(finalTotal))} Only
             </td>
-            <td style={{ ...S.td, borderLeft: "none" }}>
-              <strong>Total {inv.typeofinvoice} Charges</strong>
-            </td>
-            <td style={{ ...S.tdR, fontWeight: "bold" }}>{f2(Math.round(finalTotal))}</td>
+            <td style={{ fontWeight: "bold" }} className="right">{f2(Math.round(finalTotal))}</td>
           </tr>
         </tbody>
       </table>
 
       {/* Bank + Signatory */}
       <table style={S.table}>
+        <colgroup>
+          <col style={{ width: "60%" }} />
+          <col style={{ width: "40%" }} />
+        </colgroup>
         <tbody>
           <tr>
-            <td style={{ ...S.td, width: "60%", borderRight: "none" }}>
+            <td style={{ verticalAlign: "top" }}>
               <div>For online payments — {inv.bankaccountname || companyInfo?.bank?.account_name || ""}</div>
               <div>Bank Name : {inv.bankname || companyInfo?.bank?.bank_name || ""}, Branch Name : {inv.bankbranch || companyInfo?.bank?.branch || ""}</div>
               <div>Bank Account No. : {inv.bankaccountno || companyInfo?.bank?.account_no || ""}, A/c Type : {inv.bankactype || companyInfo?.bank?.account_type || ""}</div>
@@ -358,17 +366,17 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
                 <strong> Declaration u/s 206AB of Income Tax Act:</strong> We have filed our Income Tax Return for previous two years with in specified due dates.
               </div>
             </td>
-            <td style={{ ...S.td, borderLeft: "none", textAlign: "right" }}>
+            <td className="right" style={{ verticalAlign: "top" }}>
               <div>For {companyInfo?.company?.name || "Kailtech Test And Research Centre Pvt. Ltd."}</div>
               {(status === 1 || status === 2) && (<div style={{ marginTop: 8 }}>
-                {signUrl && <img src={signUrl} alt="Sign" crossOrigin="anonymous" style={{ width: 100, height: 40, objectFit: "contain" }} />}
-                {digitalSignUrl && <img src={digitalSignUrl} alt="DigSign" crossOrigin="anonymous" style={{ maxHeight: 50, objectFit: "contain" }} />}
+                {signUrl && <img src={signUrl} alt="Sign" style={{ width: 100, height: 40, objectFit: "contain" }} />}
+                {digitalSignUrl && <img src={digitalSignUrl} alt="DigSign" style={{ maxHeight: 50, objectFit: "contain" }} />}
               </div>)}
               <div style={{ marginTop: 8 }}><u>Authorised Signatory</u></div>
             </td>
           </tr>
           <tr>
-            <td style={{ ...S.td, fontSize: 10 }} colSpan={2}>
+            <td colSpan={2} style={{ fontSize: 10 }}>
               <strong><u>Terms &amp; Conditions:</u></strong>
               <ol style={{ paddingLeft: 18, marginTop: 4, lineHeight: 1.6 }}>
                 <li>Cross Cheque/DD should be drawn in favour of {companyInfo?.company?.name || "Kailtech Test And Research Centre Pvt. Ltd."} Payable at Indore</li>
@@ -391,7 +399,8 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
 }
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
-function Spinner() {  return (
+function Spinner() {
+  return (
     <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">
       <svg className="h-6 w-6 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -423,15 +432,13 @@ export default function ViewInvoiceCalibration() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const printWithLH = useRef(null);
-  const printWithoutLH = useRef(null);
 
   const [invoice, setInvoice] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [companyInfo, setCompanyInfo] = useState(null);
   const [imgBase64, setImgBase64] = useState({ qr: "", sign: "", dSign: "" });
-  const [pdfBusy, setPdfBusy] = useState(false);
+  const [states, setStates] = useState([]);
 
   // ── Fetch invoice detail ───────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -442,12 +449,12 @@ export default function ViewInvoiceCalibration() {
       const d = res.data?.data ?? res.data ?? {};
       setInvoice({ ...(d.invoice ?? d), _address: d.address, _qr_image: d.qr_image, _signature_image: d.signature_image, _digital_signature: d.digital_signature });
       setItems(Array.isArray(d.items) ? d.items : []);
-      const [qr, sign, dSign] = await Promise.all([
-        toBase64(d?.qr_image),
-        toBase64(d?.signature_image),
-        toBase64(d?.digital_signature),
-      ]);
-      setImgBase64({ qr, sign, dSign });
+      // QR / signature images — stored directly; print window loads them as same-origin URLs
+      setImgBase64({
+        qr: d?.qr_image ?? "",
+        sign: d?.signature_image ?? "",
+        dSign: d?.digital_signature ?? "",
+      });
     } catch {
       toast.error("Failed to load invoice");
     } finally {
@@ -461,6 +468,11 @@ export default function ViewInvoiceCalibration() {
     axios.get("/get-company-info")
       .then(res => setCompanyInfo(res.data?.data))
       .catch(err => console.error("Failed to load company info:", err));
+
+    // Fetch state list
+    axios.get("/people/get-state")
+      .then(res => setStates(res.data?.data || []))
+      .catch(err => console.error("Failed to load states:", err));
   }, [load]);
 
   if (loading) return <Page title="View Invoice"><Spinner /></Page>;
@@ -545,67 +557,41 @@ export default function ViewInvoiceCalibration() {
   const discnumber = parseFloat(invoice.discnumber) || 0;
 
   // ── PDF handlers ──────────────────────────────────────────────────────────
-  const handlePdfWithLH = async () => {
-    setPdfBusy(true);
-    await capturePdf(printWithLH, `${invoice.invoiceno ?? "invoice"}.pdf`);
-    setPdfBusy(false);
-  };
-
-  const handlePdfWithoutLH = async () => {
-    setPdfBusy(true);
-    await capturePdf(printWithoutLH, `${invoice.invoiceno ?? "invoice"}withoutletterhead.pdf`);
-    setPdfBusy(false);
-  };
-
-  const templateProps = {
-    inv: invoice,
-    addr: invoice._address ?? {},
-    items,
-    qrUrl: imgBase64.qr || invoice._qr_image,
-    signUrl: imgBase64.sign || invoice._signature_image,
-    digitalSignUrl: imgBase64.dSign || invoice._digital_signature,
-    companyInfo,
+  const handleExport = (withLH) => {
+    const templateProps = {
+      inv: invoice,
+      addr: invoice._address ?? {},
+      items: computedItems,
+      qrUrl: imgBase64.qr || invoice._qr_image,
+      signUrl: imgBase64.sign || invoice._signature_image,
+      digitalSignUrl: imgBase64.dSign || invoice._digital_signature,
+      companyInfo,
+      states,
+    };
+    const pageTitle = withLH ? "invoice" : "invoice without LetterHead";
+    printInvoice(templateProps, withLH, logo, pageTitle);
   };
 
   return (
     <Page title="View Invoice">
       <div className="transition-content px-(--margin-x) pb-10">
 
-        {/* ── Hidden print templates (off-screen, captured by html2canvas) ── */}
-        <div style={{ position: "absolute", top: -9999, left: -9999, zIndex: -1 }}>
-          <div ref={printWithLH} style={{ display: "none" }}>
-            <InvoicePrintTemplate {...templateProps} withLH={true} />
-          </div>
-        </div>
-        <div style={{ position: "absolute", top: -9999, left: -9999, zIndex: -1 }}>
-          <div ref={printWithoutLH} style={{ display: "none" }}>
-            <InvoicePrintTemplate {...templateProps} withLH={false} />
-          </div>
-        </div>
+        {/* No hidden print-template refs needed — we use window.open+print */}
 
         {/* ── Action buttons (no-print) ── */}
         <div className="mb-4 flex flex-wrap items-center gap-2 print:hidden">
           <button
-            onClick={handlePdfWithLH}
-            disabled={pdfBusy}
-            className="inline-flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+            onClick={() => handleExport(true)}
+            className="inline-flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700"
           >
-            {pdfBusy ? (
-              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
-              </svg>
-            ) : (
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              </svg>
-            )}
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
             Export PDF Invoice
           </button>
           <button
-            onClick={handlePdfWithoutLH}
-            disabled={pdfBusy}
-            className="inline-flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-60"
+            onClick={() => handleExport(false)}
+            className="inline-flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -622,9 +608,8 @@ export default function ViewInvoiceCalibration() {
 
         {/* ── Invoice body ── */}
         <div
-          className={`relative overflow-hidden rounded-lg border border-gray-300 bg-white p-6 text-sm dark:border-dark-600 dark:bg-dark-900 ${
-            isDraft ? "draft-watermark" : ""
-          }`}
+          className={`relative overflow-hidden rounded-lg border border-gray-300 bg-white p-6 text-sm dark:border-dark-600 dark:bg-dark-900 ${isDraft ? "draft-watermark" : ""
+            }`}
         >
           {/* DRAFT watermark */}
           {isDraft && (
@@ -640,20 +625,22 @@ export default function ViewInvoiceCalibration() {
             <div className="col-span-3 flex items-start">
               <img src={companyInfo?.branding?.logo || logo} alt="KRTC Logo" className="h-16 w-auto object-contain" />
             </div>
-            <div className="col-span-9 text-right">
-              <p className="font-mono text-xs italic text-gray-500">
+            <div className="col-span-9">
+              <p className="font-mono text-xs italic text-gray-500 text-right">
                 NABL Accredited as per IS/ISO/IEC 17025 (Certificate Nos. TC-7832 &amp; CC-2348),<br />
                 BIS Recognized &amp; ISO 9001 Certified Test &amp; Calibration Laboratory
               </p>
-              <h2 className="mt-1 text-xl font-bold text-navy-700" style={{ color: "navy" }}>
+              <h2 className="mt-2 text-2xl font-bold text-left" style={{ color: "navy" }}>
                 {companyInfo?.company?.name || invoice.companyname || "KAILTECH TEST AND RESEARCH CENTRE PVT LTD."}
               </h2>
             </div>
+            {/* Row 2: spacer | TAX INVOICE centered | ORIGINAL FOR RECIPIENT right */}
+            <div className="col-span-3" />
             <div className="col-span-6 text-center text-base font-bold">
               TAX INVOICE<br />
               <span className="text-sm font-normal">For {invoice.typeofinvoice} Charges</span>
             </div>
-            <div className="col-span-6 text-right text-sm">
+            <div className="col-span-3 text-right text-xs font-semibold self-center">
               ORIGINAL FOR RECIPIENT
             </div>
           </div>
@@ -668,7 +655,10 @@ export default function ViewInvoiceCalibration() {
                   <div>M / s . {invoice.customername}</div>
                   <div className="mt-1">{invoice._address ? `${invoice._address.address}, ${invoice._address.city}, ${invoice._address.pincode}` : invoice.address}</div>
                   <div className="mt-2 flex flex-wrap gap-x-4">
-                    <span><b>State name: </b>{invoice.statename ?? statecode}</span>
+                    <span>
+                      <b>State name: </b>
+                      {invoice.statename ?? states.find(s => String(s.gst_code).padStart(2, "0") === String(statecode).padStart(2, "0"))?.state ?? statecode}
+                    </span>
                     <span><b>State code: </b>{isNaN(Number(statecode)) ? "NA" : statecode}</span>
                   </div>
                   <div className="flex flex-wrap gap-x-4">
@@ -726,7 +716,7 @@ export default function ViewInvoiceCalibration() {
               {computedItems.map((item, idx) => (
                 <tr key={item.id ?? idx} className="odd:bg-white even:bg-gray-50 dark:odd:bg-dark-900 dark:even:bg-dark-800">
                   <td className="border border-gray-400 px-2 py-1.5 text-center dark:border-dark-500">{idx + 1}</td>
-                  <td className="border border-gray-400 px-2 py-1.5 dark:border-dark-500">{item.description}</td>
+                  <td className="border border-gray-400 px-2 py-1.5 dark:border-dark-500" dangerouslySetInnerHTML={{ __html: item.description }} />
                   <td className="border border-gray-400 px-2 py-1.5 text-center dark:border-dark-500">
                     {/* PHP: meter_option == 1 → show meter, else qty */}
                     {item.meter_option == 1 ? item.meter : item.qty}

@@ -122,6 +122,7 @@ export default function AddTrfStartJob() {
   const detailsofpaymentRef = useRef(null);
   const paymentamountRef = useRef(null);
   const certcollectionremarkRef = useRef(null);
+  const deadlineRef = useRef(null);
 
   // ── Form State ──────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
@@ -278,6 +279,7 @@ export default function AddTrfStartJob() {
       { field: "detailsofpayment", ref: detailsofpaymentRef },
       { field: "paymentamount", ref: paymentamountRef },
       { field: "certcollectionremark", ref: certcollectionremarkRef },
+      { field: "deadline", ref: deadlineRef },
     ];
 
     for (const { field, ref } of errorFields) {
@@ -570,6 +572,8 @@ export default function AddTrfStartJob() {
     }
 
     if (!formData.certcollectionremark) newErrors.certcollectionremark = "Description is required";
+
+    if (!formData.deadline) newErrors.deadline = "Deadline is required";
 
     return newErrors;
   };
@@ -1327,9 +1331,10 @@ export default function AddTrfStartJob() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Documents Submitted, if any (Details)</label>
                 <Input type="text" name="documents" value={formData.documents} onChange={handleInputChange} className="w-full" placeholder="Enter document details" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Any Deadline</label>
+              <div ref={deadlineRef}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Any Deadline <span className="text-red-500">*</span></label>
                 <Input type="date" name="deadline" value={dateInputs.deadline} onChange={handleDateChange} className="w-full" />
+                <ErrMsg field="deadline" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Any Special Request</label>

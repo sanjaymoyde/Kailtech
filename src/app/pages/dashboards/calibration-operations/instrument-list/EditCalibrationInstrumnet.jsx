@@ -87,7 +87,7 @@ export default function EditCalibrationInstrumnet() {
   const [priceLists, setPriceLists] = useState([]);
   const [sopOptions, setSopOptions] = useState([]);
   const [standardOptions, setStandardOptions] = useState([]);
-  const [disciplineOptions, setDisciplineOptions] = useState([]);
+  const [disciplineOptions] = useState([]);
   const [groupOptions] = useState([]);
   const [subcategoryOne, setSubcategoryOne] = useState([]);
   const [subcategoryTwo, setSubcategoryTwo] = useState([]);
@@ -147,7 +147,6 @@ export default function EditCalibrationInstrumnet() {
           unitTypeRes,
           unitRes,
           modeRes,
-          disciplineRes,
         ] = await Promise.all([
           axios.get("/calibrationoperations/calibration-method-list"),
           axios.get("/calibrationoperations/calibration-standard-list"),
@@ -159,7 +158,6 @@ export default function EditCalibrationInstrumnet() {
           axios.get("/master/unit-type-list"),
           axios.get("/master/units-list"),
           axios.get("/master/mode-list"),
-          axios.get("/calibrationoperations/get-disciplines"),
         ]);
 
         const safeArray = (data) => (Array.isArray(data) ? data : []);
@@ -177,14 +175,6 @@ export default function EditCalibrationInstrumnet() {
             value: item.id.toString(),
           })),
         );
-        if (disciplineRes?.data?.data) {
-          setDisciplineOptions(
-            safeArray(disciplineRes.data.data).map((item) => ({
-              label: item.name || item.discipline_name,
-              value: (item.id || item.discipline_id || item.name)?.toString(),
-            })),
-          );
-        }
         setSubcategoryOne(
           safeArray(subcategoryoneRes.data.data).map((item) => ({
             label: item.name,
@@ -566,8 +556,6 @@ export default function EditCalibrationInstrumnet() {
 
       const newMatrix = {
         id: "",
-        discipline: "",
-        group: "",
         unittype: "",
         unit: "",
         mode: "",
@@ -576,6 +564,14 @@ export default function EditCalibrationInstrumnet() {
         tolerance: "",
         tolerancetype: "",
       };
+
+      if (
+        newMatrices.length > 0 &&
+        JSON.stringify(newMatrices[newMatrices.length - 1]) ===
+        JSON.stringify(newMatrix)
+      ) {
+        return prev;
+      }
 
       newMatrices.push(newMatrix);
       selectedPrice.matrices = newMatrices;
