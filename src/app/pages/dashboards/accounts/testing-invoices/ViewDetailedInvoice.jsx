@@ -249,7 +249,7 @@ function DetailedInvoicePrintTemplate({ inv, addr, items, signUrl, digitalSignUr
             <tr key={item.id ?? idx} style={{ backgroundColor: idx % 2 === 1 ? "#f9fafb" : "#fff" }}>
               <td style={S.tdC}>{idx + 1}</td>
               <td style={S.td}>
-                {item.description}
+                <div dangerouslySetInnerHTML={{ __html: item.description }} />
                 {/* PHP: parameters from packageparameters joined parameters by pricematrixid */}
                 {Array.isArray(item.parameters) &&
                   item.parameters.map((p, pi) => (
@@ -258,7 +258,7 @@ function DetailedInvoicePrintTemplate({ inv, addr, items, signUrl, digitalSignUr
                     </div>
                   ))}
               </td>
-              <td style={S.tdC}>{item.meter_option == 1 ? item.meter : item.qty}</td>
+              <td style={S.tdC}>{item.meter_option == 1 ? (Math.round(item.meter * 100) / 100) : item.qty}</td>
               <td style={S.tdC}>{item.rate}</td>
               <td style={S.tdR}>{f2(item.amount)}</td>
             </tr>
@@ -530,6 +530,25 @@ export default function ViewDetailedInvoice() {
   // PHP: meter_option from invoicerow where status=1
   const hasMeter = items.some((it) => it.meter_option == 1);
 
+  // ── Grouping logic (per user request) ──────────────────────────────────────
+  const groupedItemsMap = items.reduce((acc, item) => {
+    // Clean description: remove everything from "Brn No:" or "CCL Updation"
+    const cleanedDesc = (item.description || "")
+      .split(/<br>\s*Brn No:|CCL Updation/i)[0]
+      .replace(/<br>\s*$/i, "")
+      .trim();
+
+    const key = `${cleanedDesc}_${item.rate}`;
+    if (!acc[key]) {
+      acc[key] = { ...item, description: cleanedDesc, qty: 0, meter: 0, amount: 0 };
+    }
+    acc[key].qty += parseFloat(item.qty || 0);
+    acc[key].meter += parseFloat(item.meter || 0);
+    acc[key].amount += parseFloat(item.amount || 0);
+    return acc;
+  }, {});
+  const finalItems = Object.values(groupedItemsMap);
+
   // ── Format helpers ─────────────────────────────────────────────────────────
   const fmt = (v) => parseFloat(v || 0).toFixed(2);
   const discnumber = parseFloat(invoice.discnumber) || 0;
@@ -557,7 +576,7 @@ export default function ViewDetailedInvoice() {
   const templateProps = {
     inv: invoice,
     addr: invoice._address ?? {},
-    items,
+    items: finalItems,
     signUrl: imgBase64.sign || invoice._signature_image,
     digitalSignUrl: imgBase64.dSign || invoice._digital_signature,
     hasMeter,
@@ -713,7 +732,7 @@ export default function ViewDetailedInvoice() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item, idx) => (
+              {finalItems.map((item, idx) => (
                 <tr
                   key={item.id ?? idx}
                   className="odd:bg-white even:bg-gray-50 dark:odd:bg-dark-900 dark:even:bg-dark-800"
@@ -722,11 +741,7 @@ export default function ViewDetailedInvoice() {
                     {idx + 1}
                   </td>
                   <td className="border border-gray-400 px-2 py-1.5 dark:border-dark-500">
-                    {item.description}
-                    {/* PHP: SELECT parameters.* FROM parameters, packageparameters
-                              WHERE parameters.id=packageparameters.parameter
-                              AND packageparameters.package=pricematrixid
-                              AND packageparameters.status=1 */}
+                    <div dangerouslySetInnerHTML={{ __html: item.description }} />
                     {Array.isArray(item.parameters) &&
                       item.parameters.map((p, pi) => (
                         <div key={pi} className="ml-2 text-gray-500" style={{ fontSize: 10 }}>
@@ -735,7 +750,7 @@ export default function ViewDetailedInvoice() {
                       ))}
                   </td>
                   <td className="border border-gray-400 px-2 py-1.5 text-center dark:border-dark-500">
-                    {item.meter_option == 1 ? item.meter : item.qty}
+                    {item.meter_option == 1 ? (Math.round(item.meter * 100) / 100) : item.qty}
                   </td>
                   <td className="border border-gray-400 px-2 py-1.5 text-center dark:border-dark-500">
                     {item.rate}

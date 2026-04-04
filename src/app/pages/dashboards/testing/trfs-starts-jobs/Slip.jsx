@@ -3,11 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "utils/axios";
 import { toast } from "sonner";
 
-/**
- * Slip Component
- * Final structure based on USER's updated API response.
- * API Endpoint: testing/get-slip/:id
- */
 export default function Slip() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -17,10 +12,7 @@ export default function Slip() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // ── Updated API Endpoint ──
       const response = await axios.get(`testing/get-slip/${id}`);
-
-      // Checking for data presence (assuming root response is the object)
       if (response.data && response.data.customer_name) {
         setPrintableData(response.data);
       } else {
@@ -114,12 +106,12 @@ export default function Slip() {
             margin: 0 auto;
             padding: 3rem;
           }
-          .label { font-weight: 700; color: #374151; width: 140px; display: inline-block; }
+          .label { font-weight: 700; color: #374151; width: 120px; display: inline-block; }
           .table {
             width: 100%;
             border-collapse: collapse;
             font-size: 10.5px;
-            margin-top: 2rem;
+            margin-top: 0.6rem;
           }
           .table th {
             background-color: #f9fafb;
@@ -138,12 +130,12 @@ export default function Slip() {
           }
           .text-center { text-align: center; }
           .header-box {
-            border-bottom: 2px solid #000;
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
+            border-bottom: none;
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.8rem;
           }
           .header-line {
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.2rem;
             display: flex;
             align-items: flex-start;
           }
@@ -263,28 +255,6 @@ export default function Slip() {
             )}
           </tbody>
         </table>
-
-        {/* ── Visual Checkmarks / Verification ── */}
-        <div className="mt-12 grid grid-cols-3 gap-8 px-4 py-8 border border-dashed border-gray-200">
-          <div className="text-center">
-            <div className="h-10 border-b border-gray-300 mb-2"></div>
-            <span className="text-[9px] uppercase font-bold text-gray-500">Prepared By</span>
-          </div>
-          <div className="text-center">
-            <div className="h-10 border-b border-gray-300 mb-2"></div>
-            <span className="text-[9px] uppercase font-bold text-gray-500">Sample Receiver</span>
-          </div>
-          <div className="text-center">
-            <div className="h-10 border-b border-gray-300 mb-2"></div>
-            <span className="text-[9px] uppercase font-bold text-gray-500">Authorized Signatory</span>
-          </div>
-        </div>
-
-        <div className="mt-10 flex justify-between px-2 text-[9px] text-gray-400 font-bold uppercase border-t border-gray-100 pt-3">
-          <span>** System Generated **</span>
-          <span>Report ID: {id}</span>
-          <span>{new Date().toLocaleString()}</span>
-        </div>
 
       </div>
     </div>

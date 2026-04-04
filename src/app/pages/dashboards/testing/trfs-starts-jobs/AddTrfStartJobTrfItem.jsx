@@ -11,6 +11,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import TrfItemForm from "./TrfItemForm";
 import EditItemModal from "./EditItemModal";   // ✅ NEW IMPORT
 import { toast } from "sonner";
+import { Pagination, PaginationItems, PaginationNext, PaginationPrevious } from "components/ui";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -555,25 +556,17 @@ export default function TrfProductsList() {
                 ? "Showing 0 to 0 of 0 entries"
                 : `Showing ${startIndex + 1} to ${Math.min(startIndex + pageSize, totalEntries)} of ${totalEntries} entries`}
             </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                disabled={safeCurrentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+            {totalEntries > 0 && (
+              <Pagination
+                total={totalPages}
+                value={safeCurrentPage}
+                onChange={(page) => setCurrentPage(page)}
               >
-                Previous
-              </button>
-              <span className="min-w-[36px] rounded border border-blue-500 bg-blue-50 px-3 py-1.5 text-center text-sm font-semibold text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                {safeCurrentPage}
-              </span>
-              <button
-                disabled={safeCurrentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-              >
-                Next
-              </button>
-            </div>
+                <PaginationPrevious />
+                <PaginationItems />
+                <PaginationNext />
+              </Pagination>
+            )}
           </div>
 
           {canSubmitReview && (

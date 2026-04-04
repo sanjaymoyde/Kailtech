@@ -252,25 +252,19 @@ function ItemizedBillPrintTemplate({ inv, addr, items, signUrl, digitalSignUrl, 
         </thead>
         <tbody>
           {items.map((item, idx) => {
-            // PHP: meter_option==1 → qty=meter, amount=rate*meter; else qty=1, amount=rate
-            const qty = item.meter_option == 1 ? item.meter : 1;
-            const amount =
-              item.meter_option == 1
-                ? parseFloat(item.rate || 0) * parseFloat(item.meter || 0)
-                : parseFloat(item.rate || 0);
+            const qty = item.meter_option == 1 ? (Math.round(item.meter * 100) / 100) : item.qty;
             return (
               <tr key={item.id ?? idx} style={{ backgroundColor: idx % 2 === 1 ? "#f9fafb" : "#fff" }}>
                 <td style={S.tdC}>{idx + 1}</td>
                 <td style={S.td}>
-                  {/* PHP: name(brand from technical where trfitem=crfitemid) + CCL Updation-brnno */}
                   {item.name}
                   {item.brand ? `(${item.brand})` : ""}
-                  <br />
-                  CCL Updation-{item.brnno}
                 </td>
-                <td style={S.tdC}>{qty}</td>
+                <td style={S.tdC}>
+                  {qty}
+                </td>
                 <td style={S.tdC}>{item.rate}</td>
-                <td style={S.tdR}>{f2(amount)}</td>
+                <td style={S.tdR}>{f2(item.amount)}</td>
               </tr>
             );
           })}
@@ -544,6 +538,22 @@ export default function ViewItemizedBill() {
   // PHP: meter_option from invoicerow where status=1
   const hasMeter = items.some((it) => it.meter_option == 1);
 
+  // ── Grouping logic (per user request) ──────────────────────────────────────
+  const groupedItemsMap = items.reduce((acc, item) => {
+    const key = `${item.name}_${item.brand}_${item.rate}`;
+    if (!acc[key]) {
+      acc[key] = { ...item, qty: 0, meter: 0, amount: 0 };
+    }
+    acc[key].qty += parseFloat(item.qty || 1);
+    acc[key].meter += parseFloat(item.meter || 0);
+    const rowAmt = item.meter_option == 1
+      ? parseFloat(item.rate || 0) * parseFloat(item.meter || 0)
+      : parseFloat(item.rate || 0) * (parseFloat(item.qty) || 1);
+    acc[key].amount += rowAmt;
+    return acc;
+  }, {});
+  const finalItems = Object.values(groupedItemsMap);
+
   const fmt = (v) => parseFloat(v || 0).toFixed(2);
   const discnumber = parseFloat(invoice.discnumber) || 0;
 
@@ -571,7 +581,7 @@ export default function ViewItemizedBill() {
   const templateProps = {
     inv: invoice,
     addr: invoice._address ?? {},
-    items,
+    items: finalItems,
     signUrl: imgBase64.sign || invoice._signature_image,
     digitalSignUrl: imgBase64.dSign || invoice._digital_signature,
     hasMeter,
@@ -723,13 +733,8 @@ export default function ViewItemizedBill() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item, idx) => {
-                // PHP: meter_option==1 → qty=meter, amount=rate*meter; else qty=1, amount=rate
-                const qty = item.meter_option == 1 ? item.meter : 1;
-                const amount =
-                  item.meter_option == 1
-                    ? parseFloat(item.rate || 0) * parseFloat(item.meter || 0)
-                    : parseFloat(item.rate || 0);
+              {finalItems.map((item, idx) => {
+                const qty = item.meter_option == 1 ? (Math.round(item.meter * 100) / 100) : item.qty;
                 return (
                   <tr
                     key={item.id ?? idx}
@@ -739,12 +744,8 @@ export default function ViewItemizedBill() {
                       {idx + 1}
                     </td>
                     <td className="border border-gray-400 px-2 py-1.5 dark:border-dark-500">
-                      {/* PHP: name(brand from technical where trfitem=crfitemid) */}
                       {item.name}
                       {item.brand ? `(${item.brand})` : ""}
-                      <br />
-                      {/* PHP: CCL Updation-brnno */}
-                      <span className="text-gray-500">CCL Updation-{item.brnno}</span>
                     </td>
                     <td className="border border-gray-400 px-2 py-1.5 text-center dark:border-dark-500">
                       {qty}
@@ -753,7 +754,7 @@ export default function ViewItemizedBill() {
                       {item.rate}
                     </td>
                     <td className="border border-gray-400 px-2 py-1.5 text-right dark:border-dark-500">
-                      {fmt(amount)}
+                      {fmt(item.amount)}
                     </td>
                   </tr>
                 );

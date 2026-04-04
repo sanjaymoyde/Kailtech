@@ -434,6 +434,7 @@ export default function AddTrfStartJob() {
     const { name, value } = e.target;
     setDateInputs((prev) => ({ ...prev, [name]: value }));
     setFormData((prev) => ({ ...prev, [name]: value ? formatDateForServer(value) : "" }));
+    clearError(name);
   };
 
   // Helper: clear one error key on change
@@ -542,6 +543,7 @@ export default function AddTrfStartJob() {
   const validate = () => {
     const newErrors = {};
 
+    if (!formData.date) newErrors.date = "Date is required";
     if (!formData.sample_received_on) newErrors.sample_received_on = "Sample Received Date is required";
     if (!formData.ctype) newErrors.ctype = "Customer Type is required";
     if (!formData.customerid) newErrors.customerid = "Customer is required";
@@ -714,7 +716,7 @@ export default function AddTrfStartJob() {
               {/* Date */}
               <div ref={dateRef}>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
-                <Input type="date" name="date" value={dateInputs.date} onChange={handleDateChange} disabled className="w-full bg-gray-50" />
+                <Input type="date" name="date" value={dateInputs.date} onChange={handleDateChange} className="w-full" />
                 <ErrMsg field="date" />
               </div>
 

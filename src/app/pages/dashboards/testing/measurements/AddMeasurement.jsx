@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
+import Select from "react-select";
 import { Button, Input } from "components/ui";
 import { Page } from "components/shared/Page";
 import axios from "utils/axios";
@@ -29,9 +30,9 @@ export default function AddMeasurement() {
       try {
         setFetchingUnits(true);
         const res = await axios.get("/master/units-list");
-        
+
         console.log("Units API Response:", res.data); // Debug log
-        
+
         if (res.data?.status === "true" && res.data.data) {
           setUnits(res.data.data || []);
         } else {
@@ -63,6 +64,37 @@ export default function AddMeasurement() {
         [name]: "",
       }));
     }
+  };
+
+  const handleUnitChange = (selected) => {
+    const value = selected ? selected.value : "";
+    setFormData((prev) => ({
+      ...prev,
+      unit: value,
+    }));
+
+    if (errors.unit) {
+      setErrors((prev) => ({
+        ...prev,
+        unit: "",
+      }));
+    }
+  };
+
+  const unitOptions = units.map((unit) => ({
+    value: unit.id,
+    label: unit.name || unit.unit || unit.unitdesc || unit.description || "-",
+  }));
+
+  const selectStyles = {
+    control: (base, state) => ({
+      ...base,
+      minHeight: "40px",
+      borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+      boxShadow: state.isFocused ? "0 0 0 1px #3b82f6" : "none",
+      ":hover": { borderColor: "#93c5fd" },
+    }),
+    menu: (base) => ({ ...base, zIndex: 50 }),
   };
 
   // ✅ Validation
@@ -119,7 +151,7 @@ export default function AddMeasurement() {
       console.error("Add Measurement Error:", err);
       toast.error(
         err?.response?.data?.message ||
-          "Something went wrong while adding measurement"
+        "Something went wrong while adding measurement"
       );
     } finally {
       setLoading(false);
@@ -187,28 +219,24 @@ export default function AddMeasurement() {
                 <span className="text-gray-500">Loading units...</span>
               </div>
             ) : (
-              <select
-                name="unit"
-                value={formData.unit}
-                onChange={handleChange}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 
-                         bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                         disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
-              >
-                <option value="">Select Unit</option>
-                {units.map((unit) => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.name}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={unitOptions}
+                value={unitOptions.find((o) => o.value === formData.unit) || null}
+                onChange={handleUnitChange}
+                placeholder="Select unit..."
+                isSearchable
+                isLoading={fetchingUnits}
+                isDisabled={fetchingUnits}
+                styles={selectStyles}
+                classNamePrefix="react-select"
+                className="react-select-container text-gray-900 dark:text-gray-100"
+              />
             )}
 
             {errors.unit && (
               <p className="text-red-500 text-sm mt-1">{errors.unit}</p>
             )}
-            
+
             {/* Show total units count */}
             {units.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">

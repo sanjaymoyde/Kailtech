@@ -175,7 +175,7 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
       <table style={S.table}>
         <tbody>
           <tr>
-            <td style={{ ...S.td, width: "55%" }} colSpan={2}>
+            <td style={{ ...S.td, width: "64%" }} colSpan={2}>
               <div style={S.label}>Customer:</div>
               <strong>{inv.customername}</strong><br />
               <div style={{ marginTop: 2 }}>
@@ -198,14 +198,14 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
               </div>
               {inv.concern_person && <div style={{ fontSize: 10, color: "#555" }}>Kind Attn. {inv.concern_person}</div>}
             </td>
-            <td style={{ ...S.td, width: "30%", borderRight: status === 2 && safeQrUrl ? undefined : "none" }}
+            <td style={{ ...S.td, width: status === 2 && safeQrUrl ? "26%" : "36%", borderRight: status === 2 && safeQrUrl ? "none" : undefined }}
               colSpan={status === 2 && safeQrUrl ? 2 : 3}>
               <div><span style={S.label}>Invoice No.: </span>{inv.invoiceno}</div>
               <div><span style={S.label}>Date: </span>{fmtDate(inv.approved_on)}</div>
               <div><span style={S.label}>P.O. No. / Date: </span>{inv.ponumber}</div>
             </td>
             {status === 2 && safeQrUrl && (
-              <td style={{ ...S.td, borderLeft: "none", width: 80 }}>
+              <td style={{ ...S.td, borderLeft: "none", width: "10%" }}>
                 <div style={{ border: "2px solid #000", overflow: "hidden" }}>
                   <img src={safeQrUrl} alt="QR" style={{ width: "100%" }} crossOrigin="anonymous" />
                 </div>
@@ -243,9 +243,8 @@ function InvoicePrintTemplate({ inv, addr, items, qrUrl, signUrl, digitalSignUrl
             let displayAmount = f2(item.amount);
             if (!isFoc && isNormalPo) {
               const itemAmountOld = parseFloat(item.amount) || 0;
-              const qty = parseFloat(item.qty) || 0;
               const itemOtherCharge = otherCharges > 0 && totalQty > 0
-                ? parseFloat(((otherCharges / totalQty) * qty).toFixed(2)) : 0;
+                ? parseFloat(((otherCharges / totalQty) * parseFloat(item.qty || 0)).toFixed(2)) : 0;
               displayAmount = f2(itemAmountOld + itemOtherCharge);
             }
             return (
@@ -459,8 +458,20 @@ export default function ViewInvoiceCalibration() {
     try {
       const res = await axios.get(`/accounts/view-calibration-invoice/${id}`);
       const d = res.data?.data ?? res.data ?? {};
-      setInvoice({ ...(d.invoice ?? d), _address: d.address, _qr_image: d.qr_image, _signature_image: d.signature_image, _digital_signature: d.digital_signature });
+      const inv = { ...(d.invoice ?? d), _address: d.address, _qr_image: d.qr_image, _signature_image: d.signature_image, _digital_signature: d.digital_signature };
       setItems(Array.isArray(d.items) ? d.items : []);
+      // Handle concern person name if it's an ID
+      const concernId = d.inward?.concernpersonname || inv.concern_person;
+      if (concernId && !isNaN(Number(concernId))) {
+        try {
+          const personRes = await axios.get(`/get-concern-person-details/${concernId}`);
+          if (personRes.data?.data?.name) {
+            inv.concern_person = personRes.data.data.name;
+          }
+        } catch (err) { console.error("Failed to fetch person details", err); }
+      }
+
+      setInvoice(inv);
       // QR / signature images — stored directly; print window loads them as same-origin URLs
       setImgBase64({
         qr: d?.qr_image ?? "",
@@ -507,6 +518,31 @@ export default function ViewInvoiceCalibration() {
   // PHP: totalQuantity = sum of all item qty
   const totalQuantity = items.reduce((s, it) => s + (parseFloat(it.qty) || 0), 0);
 
+  // ── Group items by description and rate (User request) ────────────────────
+  const groupedItemsMap = items.reduce((acc, item) => {
+    // Clean description: remove everything from "Brn No:" or "CCL Updation"
+    const cleanedDesc = (item.description || "")
+      .split(/<br>\s*Brn No:|CCL Updation/i)[0]
+      .replace(/<br>\s*$/i, "")
+      .trim();
+
+    const key = `${cleanedDesc}_${item.rate}`;
+    if (!acc[key]) {
+      acc[key] = { ...item, description: cleanedDesc, qty: 0, meter: 0, amount: 0 };
+    }
+    const q = parseFloat(item.qty || 0);
+    const m = parseFloat(item.meter || 0);
+    const r = parseFloat(item.rate || 0);
+    const a = parseFloat(item.amount || 0);
+
+    acc[key].qty += q;
+    acc[key].meter += m;
+    // If original amount is 0, calculate it as rate * (meter or qty)
+    acc[key].amount += a !== 0 ? a : (item.meter_option == 1 ? r * m : r * q);
+    return acc;
+  }, {});
+  const finalItems = Object.values(groupedItemsMap);
+
   // PHP: otherCharge = witnesscharges + samplehandling + sampleprep + freight + mobilisation
   const otherCharges =
     (parseFloat(invoice.witnesscharges) || 0) +
@@ -522,7 +558,7 @@ export default function ViewInvoiceCalibration() {
   const amountNew = subtotal + otherCharges;
 
   // ── Per-item calculations (PHP logic, skipped for FOC) ─────────────────────
-  const computedItems = items.map((item) => {
+  const computedItems = finalItems.map((item) => {
     if (isFoc) {
       return { ...item, itemOtherCharge: 0, itemAmount: 0, itemDiscount: 0, itemAssAmt: 0, itemCgst: 0, itemSgst: 0, itemIgst: 0, itemTotVal: 0, gstRate: 0 };
     }
@@ -729,8 +765,8 @@ export default function ViewInvoiceCalibration() {
                   <td className="border border-gray-400 px-2 py-1.5 text-center dark:border-dark-500">{idx + 1}</td>
                   <td className="border border-gray-400 px-2 py-1.5 dark:border-dark-500" dangerouslySetInnerHTML={{ __html: item.description }} />
                   <td className="border border-gray-400 px-2 py-1.5 text-center dark:border-dark-500">
-                    {/* PHP: meter_option == 1 → show meter, else qty */}
-                    {item.meter_option == 1 ? item.meter : item.qty}
+                    {/* PHP: meter_option == 1 → show meter, else grouped quantity */}
+                    {item.meter_option == 1 ? (Math.round(item.meter * 100) / 100) : item.qty}
                   </td>
                   {isNormalPo && (
                     <>
