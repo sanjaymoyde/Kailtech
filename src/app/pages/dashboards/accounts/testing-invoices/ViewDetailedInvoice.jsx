@@ -130,10 +130,10 @@ const f2 = (v) => parseFloat(v ?? 0).toFixed(2);
 const fmtDate = (d) =>
   d && d !== "0000-00-00 00:00:00"
     ? new Date(d).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    })
     : "";
 
 // ─── Number to words ──────────────────────────────────────────────────────────
@@ -190,6 +190,8 @@ function DetailedInvoicePrintTemplate({ inv, addr, items, signUrl, digitalSignUr
       {/* Title */}
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{ fontSize: 14, fontWeight: "bold", textTransform: "uppercase" }}>TAX INVOICE</div>
+        <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", marginTop: 4 }}>For {inv.typeofinvoice || "Testing"} Charges</div>
+        <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", marginTop: 2 }}>ORIGINAL FOR RECIPIENT</div>
       </div>
 
       {/* Customer + Invoice meta */}
@@ -199,8 +201,16 @@ function DetailedInvoicePrintTemplate({ inv, addr, items, signUrl, digitalSignUr
             <td style={{ ...S.td, width: "60%" }} colSpan={2}>
               <div style={S.label}>Customer:</div>
               <strong>M / s . {inv.customername}</strong>
-              <br />
-              {[addr.address, addr.city, addr.pincode].filter(Boolean).join(", ")}
+              <div style={{ marginTop: 2 }}>
+                {addr.address ? (
+                  <>
+                    {addr.address}<br />
+                    {[addr.city, addr.pincode].filter(Boolean).join(", ")}
+                  </>
+                ) : (
+                  inv.address
+                )}
+              </div>
               <div style={{ marginTop: 4 }}>
                 <span style={S.label}>State name: </span>{stateLabel}&nbsp;&nbsp;
                 <span style={S.label}>State code: </span>
@@ -367,29 +377,32 @@ function DetailedInvoicePrintTemplate({ inv, addr, items, signUrl, digitalSignUr
           {/* Bank details + Signatory */}
           <tr>
             <td style={{ ...S.td, borderRight: "none" }} colSpan={2}>
-              <div>For online payments — {inv.bankaccountname ?? ""}</div>
+              <div>For online payments - {inv.bankaccountname ?? ""}</div>
               <div>Bank Name : {inv.bankname ?? ""}, Branch Name : {inv.bankbranch ?? ""}</div>
               <div>Bank Account No. : {inv.bankaccountno ?? ""}, A/c Type : {inv.bankactype ?? ""}</div>
               <div>IFSC CODE: {inv.bankifsccode ?? ""}, MICR CODE: {inv.bankmicr ?? ""}</div>
               <div style={{ marginTop: 6, fontSize: 10 }}>
-                Certified that the particulars given above are true and correct.
+                Certified that the particulars given above are true and correct.<br />
+                <b> Declaration u/s 206 AB of Income Tax Act:</b> We have filed our Income Tax Return for previous two years with in specified due dates.
               </div>
             </td>
             <td style={{ ...S.td, borderLeft: "none", textAlign: "right" }} colSpan={2}>
-              <div>For Kailtech Test And Research Centre Pvt. Ltd.</div>
-              {(status === 1 || status === 2) && (
-                <div style={{ marginTop: 8 }}>
-                  {signUrl && (
-                    <img src={signUrl} alt="Sign" crossOrigin="anonymous"
-                      style={{ width: 100, height: 40, objectFit: "contain" }} />
-                  )}
-                  {digitalSignUrl && (
-                    <img src={digitalSignUrl} alt="DigSign" crossOrigin="anonymous"
-                      style={{ maxHeight: 50, objectFit: "contain" }} />
-                  )}
-                </div>
-              )}
-              <div style={{ marginTop: 8 }}><u>Authorised Signatory</u></div>
+              <div style={{ height: 120, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div style={{ textAlign: "right" }}>For Kailtech Test And Research Centre Pvt. Ltd.</div>
+                {(status === 1 || status === 2) && (
+                  <div style={{ textAlign: "right" }}>
+                    {signUrl && (
+                      <img src={signUrl} alt="Sign" crossOrigin="anonymous"
+                        style={{ width: 100, height: 40, objectFit: "contain" }} />
+                    )}
+                    {digitalSignUrl && (
+                      <img src={digitalSignUrl} alt="DigSign" crossOrigin="anonymous"
+                        style={{ maxHeight: 50, objectFit: "contain" }} />
+                    )}
+                  </div>
+                )}
+                <div style={{ textAlign: "right" }}><u>Authorised Signatory</u></div>
+              </div>
             </td>
           </tr>
 
@@ -607,9 +620,8 @@ export default function ViewDetailedInvoice() {
 
         {/* ── Invoice Body ── */}
         <div
-          className={`relative overflow-hidden rounded-lg border border-gray-300 bg-white p-6 text-sm dark:border-dark-600 dark:bg-dark-900 ${
-            isDraft ? "draft-watermark" : ""
-          }`}
+          className={`relative overflow-hidden rounded-lg border border-gray-300 bg-white p-6 text-sm dark:border-dark-600 dark:bg-dark-900 ${isDraft ? "draft-watermark" : ""
+            }`}
         >
           {/* DRAFT watermark */}
           {isDraft && (
@@ -635,7 +647,11 @@ export default function ViewDetailedInvoice() {
                 {invoice.companyname ?? "KAILTECH TEST AND RESEARCH CENTRE PVT LTD."}
               </h2>
             </div>
-            <div className="col-span-12 text-center text-base font-bold">TAX INVOICE</div>
+            <div className="col-span-12 text-center text-base font-bold">
+              TAX INVOICE<br />
+              <span className="text-sm font-normal">For {invoice.typeofinvoice || "Testing"} Charges</span><br />
+              <span className="text-xs font-semibold uppercase">ORIGINAL FOR RECIPIENT</span>
+            </div>
           </div>
 
           {/* ── Customer + Invoice Info table ── */}
@@ -834,32 +850,34 @@ export default function ViewDetailedInvoice() {
                     IFSC CODE: {invoice.bankifsccode ?? "—"}, MICR CODE: {invoice.bankmicr ?? "—"}
                   </div>
                   <div className="mt-2 text-gray-600">
-                    Certified that the particulars given above are true and correct.
+                    Certified that the particulars given above are true and correct.<br />
+                    <b> Declaration u/s 206 AB of Income Tax Act:</b> We have filed our Income Tax Return for previous two years with in specified due dates.
                   </div>
                 </td>
-                <td className="border border-gray-400 p-3 align-top text-xs dark:border-dark-500">
-                  <div>
-                    For {invoice.companyname ?? "KAILTECH TEST AND RESEARCH CENTRE PVT LTD."}
-                  </div>
-                  {/* PHP: status==1 → show electronically signed by approved_by */}
-                  {(Number(invoice.status) === 1 || Number(invoice.status) === 2) &&
-                    invoice._signature_image && (
-                      <div className="mt-2">
-                        <img
-                          src={invoice._signature_image}
-                          alt="Signature"
-                          className="h-10 w-24 object-contain"
-                        />
-                        {invoice._digital_signature && (
+                <td className="border border-gray-400 p-3 align-top text-xs dark:border-dark-500 h-1">
+                  <div className="flex h-full min-h-[120px] flex-col justify-between text-right">
+                    <div>
+                      For {invoice.companyname ?? "KAILTECH TEST AND RESEARCH CENTRE PVT LTD."}
+                    </div>
+                    {(Number(invoice.status) === 1 || Number(invoice.status) === 2) &&
+                      invoice._signature_image && (
+                        <div className="mt-2 text-right">
                           <img
-                            src={invoice._digital_signature}
-                            alt="Digital Signature"
-                            className="mt-1 h-10 object-contain"
+                            src={invoice._signature_image}
+                            alt="Signature"
+                            className="inline-block h-10 w-24 object-contain"
                           />
-                        )}
-                      </div>
-                    )}
-                  <div className="mt-3 underline">Authorised Signatory</div>
+                          {invoice._digital_signature && (
+                            <img
+                              src={invoice._digital_signature}
+                              alt="Digital Signature"
+                              className="mt-1 inline-block h-10 object-contain"
+                            />
+                          )}
+                        </div>
+                      )}
+                    <div className="underline">Authorised Signatory</div>
+                  </div>
                 </td>
               </tr>
 
