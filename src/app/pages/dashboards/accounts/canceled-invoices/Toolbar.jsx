@@ -17,7 +17,7 @@ export function Toolbar({ table }) {
       )}
     >
       <h2 className="text-xl font-semibold tracking-wide text-gray-800 dark:text-dark-50">
-        Invoice List
+        Canceled Invoice List
       </h2>
 
       <div className="mt-2 flex items-center justify-between">

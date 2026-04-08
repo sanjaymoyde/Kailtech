@@ -336,455 +336,455 @@ export function PerformActions({ item, onAction }) {
   const performActions = [
     // STEP 1: Before allotment - ONLY show upload document
     ...((!item.allotedto || item.allotedto === "" || item.allotedto === null) &&
-    item.status < 1 &&
-    item.itemdocument.length === 0
+      item.status < 1 &&
+      item.itemdocument.length === 0
       ? [
-          {
-            label: "Upload Document",
-            action: "uploadDocument",
-            icon: DocumentArrowUpIcon,
-            color: "text-blue-600",
-            hoverColor: "hover:bg-blue-50 hover:text-blue-700",
-            bgColor: "bg-blue-50",
-            borderColor: "border-blue-200",
-          },
-        ]
+        {
+          label: "Upload Document",
+          action: "uploadDocument",
+          icon: DocumentArrowUpIcon,
+          color: "text-blue-600",
+          hoverColor: "hover:bg-blue-50 hover:text-blue-700",
+          bgColor: "bg-blue-50",
+          borderColor: "border-blue-200",
+        },
+      ]
       : []),
 
     // Show view documents if uploaded but not allotted
     ...((!item.allotedto || item.allotedto === "" || item.allotedto === null) &&
-    item.status < 1 &&
-    item.itemdocument.length > 0
+      item.status < 1 &&
+      item.itemdocument.length > 0
       ? [
-          {
-            label: "View Documents",
-            action: "viewDocuments",
-            icon: DocumentTextIcon,
-            color: "text-cyan-600",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-        ]
+        {
+          label: "View Documents",
+          action: "viewDocuments",
+          icon: DocumentTextIcon,
+          color: "text-cyan-600",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+      ]
       : []),
 
     // STEP 2: After allotment - Show Add CRF, Clone Item, Request Cancel LRN, Request Revision
     ...(item.allotedto && item.status === -1
       ? [
-          {
-            label: "Upload Document",
-            action: "uploadDocument",
-            icon: DocumentArrowUpIcon,
-            color: "text-blue-600",
-            hoverColor: "hover:bg-blue-50 hover:text-blue-700",
-            bgColor: "bg-blue-50",
-            borderColor: "border-blue-200",
-          },
-          {
-            label: "Add Crf",
-            permission: 113,
-            action: "addCrf",
-            icon: PlusIcon,
-            color: "text-green-600",
-            hoverColor: "hover:bg-green-50 hover:text-green-700",
-            bgColor: "bg-green-50",
-            borderColor: "border-green-200",
-          },
-          {
-            label: "Clone Item",
-            permission: 113,
-            action: "cloneItem",
-            icon: DocumentDuplicateIcon,
-            color: "text-purple-600",
-            hoverColor: "hover:bg-purple-50 hover:text-purple-700",
-            bgColor: "bg-purple-50",
-            borderColor: "border-purple-200",
-          },
-        ]
+        {
+          label: "Upload Document",
+          action: "uploadDocument",
+          icon: DocumentArrowUpIcon,
+          color: "text-blue-600",
+          hoverColor: "hover:bg-blue-50 hover:text-blue-700",
+          bgColor: "bg-blue-50",
+          borderColor: "border-blue-200",
+        },
+        {
+          label: "Add Crf",
+          permission: 113,
+          action: "addCrf",
+          icon: PlusIcon,
+          color: "text-green-600",
+          hoverColor: "hover:bg-green-50 hover:text-green-700",
+          bgColor: "bg-green-50",
+          borderColor: "border-green-200",
+        },
+        {
+          label: "Clone Item",
+          permission: 113,
+          action: "cloneItem",
+          icon: DocumentDuplicateIcon,
+          color: "text-purple-600",
+          hoverColor: "hover:bg-purple-50 hover:text-purple-700",
+          bgColor: "bg-purple-50",
+          borderColor: "border-purple-200",
+        },
+      ]
       : []),
 
     // STEP 3: Status 0 or 11 - Edit and Calibrate Step 1
     ...(item.allotedto && (item.status === 0 || item.status === 11)
       ? [
-          {
-            label: "Edit Instrument Detail",
-            permission: 114,
-            action: "editInstrumentDetail",
-            icon: PencilIcon,
-            color: "text-indigo-600",
-            hoverColor: "hover:bg-indigo-50 hover:text-indigo-700",
-            bgColor: "bg-indigo-50",
-            borderColor: "border-indigo-200",
-          },
-          {
-            label: "Calibrate Step 1",
-            permission: 103,
-            action: "calibrateStep1",
-            icon: WrenchScrewdriverIcon,
-            color: "text-teal-600",
-            hoverColor: "hover:bg-teal-50 hover:text-teal-700",
-            bgColor: "bg-teal-50",
-            borderColor: "border-teal-200",
-          },
-        ]
+        {
+          label: "Edit Instrument Detail",
+          permission: 114,
+          action: "editInstrumentDetail",
+          icon: PencilIcon,
+          color: "text-indigo-600",
+          hoverColor: "hover:bg-indigo-50 hover:text-indigo-700",
+          bgColor: "bg-indigo-50",
+          borderColor: "border-indigo-200",
+        },
+        {
+          label: "Calibrate Step 1",
+          permission: 103,
+          action: "calibrateStep1",
+          icon: WrenchScrewdriverIcon,
+          color: "text-teal-600",
+          hoverColor: "hover:bg-teal-50 hover:text-teal-700",
+          bgColor: "bg-teal-50",
+          borderColor: "border-teal-200",
+        },
+      ]
       : []),
 
     // STEP 4: Status 1 - Calibrate Step 2
     ...(item.allotedto && item.status === 1
       ? [
-          {
-            label: "Back To Step 1",
-            permission: 103,
-            action: "backToStep1",
-            icon: ArrowLeftIcon,
-            color: "text-gray-600",
-            hoverColor: "hover:bg-gray-50 hover:text-gray-700",
-            bgColor: "bg-gray-50",
-            borderColor: "border-gray-200",
-          },
-          {
-            label: "Edit Instrument Detail",
-            permission: 114,
-            action: "editInstrumentDetail",
-            icon: PencilIcon,
-            color: "text-indigo-600",
-            hoverColor: "hover:bg-indigo-50 hover:text-indigo-700",
-            bgColor: "bg-indigo-50",
-            borderColor: "border-indigo-200",
-          },
-          {
-            label: "Calibrate Step 2",
-            permission: 103,
-            action: "calibrateStep2",
-            icon: WrenchScrewdriverIcon,
-            color: "text-teal-700",
-            hoverColor: "hover:bg-teal-50 hover:text-teal-800",
-            bgColor: "bg-teal-50",
-            borderColor: "border-teal-200",
-          },
-        ]
+        {
+          label: "Back To Step 1",
+          permission: 103,
+          action: "backToStep1",
+          icon: ArrowLeftIcon,
+          color: "text-gray-600",
+          hoverColor: "hover:bg-gray-50 hover:text-gray-700",
+          bgColor: "bg-gray-50",
+          borderColor: "border-gray-200",
+        },
+        {
+          label: "Edit Instrument Detail",
+          permission: 114,
+          action: "editInstrumentDetail",
+          icon: PencilIcon,
+          color: "text-indigo-600",
+          hoverColor: "hover:bg-indigo-50 hover:text-indigo-700",
+          bgColor: "bg-indigo-50",
+          borderColor: "border-indigo-200",
+        },
+        {
+          label: "Calibrate Step 2",
+          permission: 103,
+          action: "calibrateStep2",
+          icon: WrenchScrewdriverIcon,
+          color: "text-teal-700",
+          hoverColor: "hover:bg-teal-50 hover:text-teal-800",
+          bgColor: "bg-teal-50",
+          borderColor: "border-teal-200",
+        },
+      ]
       : []),
 
     // STEP 5: Status 2 - Change Master, Edit Calib Point
     ...(item.allotedto && item.status === 2
       ? [
-          {
-            label: "Edit Instrument Detail",
-            permission: 114,
-            action: "editInstrumentDetail",
-            icon: PencilIcon,
-            color: "text-indigo-600",
-            hoverColor: "hover:bg-indigo-50 hover:text-indigo-700",
-            bgColor: "bg-indigo-50",
-            borderColor: "border-indigo-200",
-          },
-          {
-            label: "Back To Step 1",
-            permission: 103,
-            action: "backToStep1",
-            icon: ArrowLeftIcon,
-            color: "text-gray-600",
-            hoverColor: "hover:bg-gray-50 hover:text-gray-700",
-            bgColor: "bg-gray-50",
-            borderColor: "border-gray-200",
-          },
-          {
-            label: "Change Master",
-            permission: 103,
-            action: "changeMaster",
-            icon: Cog6ToothIcon,
-            color: "text-pink-600",
-            hoverColor: "hover:bg-pink-50 hover:text-pink-700",
-            bgColor: "bg-pink-50",
-            borderColor: "border-pink-200",
-          },
-          {
-            label: "Edit Calib Point",
-            permission: 114,
-            action: "editCalibPoint",
-            icon: PencilIcon,
-            color: "text-violet-600",
-            hoverColor: "hover:bg-violet-50 hover:text-violet-700",
-            bgColor: "bg-violet-50",
-            borderColor: "border-violet-200",
-          },
-        ]
+        {
+          label: "Edit Instrument Detail",
+          permission: 114,
+          action: "editInstrumentDetail",
+          icon: PencilIcon,
+          color: "text-indigo-600",
+          hoverColor: "hover:bg-indigo-50 hover:text-indigo-700",
+          bgColor: "bg-indigo-50",
+          borderColor: "border-indigo-200",
+        },
+        {
+          label: "Back To Step 1",
+          permission: 103,
+          action: "backToStep1",
+          icon: ArrowLeftIcon,
+          color: "text-gray-600",
+          hoverColor: "hover:bg-gray-50 hover:text-gray-700",
+          bgColor: "bg-gray-50",
+          borderColor: "border-gray-200",
+        },
+        {
+          label: "Change Master",
+          permission: 103,
+          action: "changeMaster",
+          icon: Cog6ToothIcon,
+          color: "text-pink-600",
+          hoverColor: "hover:bg-pink-50 hover:text-pink-700",
+          bgColor: "bg-pink-50",
+          borderColor: "border-pink-200",
+        },
+        {
+          label: "Edit Calib Point",
+          permission: 114,
+          action: "editCalibPoint",
+          icon: PencilIcon,
+          color: "text-violet-600",
+          hoverColor: "hover:bg-violet-50 hover:text-violet-700",
+          bgColor: "bg-violet-50",
+          borderColor: "border-violet-200",
+        },
+      ]
       : []),
 
     // STEP 6: Status 3 - View Rawdata, Calculate Uncertainty, View Certificate, Approve
     ...(item.allotedto && item.status === 3
       ? [
-          {
-            label: "Edit Calib Point",
-            permission: 114,
-            action: "editCalibPoint",
-            icon: PencilIcon,
-            color: "text-violet-600",
-            hoverColor: "hover:bg-violet-50 hover:text-violet-700",
-            bgColor: "bg-violet-50",
-            borderColor: "border-violet-200",
-          },
-          {
-            label: "Back To Step 1",
-            permission: 103,
-            action: "backToStep1",
-            icon: ArrowLeftIcon,
-            color: "text-gray-600",
-            hoverColor: "hover:bg-gray-50 hover:text-gray-700",
-            bgColor: "bg-gray-50",
-            borderColor: "border-gray-200",
-          },
-          {
-            label: "Edit Instrument Detail",
-            permission: 114,
-            action: "editInstrumentDetail",
-            icon: PencilIcon,
-            color: "text-indigo-600",
-            hoverColor: "hover:bg-indigo-50 hover:text-indigo-700",
-            bgColor: "bg-indigo-50",
-            borderColor: "border-indigo-200",
-          },
-          {
-            label: "View Rawdata",
-            permission: [104, 105],
-            action: "viewRawdata",
-            icon: EyeIcon,
-            color: "text-cyan-600",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-          {
-            label: "Calculate Uncertainty",
-            permission: [104, 105],
-            action: "calculateUncertainty",
-            icon: CalculatorIcon,
-            color: "text-green-700",
-            hoverColor: "hover:bg-green-50 hover:text-green-800",
-            bgColor: "bg-green-50",
-            borderColor: "border-green-200",
-          },
-          {
-            label: "View Certificate",
-            permission: [104, 105, 278],
-            action: "viewCertificate",
-            icon: CertificateIcon,
-            color: "text-cyan-600",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-          ...(item.accreditation === "Nabl"
-            ? [
-                {
-                  label: "View CMC Calculation",
-                  action: "viewCMCCalculation",
-                  icon: CalculatorIcon,
-                  color: "text-cyan-600",
-                  hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-                  bgColor: "bg-cyan-50",
-                  borderColor: "border-cyan-200",
-                },
-              ]
-            : []),
-          {
-            label: "Approve",
-            permission: [105],
-            action: "approve",
-            icon: CheckIcon,
-            color: "text-green-700",
-            hoverColor: "hover:bg-green-50 hover:text-green-800",
-            bgColor: "bg-green-50",
-            borderColor: "border-green-200",
-          },
-        ]
+        {
+          label: "Edit Calib Point",
+          permission: 114,
+          action: "editCalibPoint",
+          icon: PencilIcon,
+          color: "text-violet-600",
+          hoverColor: "hover:bg-violet-50 hover:text-violet-700",
+          bgColor: "bg-violet-50",
+          borderColor: "border-violet-200",
+        },
+        {
+          label: "Back To Step 1",
+          permission: 103,
+          action: "backToStep1",
+          icon: ArrowLeftIcon,
+          color: "text-gray-600",
+          hoverColor: "hover:bg-gray-50 hover:text-gray-700",
+          bgColor: "bg-gray-50",
+          borderColor: "border-gray-200",
+        },
+        {
+          label: "Edit Instrument Detail",
+          permission: 114,
+          action: "editInstrumentDetail",
+          icon: PencilIcon,
+          color: "text-indigo-600",
+          hoverColor: "hover:bg-indigo-50 hover:text-indigo-700",
+          bgColor: "bg-indigo-50",
+          borderColor: "border-indigo-200",
+        },
+        {
+          label: "View Rawdata",
+          permission: [104, 105],
+          action: "viewRawdata",
+          icon: EyeIcon,
+          color: "text-cyan-600",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+        {
+          label: "Calculate Uncertainty",
+          permission: [104, 105],
+          action: "calculateUncertainty",
+          icon: CalculatorIcon,
+          color: "text-green-700",
+          hoverColor: "hover:bg-green-50 hover:text-green-800",
+          bgColor: "bg-green-50",
+          borderColor: "border-green-200",
+        },
+        {
+          label: "View Certificate",
+          permission: [104, 105, 278],
+          action: "viewCertificate",
+          icon: CertificateIcon,
+          color: "text-cyan-600",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+        ...(item.accreditation === "Nabl"
+          ? [
+            {
+              label: "View CMC Calculation",
+              action: "viewCMCCalculation",
+              icon: CalculatorIcon,
+              color: "text-cyan-600",
+              hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+              bgColor: "bg-cyan-50",
+              borderColor: "border-cyan-200",
+            },
+          ]
+          : []),
+        {
+          label: "Approve",
+          permission: [105],
+          action: "approve",
+          icon: CheckIcon,
+          color: "text-green-700",
+          hoverColor: "hover:bg-green-50 hover:text-green-800",
+          bgColor: "bg-green-50",
+          borderColor: "border-green-200",
+        },
+      ]
       : []),
 
     // STEP 7: Status 5 - Approved (Final state)
     ...(item.allotedto && item.status === 5
       ? [
-          {
-            label: "View Rawdata",
-            action: "viewRawdata",
-            icon: EyeIcon,
-            color: "text-cyan-600",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-          {
-            label: "Regenerate Cache Copy",
-            permission: [105, 482],
-            action: "regenerateCache",
-            icon: ArrowDownTrayIcon,
-            color: "text-orange-600",
-            hoverColor: "hover:bg-orange-50 hover:text-orange-700",
-            bgColor: "bg-orange-50",
-            borderColor: "border-orange-200",
-          },
-          {
-            label: "View Certificate",
-            permission: [104, 105, 482],
-            action: item.fileWithFullPath
-              ? "viewApprovedCertificate"
-              : "viewCertificate",
-            icon: CertificateIcon,
-            color: "text-cyan-600",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-          {
-            label: "View Certificate with l/h",
-            permission: [104, 105, 482],
-            action: "viewCertificateWithLH",
-            icon: CertificateIcon,
-            color: "text-cyan-800",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-900",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-        ]
+        {
+          label: "View Rawdata",
+          action: "viewRawdata",
+          icon: EyeIcon,
+          color: "text-cyan-600",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+        {
+          label: "Regenerate Cache Copy",
+          permission: [105, 482],
+          action: "regenerateCache",
+          icon: ArrowDownTrayIcon,
+          color: "text-orange-600",
+          hoverColor: "hover:bg-orange-50 hover:text-orange-700",
+          bgColor: "bg-orange-50",
+          borderColor: "border-orange-200",
+        },
+        {
+          label: "View Certificate",
+          permission: [104, 105, 482],
+          action: item.fileWithFullPath
+            ? "viewApprovedCertificate"
+            : "viewCertificate",
+          icon: CertificateIcon,
+          color: "text-cyan-600",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+        {
+          label: "View Certificate with l/h",
+          permission: [104, 105, 482],
+          action: "viewCertificateWithLH",
+          icon: CertificateIcon,
+          color: "text-cyan-800",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-900",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+      ]
       : []),
 
     // View Traceability - Available for status 3, 4, 5
     ...(item.allotedto && item.status >= 3 && item.status <= 5
       ? [
-          {
-            label: "View Tracebility",
-            action: "viewTraceability",
-            icon: DocumentMagnifyingGlassIcon,
-            color: "text-cyan-700",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-800",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-        ]
+        {
+          label: "View Tracebility",
+          action: "viewTraceability",
+          icon: DocumentMagnifyingGlassIcon,
+          color: "text-cyan-700",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-800",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+      ]
       : []),
 
     // CMC Calculation for approved NABL items
     ...(item.allotedto && item.status === 5 && item.accreditation === "Nabl"
       ? [
-          {
-            label: "View CMC Calculation",
-            action: "viewCMCCalculation",
-            icon: CalculatorIcon,
-            color: "text-cyan-600",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-        ]
+        {
+          label: "View CMC Calculation",
+          action: "viewCMCCalculation",
+          icon: CalculatorIcon,
+          color: "text-cyan-600",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+      ]
       : []),
 
     // Cancel CRF - Available for status 0, 1, 2 (only after allotment)
     ...(item.allotedto && item.status >= 0 && item.status <= 2
       ? [
-          {
-            label: "Cancel Crf",
-            action: "cancelCrf",
-            icon: XMarkIcon,
-            color: "text-red-600",
-            hoverColor: "hover:bg-red-50 hover:text-red-700",
-            bgColor: "bg-red-50",
-            borderColor: "border-red-200",
-          },
-        ]
+        {
+          label: "Cancel Crf",
+          action: "cancelCrf",
+          icon: XMarkIcon,
+          color: "text-red-600",
+          hoverColor: "hover:bg-red-50 hover:text-red-700",
+          bgColor: "bg-red-50",
+          borderColor: "border-red-200",
+        },
+      ]
       : []),
 
     // Request Cancel LRN - Available for all statuses after allotment (until status 3)
     ...(item.allotedto && item.status >= -1 && item.status <= 3
       ? [
-          {
-            label: "Request Cancel LRN",
-            permission: 103,
-            action: "requestCancelLRN",
-            icon: ExclamationTriangleIcon,
-            color: "text-red-700",
-            hoverColor: "hover:bg-red-50 hover:text-red-800",
-            bgColor: "bg-red-50",
-            borderColor: "border-red-200",
-          },
-        ]
+        {
+          label: "Request Cancel LRN",
+          permission: 103,
+          action: "requestCancelLRN",
+          icon: ExclamationTriangleIcon,
+          color: "text-red-700",
+          hoverColor: "hover:bg-red-50 hover:text-red-800",
+          bgColor: "bg-red-50",
+          borderColor: "border-red-200",
+        },
+      ]
       : []),
 
     // Revision workflows
     ...(item.allotedto && item.status === 81
       ? [
-          {
-            label: "Edit Details for revision",
-            permission: 105,
-            action: "editDetailsForRevision",
-            icon: PencilIcon,
-            color: "text-yellow-600",
-            hoverColor: "hover:bg-yellow-50 hover:text-yellow-700",
-            bgColor: "bg-yellow-50",
-            borderColor: "border-yellow-200",
-          },
-        ]
+        {
+          label: "Edit Details for revision",
+          permission: 105,
+          action: "editDetailsForRevision",
+          icon: PencilIcon,
+          color: "text-yellow-600",
+          hoverColor: "hover:bg-yellow-50 hover:text-yellow-700",
+          bgColor: "bg-yellow-50",
+          borderColor: "border-yellow-200",
+        },
+      ]
       : []),
 
     ...(item.allotedto && item.status === 82
       ? [
-          {
-            label: "View Rawdata",
-            action: "viewRawdata",
-            icon: EyeIcon,
-            color: "text-cyan-600",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-          {
-            label: "View Certificate",
-            permission: [104, 105],
-            action: "viewCertificate",
-            icon: CertificateIcon,
-            color: "text-cyan-600",
-            hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-            bgColor: "bg-cyan-50",
-            borderColor: "border-cyan-200",
-          },
-          ...(item.accreditation === "Nabl"
-            ? [
-                {
-                  label: "View CMC Calculation",
-                  permission: [104, 105],
-                  action: "viewCMCCalculation",
-                  icon: CalculatorIcon,
-                  color: "text-cyan-600",
-                  hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
-                  bgColor: "bg-cyan-50",
-                  borderColor: "border-cyan-200",
-                },
-              ]
-            : []),
-          {
-            label: "Review",
-            permission: [227, 115],
-            action: "review",
-            icon: ClipboardDocumentCheckIcon,
-            color: "text-blue-700",
-            hoverColor: "hover:bg-blue-50 hover:text-blue-800",
-            bgColor: "bg-blue-50",
-            borderColor: "border-blue-200",
-          },
-        ]
+        {
+          label: "View Rawdata",
+          action: "viewRawdata",
+          icon: EyeIcon,
+          color: "text-cyan-600",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+        {
+          label: "View Certificate",
+          permission: [104, 105],
+          action: "viewCertificate",
+          icon: CertificateIcon,
+          color: "text-cyan-600",
+          hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+          bgColor: "bg-cyan-50",
+          borderColor: "border-cyan-200",
+        },
+        ...(item.accreditation === "Nabl"
+          ? [
+            {
+              label: "View CMC Calculation",
+              permission: [104, 105],
+              action: "viewCMCCalculation",
+              icon: CalculatorIcon,
+              color: "text-cyan-600",
+              hoverColor: "hover:bg-cyan-50 hover:text-cyan-700",
+              bgColor: "bg-cyan-50",
+              borderColor: "border-cyan-200",
+            },
+          ]
+          : []),
+        {
+          label: "Review",
+          permission: [227, 115],
+          action: "review",
+          icon: ClipboardDocumentCheckIcon,
+          color: "text-blue-700",
+          hoverColor: "hover:bg-blue-50 hover:text-blue-800",
+          bgColor: "bg-blue-50",
+          borderColor: "border-blue-200",
+        },
+      ]
       : []),
 
     // Request Revision - Available for all states after allotment
     ...(item.allotedto
       ? [
-          {
-            label: "Request Revision",
-            action: "requestRevision",
-            icon: ArrowPathIcon,
-            color: "text-orange-600",
-            hoverColor: "hover:bg-orange-50 hover:text-orange-700",
-            bgColor: "bg-orange-50",
-            borderColor: "border-orange-200",
-          },
-        ]
+        {
+          label: "Request Revision",
+          action: "requestRevision",
+          icon: ArrowPathIcon,
+          color: "text-orange-600",
+          hoverColor: "hover:bg-orange-50 hover:text-orange-700",
+          bgColor: "bg-orange-50",
+          borderColor: "border-orange-200",
+        },
+      ]
       : []),
   ];
 
@@ -811,8 +811,12 @@ export function PerformActions({ item, onAction }) {
               key={`${action.action}-${index}`}
               onClick={() => handleActionClick(action.action)}
               className={clsx(
-                "btn-base btn bg-gray-150 text-gray-900 hover:bg-gray-200 focus:bg-gray-200 active:bg-gray-200/80 dark:bg-surface-2 dark:text-dark-50 dark:hover:bg-surface-1 dark:focus:bg-surface-1 dark:active:bg-surface-1/90 h-7 rounded bg-blue-500 px-2.5 py-1 text-xs font-medium text-black outline-none transition-all hover:bg-blue-600 hover:shadow-md",
-                
+                "btn-base btn h-7 rounded border px-2.5 py-1 text-xs font-medium outline-none transition-all hover:shadow-md",
+                action.bgColor || "bg-slate-100",
+                action.color || "text-slate-800",
+                action.hoverColor || "hover:bg-slate-200",
+                action.borderColor,
+                "focus:ring-2 focus:ring-slate-300 focus:ring-offset-1 dark:focus:ring-slate-500",
               )}
               title={action.label}
             >

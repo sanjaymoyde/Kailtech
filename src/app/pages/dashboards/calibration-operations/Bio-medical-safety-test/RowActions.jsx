@@ -24,10 +24,10 @@ import { useNavigate } from "react-router";
 const confirmMessages = {
   pending: {
     description:
-      "Are you sure you want to delete this electrical test? Once deleted, it cannot be restored.",
+      "Are you sure you want to delete this Bio medical safety test? Once deleted, it cannot be restored.",
   },
   success: {
-    title: "Electrical Test Deleted",
+    title: "Bio medical safety test Deleted",
   },
 };
 
@@ -75,12 +75,12 @@ export function RowActions({ row, table }) {
     } catch (error) {
       console.error("Delete failed:", error);
       setDeleteError(true);
-      
+
       let errorMessage = "Failed to delete electrical test";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setConfirmDeleteLoading(false);
@@ -116,7 +116,7 @@ export function RowActions({ row, table }) {
                     className={clsx(
                       "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors ",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100"
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100"
                     )}
                   >
                     <PencilIcon className="size-4.5 stroke-1" />

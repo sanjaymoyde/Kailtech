@@ -3,9 +3,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import axios from "utils/axios";
+import Select from "react-select";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // Local Imports
 import { Page } from "components/shared/Page";
+
+// ----------------------------------------------------------------------
 
 // ----------------------------------------------------------------------
 
@@ -51,7 +55,7 @@ export default function AddCreditNote() {
   // Fetch customers on mount
   useEffect(() => {
     axios
-      .get("/customers", { params: { status: 1 } })
+      .get("/people/get-all-customers", { params: { status: 1 } })
       .then((res) => setCustomers(Array.isArray(res.data) ? res.data : res.data?.data || []))
       .catch((err) => console.error("Failed to load customers:", err));
   }, []);
@@ -65,8 +69,15 @@ export default function AddCreditNote() {
       return;
     }
     axios
-      .get("/credit-note/invoices", { params: { customerid: formData.customerid } })
-      .then((res) => setInvoices(Array.isArray(res.data) ? res.data : res.data?.data || []))
+      .get("/accounts/get-invoices-by-customer", { params: { customerid: formData.customerid } })
+      .then((res) => {
+        let arr = [];
+        if (Array.isArray(res.data)) arr = res.data;
+        else if (Array.isArray(res.data?.data)) arr = res.data.data;
+        else if (Array.isArray(res.data?.invoices)) arr = res.data.invoices;
+        else if (Array.isArray(res.data?.records)) arr = res.data.records;
+        setInvoices(arr);
+      })
       .catch((err) => console.error("Failed to load invoices:", err));
   }, [formData.customerid]);
 
@@ -78,15 +89,44 @@ export default function AddCreditNote() {
       return;
     }
     axios
-      .get("/credit-note/invoice-items", {
-        params: { invoiceid: formData.invoiceid, customerid: formData.customerid },
+      .get("/accounts/get-invoice-details", {
+        params: { invoiceid: formData.invoiceid },
       })
       .then((res) => {
         const d = res.data?.data ?? res.data;
         setItems(Array.isArray(d.items) ? d.items : []);
-        setInvoiceMeta(d.meta ?? null);
+        setInvoiceMeta({
+          customername: d.customername || d.customer_name || d.name,
+          addressid: d.addressid || d.address_id,
+          address: d.address,
+          statecode: d.statecode || d.state_code,
+          pan: d.pan,
+          gstno: d.gstno || d.gst_no,
+          sgst: d.sgst_applicable ?? d.sgst ?? 0,
+          cgstper: parseFloat(d.cgstper || 0),
+          sgstper: parseFloat(d.sgstper || 0),
+          igstper: parseFloat(d.igstper || 0),
+          subtotal_limit: parseFloat(d.subtotal_limit || 0),
+          freight_limit: parseFloat(d.freight_limit || 0),
+          mobilisation_limit: parseFloat(d.mobilisation_limit || 0),
+          samplehandling_limit: parseFloat(d.samplehandling_limit || 0),
+          sampleprep_limit: parseFloat(d.sampleprep_limit || 0),
+          discount: parseFloat(d.discount || 0),
+          discnumber: parseFloat(d.discnumber || 0),
+          disctype: d.disctype || "%",
+          potype: d.potype || "",
+          brnnos: d.brnnos || "",
+          remark: d.remark || ""
+        });
+
+        // Populate standard defaults into totals if necessary
+        setTotals((prev) => ({
+          ...prev,
+          disctype: d.disctype || "%",
+          discnumber: d.discnumber || 0,
+        }));
       })
-      .catch((err) => console.error("Failed to load items:", err));
+      .catch((err) => console.error("Failed to load invoice items:", err));
   }, [formData.invoiceid, formData.customerid]);
 
   // Recalculate totals whenever items or totals inputs change — mirrors sumamount()
@@ -175,14 +215,68 @@ export default function AddCreditNote() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
+    const selectedCust = customers.find(c => String(c.id || c.customerid) === String(formData.customerid));
+    const payload = {
+      cndate: formData.cndate,
+      customerid: Number(formData.customerid),
+      invoice: Number(formData.invoiceid),
+
+      customername: invoiceMeta?.customername || selectedCust?.customername || selectedCust?.name || selectedCust?.customer_name || "N.A",
+      addressid: invoiceMeta?.addressid || invoiceMeta?.address_id || selectedCust?.addressid || "0",
+      address: invoiceMeta?.address || selectedCust?.address || "N.A",
+      statecode: invoiceMeta?.statecode || invoiceMeta?.state_code || selectedCust?.statecode || "N.A",
+      pan: invoiceMeta?.pan || selectedCust?.pan || selectedCust?.pancard || selectedCust?.pan_no || "N.A",
+      gstno: invoiceMeta?.gstno || invoiceMeta?.gst_no || selectedCust?.gstno || selectedCust?.gstin || "N.A",
+
+      itemrate: items.map(item => parseFloat(item.rate || 0)),
+      invoiceitemid: items.map(item => item.itemid || item.invoiceitemid || item.id || ""),
+      itemname: items.map(item => item.name || item.itemname || ""),
+      itemidno: items.map(item => item.idno || item.itemidno || "N.A"),
+      itemserialno: items.map(item => item.serialno || item.itemserialno || "N.A"),
+
+      subtotal: totals.subtotal,
+      discnumber: totals.discnumber,
+      disctype: totals.disctype,
+      discount: totals.discountamount,
+
+      freight: totals.freight,
+      mobilisation: totals.mobilisation,
+
+      witnessnumber: totals.witnessnumber,
+      witnesstype: totals.witnesstype,
+      witnesscharges: totals.witnesscharges,
+
+      samplehandling: totals.samplehandling,
+      sampleprep: totals.sampleprep,
+      subtotal2: totals.subtotal2,
+
+      cgstper: totals.cgstper,
+      cgstamount: totals.cgstamount,
+      sgstper: totals.sgstper,
+      sgstamount: totals.sgstamount,
+      igstper: totals.igstper,
+      igstamount: totals.igstamount,
+
+      total: totals.total,
+      roundoff: totals.roundoff,
+      finaltotal: totals.finaltotal,
+
+      remark: formData.remark || "",
+      brnnos: formData.brnnos || invoiceMeta?.brnnos || invoiceMeta?.brn_nos || ""
+    };
+
     try {
       setSubmitting(true);
-      await axios.post("/credit-notes", { ...formData, items, totals });
-      toast.success("Credit note added successfully.");
-      navigate("/dashboards/accounts/credit-note");
+      const res = await axios.post("/accounts/add-credit-note", payload);
+      if (res.data.status === true || res.data.success === true || res.data.status === "success") {
+        toast.success(res.data.message || "Credit note added successfully.");
+        navigate("/dashboards/accounts/credit-note");
+      } else {
+        toast.error(res.data.message || "Failed to add credit note.");
+      }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to add credit note.");
+      toast.error(err.response?.data?.message || "Something went wrong adding credit note.");
     } finally {
       setSubmitting(false);
     }
@@ -211,13 +305,17 @@ export default function AddCreditNote() {
 
               {/* CN Date */}
               <FormRow label="CN Date" required error={errors.cndate}>
-                <input
-                  type="text"
-                  name="cndate"
+                <DatePicker
+                  options={{
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    allowInput: true,
+                  }}
                   value={formData.cndate}
-                  onChange={handleChange}
-                  onFocus={(e) => (e.target.type = "date")}
-                  onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
+                  onChange={(dates, dateStr) =>
+                    handleChange({ target: { name: "cndate", value: dateStr } })
+                  }
                   placeholder="CN Date"
                   className={inputClass(errors.cndate)}
                 />
@@ -225,17 +323,43 @@ export default function AddCreditNote() {
 
               {/* Customer */}
               <FormRow label="Customer" required error={errors.customerid}>
-                <select
-                  name="customerid"
-                  value={formData.customerid}
-                  onChange={handleChange}
-                  className={inputClass(errors.customerid)}
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <Select
+                  options={customers.map(c => ({
+                    value: String(c.id || c.customerid),
+                    label: c.name || c.customername || c.customer_name || String(c.id || c.customerid)
+                  }))}
+                  value={
+                    formData.customerid
+                      ? {
+                          value: String(formData.customerid),
+                          label: (() => {
+                            const found = customers.find(
+                              (c) => String(c.id || c.customerid) === String(formData.customerid)
+                            );
+                            return found ? (found.name || found.customername || found.customer_name || String(found.id || found.customerid)) : String(formData.customerid);
+                          })()
+                        }
+                      : null
+                  }
+                  onChange={(option) => {
+                    handleChange({ target: { name: "customerid", value: option ? option.value : "" } });
+                  }}
+                  isClearable
+                  isSearchable
+                  placeholder="Select Customer..."
+                  classNamePrefix="react-select"
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      minHeight: '38px',
+                      borderColor: errors.customerid ? '#f87171' : state.isFocused ? '#3b82f6' : '#d1d5db',
+                      boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                      '&:hover': {
+                        borderColor: state.isFocused ? '#3b82f6' : '#9ca3af'
+                      }
+                    })
+                  }}
+                />
               </FormRow>
 
               {/* Invoice — shown after customer selected */}
@@ -248,11 +372,16 @@ export default function AddCreditNote() {
                     className={inputClass(errors.invoiceid)}
                   >
                     <option value="">Select Invoice</option>
-                    {invoices.map((inv) => (
-                      <option key={inv.id} value={inv.id}>
-                        {inv.invoiceno} — {inv.date}
-                      </option>
-                    ))}
+                    {invoices.map((inv, idx) => {
+                      const id = inv.id || inv.invoiceid || idx;
+                      const label = inv.invoiceno || inv.invoice_no || inv.invoicenumber || `Invoice ${id}`;
+                      const date = inv.date || inv.invoice_date || "";
+                      return (
+                        <option key={id} value={id}>
+                          {label} {date ? `— ${date}` : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                 </FormRow>
               )}
@@ -277,9 +406,9 @@ export default function AddCreditNote() {
                   {items.map((item, i) => (
                     <tr key={i} className="border-t border-gray-100 dark:border-dark-600">
                       <td className="p-2">{i + 1}</td>
-                      <td className="p-2">{item.itemname}</td>
-                      <td className="p-2">{item.itemidno}</td>
-                      <td className="p-2">{item.itemserialno}</td>
+                      <td className="p-2">{item.name || item.itemname}</td>
+                      <td className="p-2">{item.idno || item.itemidno || "N.A"}</td>
+                      <td className="p-2">{item.serialno || item.itemserialno || "N.A"}</td>
                       <td className="p-2">
                         <input
                           type="number"
@@ -326,6 +455,21 @@ export default function AddCreditNote() {
                 <TotalField label="Round Off" value={totals.roundoff} readOnly />
                 <TotalField label="Final Total" value={totals.finaltotal} readOnly />
               </div>
+            </div>
+          )}
+
+          {/* Remarks */}
+          {items.length > 0 && (
+            <div className="mt-6 rounded border border-gray-200 bg-white dark:border-dark-600 dark:bg-dark-800">
+              <FormRow label="Remarks" required={false}>
+                <textarea
+                  name="remark"
+                  value={formData.remark || ""}
+                  onChange={handleChange}
+                  placeholder="Enter remarks here..."
+                  className={inputClass(errors.remark) + " h-20 resize-none"}
+                />
+              </FormRow>
             </div>
           )}
 
@@ -378,7 +522,7 @@ function TotalField({ label, name, value, onChange, readOnly, isSelect, options 
         <select
           name={name}
           value={value}
- 
+
           onChange={onChange}
           className="rounded border border-gray-300 px-2 py-1 text-sm dark:border-dark-500 dark:bg-dark-700"
         >

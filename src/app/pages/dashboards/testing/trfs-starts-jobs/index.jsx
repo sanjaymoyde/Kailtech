@@ -15,11 +15,10 @@ import axios from "utils/axios";
 export { columns } from "./columns";
 export { Toolbar } from "./Toolbar";
 export { RowActions } from "./RowActions";
-export { SelectedRowsActions } from "./SelectedRowsActions";
 export { TableConfig } from "./TableConfig";
 
 // Local Imports
-import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
+import { Table, Card, THead, TBody, Th, Tr, Td, Input } from "components/ui";
 import { TableSortIcon } from "components/shared/table/TableSortIcon";
 import { Page } from "components/shared/Page";
 import { useLockScrollbar, useDidUpdate, useLocalStorage } from "hooks";
@@ -28,7 +27,7 @@ import { useSkipper } from "utils/react-table/useSkipper";
 import { Toolbar } from "./Toolbar";
 import { columns } from "./columns";
 import { PaginationSection } from "components/shared/table/PaginationSection";
-import { SelectedRowsActions } from "./SelectedRowsActions";
+import { SelectedRowsActions } from "components/shared/table/SelectedRowsActions";
 import { useThemeContext } from "app/contexts/theme/context";
 import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
@@ -201,7 +200,26 @@ export default function TrfEntryList() {
   
   );
 
+  const [columnFilters, setColumnFilters] = useState([]);
+
   const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
+
+  const statusFilterOptions = [
+    { value: "", label: "All Status" },
+    { value: "0", label: "Add Items Pending" },
+    { value: "1", label: "Sample Review" },
+    { value: "2", label: "Technical Acceptance" },
+    { value: "3", label: "Allot Sample" },
+    { value: "4", label: "Assign Chemist" },
+    { value: "5", label: "Perform Testing" },
+    { value: "6", label: "Draft Report" },
+    { value: "7", label: "HOD Review" },
+    { value: "8", label: "QA Review" },
+    { value: "9", label: "Generate ULR" },
+    { value: "10", label: "Final Report Ready" },
+    { value: "98", label: "Pending For Approvals" },
+    { value: "99", label: "Cancelled" },
+  ];
 
   const table = useReactTable({
     data: trfEntries,
@@ -212,6 +230,7 @@ export default function TrfEntryList() {
       columnVisibility,
       columnPinning,
       tableSettings,
+      columnFilters,
     },
     meta: {
       updateData: (rowIndex, columnId, value) => {
@@ -246,6 +265,19 @@ export default function TrfEntryList() {
     },
     filterFns: {
       fuzzy: fuzzyFilter,
+      statusExact: (row, columnId, filterValue) => {
+        if (filterValue === undefined || filterValue === "") return true;
+        const rowValue = row.getValue(columnId);
+        return String(rowValue) === String(filterValue);
+      },
+      textContains: (row, columnId, filterValue) => {
+        if (filterValue === undefined || filterValue === "") return true;
+        const rowValue = row.getValue(columnId);
+        return String(rowValue ?? "")
+          .toLowerCase()
+          .includes(String(filterValue).toLowerCase());
+      },
+      alwaysTrue: () => true,
     },
     enableSorting: tableSettings.enableSorting,
     enableColumnFilters: tableSettings.enableColumnFilters,
@@ -258,10 +290,71 @@ export default function TrfEntryList() {
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     autoResetPageIndex,
   });
+
+  const renderColumnFilter = (column) => {
+    if (!column.getCanFilter()) return null;
+
+    const headerLabel =
+      typeof column.columnDef.header === "string"
+        ? column.columnDef.header
+        : column.id.replace(/_/g, " ");
+    const value = column.getFilterValue() ?? "";
+
+    if (column.id === "status") {
+      return (
+        <select
+          value={value ?? ""}
+          onChange={(e) =>
+            column.setFilterValue(e.target.value || undefined)
+          }
+          className="h-8 w-full rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 dark:border-dark-500 dark:bg-dark-700 dark:text-gray-100"
+        >
+          {statusFilterOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    if (column.id === "actions") {
+      return (
+        <Input
+          disabled
+          value="Not filterable"
+          classNames={{
+            input:
+              "h-8 text-xs bg-gray-100 text-gray-400 dark:bg-dark-700 dark:text-dark-300",
+            root: "w-full",
+          }}
+        />
+      );
+    }
+
+    const inputType = column.id === "date" ? "date" : "text";
+
+    return (
+      <Input
+        type={inputType}
+        value={value ?? ""}
+        onChange={(e) =>
+          column.setFilterValue(e.target.value || undefined)
+        }
+        placeholder={`Search ${headerLabel}`}
+        classNames={{
+          input:
+            "h-8 text-xs ring-primary-500/40 focus:ring-2 placeholder:text-gray-400",
+          root: "w-full",
+        }}
+      />
+    );
+  };
 
   useDidUpdate(() => table.resetRowSelection(), [trfEntries]);
 
@@ -371,6 +464,26 @@ export default function TrfEntryList() {
                         ))}
                       </Tr>
                     ))}
+                    {tableSettings.enableColumnFilters && (
+                      <Tr>
+                        {table.getVisibleLeafColumns().map((column) => (
+                          <Th
+                            key={`filter-${column.id}`}
+                            className={clsx(
+                              "bg-gray-100 text-gray-700 dark:bg-dark-800 dark:text-dark-50 font-medium",
+                              column.getCanPin() && [
+                                column.getIsPinned() === "left" &&
+                                  "sticky z-2 ltr:left-0 rtl:right-0",
+                                column.getIsPinned() === "right" &&
+                                  "sticky z-2 ltr:right-0 rtl:left-0",
+                              ],
+                            )}
+                          >
+                            {renderColumnFilter(column)}
+                          </Th>
+                        ))}
+                      </Tr>
+                    )}
                   </THead>
                   <TBody>
                     {table.getRowModel().rows.map((row) => {
@@ -424,7 +537,7 @@ export default function TrfEntryList() {
                   </TBody>
                 </Table>
               </div>
-              <SelectedRowsActions table={table} />
+              <SelectedRowsActions table={table} title="TRF Entry List" showDelete={false} />
               {table.getCoreRowModel().rows.length > 0 && (
                 <div
                   className={clsx(

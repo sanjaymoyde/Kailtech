@@ -19,84 +19,134 @@ export default function EditCustomer() {
     modeofpayment: "",
     creditdays: "",
     creditamount: "",
+    leftamount: "", // Credit Left
     mobile: "",
     pname: "",
     pnumber: "",
     email: "",
     country: "",
     stateid: "",
+    state: "", // For non-India countries
     city: "",
     gstno: "",
     pan: "",
     discount: "",
-    thumb_image: null
+    verticals: "",
+    thumb_image: null,
+    existing_thumb: "" // For displaying existing photo
   });
 
   const [customerTypeOptions, setCustomerTypeOptions] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
+  const [verticals, setVerticals] = useState([]);
+  const [isIndianCountry, setIsIndianCountry] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  
+  // Address & Contact management
+  const [addresses, setAddresses] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("address");
 
   // Required fields (thumb_image is optional)
-  const requiredFields = {
-    name: "Customer Name",
-    customertype: "Customer Type",
-    modeofpayment: "Mode of Payment",
-    creditdays: "Credit Days",
-    creditamount: "Credit Amount",
-    mobile: "Mobile",
-    pname: "Contact Person Name",
-    pnumber: "Contact Person Number",
-    email: "Email",
-    country: "Country",
-    stateid: "State",
-    city: "City",
-    gstno: "GST No",
-    pan: "PAN",
-    discount: "Discount %"
+  const getRequiredFields = () => {
+    const fields = {
+      name: "Customer Name",
+      customertype: "Customer Type",
+      modeofpayment: "Mode of Payment",
+      creditdays: "Credit Days",
+      creditamount: "Credit Amount",
+      leftamount: "Credit Left",
+      mobile: "Mobile",
+      pname: "Contact Person Name",
+      pnumber: "Contact Person Number",
+      email: "Email",
+      country: "Country",
+      city: "City",
+      gstno: "GST No",
+      pan: "PAN",
+      discount: "Discount %"
+    };
+    
+    // Add state field based on country
+    if (isIndianCountry) {
+      fields.stateid = "State";
+    } else {
+      fields.state = "State";
+    }
+    
+    return fields;
   };
 
   useEffect(() => {
     const fetchDropdownsAndCustomer = async () => {
       try {
         setLoading(true);
-        const [ctRes, pmRes, countryRes, stateRes, customerRes] = await Promise.all([
+        const [ctRes, pmRes, countryRes, stateRes, verticalsRes, customerRes, addressRes, contactRes] = await Promise.all([
           axios.get("/people/get-customer-type-list"),
           axios.get("/people/get-payment-mode"),
           axios.get("/people/get-country"),
           axios.get("/people/get-state"),
-          axios.get(`/people/get-single-customer/${id}`)
+          axios.get("/master/vertical-list"),
+          axios.get(`/people/get-single-customer/${id}`),
+          axios.get(`/people/get-customer-addresses/${id}`),
+          axios.get(`/people/get-customer-contacts/${id}`)
         ]);
 
         const ctData = Array.isArray(ctRes?.data?.Data) ? ctRes.data.Data : [];
         const pmData = Array.isArray(pmRes?.data?.data) ? pmRes.data.data : [];
         const countryData = Array.isArray(countryRes?.data?.data) ? countryRes.data.data : [];
         const stateData = Array.isArray(stateRes?.data?.data) ? stateRes.data.data : [];
+        const verticalsData = Array.isArray(verticalsRes?.data?.data) ? verticalsRes.data.data : [];
 
         setCustomerTypeOptions(ctData.map((item) => ({ label: item.name, value: item.id })));
         setPaymentModes(pmData.map((item) => ({ label: item.name, value: item.id })));
         setCountries(countryData.map((item) => ({ label: item.name, value: item.id })));
         setStates(stateData.map((item) => ({ label: item.state, value: item.id })));
+        setVerticals(verticalsData.map((item) => ({ label: item.name, value: item.id })));
 
         const customer = customerRes?.data?.data || {};
+        const isIndia = customer.country === "1" || customer.country === 1;
+        setIsIndianCountry(isIndia);
+        
+        // Parse customertype - can be string "1" or "1,2,3"
+        let customerTypeArray = [];
+        if (customer.customertype) {
+          if (typeof customer.customertype === 'string') {
+            customerTypeArray = customer.customertype.split(",").map(id => id.trim()).filter(Boolean);
+          } else if (Array.isArray(customer.customertype)) {
+            customerTypeArray = customer.customertype;
+          }
+        }
+        
         setFormData({
           name: customer.name || "",
-          customertype: customer.customertype || [],
-          modeofpayment: customer.modeofpayment || "",
-          creditdays: customer.creditdays || "",
-          creditamount: customer.creditamount || "",
+          customertype: customerTypeArray,
+          modeofpayment: String(customer.modeofpayment || ""),
+          creditdays: String(customer.creditdays || ""),
+          creditamount: String(customer.creditamount || ""),
+          leftamount: String(customer.leftamount || ""),
           mobile: customer.mobile || "",
           pname: customer.pname || "",
           pnumber: customer.pnumber || "",
           email: customer.email || "",
-          country: customer.country || "",
-          stateid: customer.stateid || "",
+          country: String(customer.country || ""),
+          stateid: isIndia ? String(customer.stateid || "") : "",
+          state: !isIndia ? (customer.state || "") : "",
           city: customer.city || "",
           gstno: customer.gstno || "",
           pan: customer.pan || "",
-          discount: customer.discount || "",
-          thumb_image: null
+          discount: String(customer.discount || ""),
+          verticals: String(customer.verticals || ""),
+          thumb_image: null,
+          existing_thumb: customer.thumb_image || ""
         });
+
+        setAddresses(addressRes?.data?.data || []);
+        setContacts(contactRes?.data?.data || []);
       } catch (err) {
         toast.error("Failed to load data");
         console.error(err);
@@ -129,7 +179,7 @@ export default function EditCustomer() {
   const handleMultiSelectChange = (selectedOptions, name) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: selectedOptions ? selectedOptions.map((opt) => opt.value) : []
+      [name]: selectedOptions ? selectedOptions.map((opt) => String(opt.value)) : []
     }));
 
     // Clear error when user makes selection
@@ -142,7 +192,8 @@ export default function EditCustomer() {
   };
 
   const handleSelectChange = (e, name) => {
-    setFormData((prev) => ({ ...prev, [name]: e.target.value }));
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear error when user makes selection
     if (errors[name]) {
@@ -151,31 +202,96 @@ export default function EditCustomer() {
         [name]: false
       }));
     }
+
+    // Handle country change - check if India (id = "1")
+    if (name === "country") {
+      const isIndia = value === "1";
+      setIsIndianCountry(isIndia);
+      
+      // Reset state fields when country changes
+      setFormData((prev) => ({
+        ...prev,
+        stateid: "",
+        state: ""
+      }));
+      
+      // Clear state errors
+      setErrors(prev => ({
+        ...prev,
+        stateid: false,
+        state: false
+      }));
+    }
   };
 
-  const validateForm = () => {
+  // Validation: GST format
+  const validateGST = (gst) => {
+    if (!gst || gst.trim() === "") return true;
+    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    return gstRegex.test(gst.toUpperCase());
+  };
+
+  // Delete address
+  const handleDeleteAddress = async (addressId) => {
+    if (!window.confirm("Are you sure you want to delete this address?")) return;
+    
+    try {
+      await axios.post("/people/delete-customer-address", { id: addressId });
+      setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+      toast.success("Address deleted successfully");
+    } catch (err) {
+      toast.error("Failed to delete address");
+      console.error(err);
+    }
+  };
+
+  // Delete contact
+  const handleDeleteContact = async (contactId) => {
+    if (!window.confirm("Are you sure you want to delete this contact?")) return;
+    
+    try {
+      await axios.post("/people/delete-customer-contact", { id: contactId });
+      setContacts(prev => prev.filter(contact => contact.id !== contactId));
+      toast.success("Contact deleted successfully");
+    } catch (err) {
+      toast.error("Failed to delete contact");
+      console.error(err);
+    }
+  };
+
+  const validateForm = async () => {
     const newErrors = {};
+    const newValidationErrors = {};
+    const requiredFields = getRequiredFields();
     
     // Check all required fields
     Object.keys(requiredFields).forEach(field => {
       if (field === 'customertype') {
-        // For customertype array, check if it has at least one item
         if (!formData[field] || formData[field].length === 0) {
           newErrors[field] = true;
         }
       } else {
-        // For other fields, check if empty or whitespace only
         if (!formData[field] || formData[field].toString().trim() === '') {
           newErrors[field] = true;
         }
       }
     });
 
-    setErrors(newErrors);
+    // Custom validations (only if fields are filled)
+    // Note: We don't validate name/email if unchanged from original
+    if (formData.gstno && formData.gstno.trim() !== "") {
+      const isGSTValid = validateGST(formData.gstno);
+      if (!isGSTValid) {
+        newValidationErrors.gstno = "Invalid GST format (e.g., 22AAAAA0000A1Z5)";
+      }
+    }
 
-    // If there are errors, focus on the first error field
-    if (Object.keys(newErrors).length > 0) {
-      const firstErrorField = Object.keys(newErrors)[0];
+    setErrors(newErrors);
+    setValidationErrors(newValidationErrors);
+
+    const allErrors = { ...newErrors, ...newValidationErrors };
+    if (Object.keys(allErrors).length > 0) {
+      const firstErrorField = Object.keys(allErrors)[0];
       const element = document.querySelector(`[name="${firstErrorField}"]`);
       if (element) {
         element.focus();
@@ -191,8 +307,9 @@ export default function EditCustomer() {
     e.preventDefault();
     
     // Validate form before submission
-    if (!validateForm()) {
-      toast.error("Please fill all required fields");
+    const isValid = await validateForm();
+    if (!isValid) {
+      toast.error("Please fix all errors before submitting");
       return;
     }
 
@@ -211,17 +328,20 @@ export default function EditCustomer() {
             payload.append("customertype[]", value);
           }
         } else if (key === "thumb_image" && value) {
-          // Only append image if file is selected
           if (value instanceof File) {
             const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/jpg"];
             if (allowedTypes.includes(value.type)) {
               payload.append("thumb_image", value);
-            } else {
-              console.warn("Invalid image file type.");
             }
           }
-        } else if (key !== "thumb_image") {
-          // Append all other fields
+        } else if (key === "stateid" || key === "state") {
+          // Only send the relevant state field based on country
+          if (isIndianCountry && key === "stateid" && value) {
+            payload.append(key, value);
+          } else if (!isIndianCountry && key === "state" && value) {
+            payload.append(key, value);
+          }
+        } else if (key !== "thumb_image" && key !== "existing_thumb") {
           payload.append(key, value);
         }
       });
@@ -276,7 +396,9 @@ export default function EditCustomer() {
             </label>
             <ReactSelect
               isMulti
-              value={customerTypeOptions.filter((opt) => formData.customertype.includes(opt.value))}
+              value={customerTypeOptions.filter((opt) => 
+                formData.customertype.includes(String(opt.value))
+              )}
               name="customertype"
               options={customerTypeOptions}
               onChange={(selected) => handleMultiSelectChange(selected, "customertype")}
@@ -330,6 +452,19 @@ export default function EditCustomer() {
               className={errors.creditamount ? "border-red-500 bg-red-50" : ""}
             />
             {errors.creditamount && (
+              <p className="text-red-600 text-sm mt-1">This field is required</p>
+            )}
+          </div>
+
+          <div>
+            <Input 
+              label="Credit Left" 
+              name="leftamount" 
+              value={formData.leftamount} 
+              onChange={handleInputChange}
+              className={errors.leftamount ? "border-red-500 bg-red-50" : ""}
+            />
+            {errors.leftamount && (
               <p className="text-red-600 text-sm mt-1">This field is required</p>
             )}
           </div>
@@ -407,23 +542,41 @@ export default function EditCustomer() {
             )}
           </div>
 
+          {/* State - Dynamic: Dropdown for India, Text input for others */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
               State <span className="text-red-500">*</span>
             </label>
-            <Select 
-              name="stateid" 
-              value={formData.stateid} 
-              onChange={(e) => handleSelectChange(e, "stateid")}
-              className={errors.stateid ? "border-red-500 bg-red-50" : ""}
-            >
-              <option value="">Choose...</option>
-              {states.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </Select>
-            {errors.stateid && (
-              <p className="text-red-600 text-sm mt-1">This field is required</p>
+            {isIndianCountry ? (
+              <>
+                <Select 
+                  name="stateid" 
+                  value={formData.stateid} 
+                  onChange={(e) => handleSelectChange(e, "stateid")}
+                  className={errors.stateid ? "border-red-500 bg-red-50" : ""}
+                >
+                  <option value="">Choose state...</option>
+                  {states.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </Select>
+                {errors.stateid && (
+                  <p className="text-red-600 text-sm mt-1">This field is required</p>
+                )}
+              </>
+            ) : (
+              <>
+                <Input 
+                  name="state" 
+                  placeholder="Enter state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  className={errors.state ? "border-red-500 bg-red-50" : ""}
+                />
+                {errors.state && (
+                  <p className="text-red-600 text-sm mt-1">This field is required</p>
+                )}
+              </>
             )}
           </div>
 
@@ -444,12 +597,16 @@ export default function EditCustomer() {
             <Input 
               label="GST No" 
               name="gstno" 
+              placeholder="GST number (e.g., 22AAAAA0000A1Z5)"
               value={formData.gstno} 
               onChange={handleInputChange}
-              className={errors.gstno ? "border-red-500 bg-red-50" : ""}
+              className={errors.gstno || validationErrors.gstno ? "border-red-500 bg-red-50" : ""}
             />
             {errors.gstno && (
               <p className="text-red-600 text-sm mt-1">This field is required</p>
+            )}
+            {validationErrors.gstno && (
+              <p className="text-red-600 text-sm mt-1">{validationErrors.gstno}</p>
             )}
           </div>
 
@@ -479,11 +636,38 @@ export default function EditCustomer() {
             )}
           </div>
 
-          {/* Image Upload - Optional */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-white">
-              Upload Photo
+          {/* Verticals */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+              Verticals
             </label>
+            <Select 
+              name="verticals" 
+              value={formData.verticals} 
+              onChange={(e) => handleSelectChange(e, "verticals")}
+            >
+              <option value="">Choose...</option>
+              {verticals.map((v) => (
+                <option key={v.value} value={v.value}>{v.label}</option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Image Upload with Preview */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+              Photo
+            </label>
+            {formData.existing_thumb && (
+              <div className="mb-3">
+                <img 
+                  src={formData.existing_thumb} 
+                  alt="Current" 
+                  className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                />
+                <p className="text-xs text-gray-500 mt-1">Current photo</p>
+              </div>
+            )}
             <input 
               type="file" 
               name="thumb_image" 
@@ -493,6 +677,7 @@ export default function EditCustomer() {
             />
           </div>
 
+          {/* Submit Button */}
           <div className="col-span-1 md:col-span-2">
             <Button type="submit" color="primary" disabled={loading}>
               {loading ? (
@@ -504,12 +689,328 @@ export default function EditCustomer() {
                   Updating...
                 </div>
               ) : (
-                "Update"
+                "Update Customer"
               )}
             </Button>
           </div>
         </form>
+
+        {/* Tabs for Address and Contacts */}
+        <div className="mt-8">
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab("address")}
+                className={`${
+                  activeTab === "address"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Address
+              </button>
+              <button
+                onClick={() => setActiveTab("contact")}
+                className={`${
+                  activeTab === "contact"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Contacts
+              </button>
+            </nav>
+          </div>
+
+          <div className="mt-6">
+            {activeTab === "address" && (
+              <div>
+                <Button
+                  onClick={() => setShowAddressModal(true)}
+                  className="mb-4"
+                  color="primary"
+                >
+                  + Add New Address
+                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {addresses.map((addr) => (
+                    <div
+                      key={addr.id}
+                      className="p-4 border border-gray-200 rounded-lg dark:border-gray-700"
+                    >
+                      <h4 className="font-semibold text-gray-800 dark:text-gray-200">
+                        {addr.name}
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        {addr.address}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {addr.city}, {addr.pincode}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {addr.mobile}
+                      </p>
+                      <button
+                        onClick={() => handleDeleteAddress(addr.id)}
+                        className="mt-3 text-sm text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "contact" && (
+              <div>
+                <Button
+                  onClick={() => setShowContactModal(true)}
+                  className="mb-4"
+                  color="primary"
+                >
+                  + Add New Contact
+                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {contacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="p-4 border border-gray-200 rounded-lg dark:border-gray-700"
+                    >
+                      <h4 className="font-semibold text-gray-800 dark:text-gray-200">
+                        {contact.name}
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        {contact.email}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {contact.mobile}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {contact.designation} - {contact.department}
+                      </p>
+                      <button
+                        onClick={() => handleDeleteContact(contact.id)}
+                        className="mt-3 text-sm text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Add Address Modal */}
+        {showAddressModal && (
+          <AddAddressModal
+            customerId={id}
+            onClose={() => setShowAddressModal(false)}
+            onSuccess={(newAddress) => {
+              setAddresses(prev => [...prev, newAddress]);
+              setShowAddressModal(false);
+            }}
+          />
+        )}
+
+        {/* Add Contact Modal */}
+        {showContactModal && (
+          <AddContactModal
+            customerId={id}
+            onClose={() => setShowContactModal(false)}
+            onSuccess={(newContact) => {
+              setContacts(prev => [...prev, newContact]);
+              setShowContactModal(false);
+            }}
+          />
+        )}
       </div>
     </Page>
+  );
+}
+
+// Add Address Modal Component
+function AddAddressModal({ customerId, onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    mobile: "",
+    address: "",
+    city: "",
+    pincode: ""
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await axios.post("/people/add-customer-address", {
+        ...formData,
+        customer: customerId
+      });
+
+      if (res.data.status === "true" || res.data.success) {
+        toast.success("Address added successfully");
+        // Pass the new address data or refetch
+        const newAddress = res.data.data || { ...formData, id: res.data.id || Date.now() };
+        onSuccess(newAddress);
+      } else {
+        toast.error(res.data.message || "Failed to add address");
+      }
+    } catch (err) {
+      toast.error("Error adding address");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-900">
+        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-100">
+          Add New Address
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Address Nickname"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            required
+          />
+          <Input
+            label="Mobile"
+            value={formData.mobile}
+            onChange={(e) => setFormData(prev => ({ ...prev, mobile: e.target.value }))}
+            required
+          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+              Address
+            </label>
+            <textarea
+              value={formData.address}
+              onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              rows={3}
+              required
+            />
+          </div>
+          <Input
+            label="City"
+            value={formData.city}
+            onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+            required
+          />
+          <Input
+            label="Pincode"
+            value={formData.pincode}
+            onChange={(e) => setFormData(prev => ({ ...prev, pincode: e.target.value }))}
+            maxLength={6}
+            required
+          />
+          <div className="flex justify-end gap-2 mt-6">
+            <Button type="button" onClick={onClose} variant="outline">
+              Close
+            </Button>
+            <Button type="submit" color="primary" disabled={loading}>
+              {loading ? "Saving..." : "Add Address"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Add Contact Modal Component
+function AddContactModal({ customerId, onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    designation: "",
+    department: ""
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await axios.post("/people/add-customer-contact", {
+        ...formData,
+        customer: customerId
+      });
+
+      if (res.data.status === "true" || res.data.success) {
+        toast.success("Contact added successfully");
+        // Pass the new contact data or refetch
+        const newContact = res.data.data || { ...formData, id: res.data.id || Date.now() };
+        onSuccess(newContact);
+      } else {
+        toast.error(res.data.message || "Failed to add contact");
+      }
+    } catch (err) {
+      toast.error("Error adding contact");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-700 dark:bg-gray-900">
+        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-gray-100">
+          Add New Contact
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Name"
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            required
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            required
+          />
+          <Input
+            label="Mobile"
+            value={formData.mobile}
+            onChange={(e) => setFormData(prev => ({ ...prev, mobile: e.target.value }))}
+            required
+          />
+          <Input
+            label="Designation"
+            value={formData.designation}
+            onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
+            required
+          />
+          <Input
+            label="Department"
+            value={formData.department}
+            onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+            required
+          />
+          <div className="flex justify-end gap-2 mt-6">
+            <Button type="button" onClick={onClose} variant="outline">
+              Close
+            </Button>
+            <Button type="submit" color="primary" disabled={loading}>
+              {loading ? "Saving..." : "Add Contact"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Card } from "components/ui";
 import axios from 'utils/axios';
 import toast, { Toaster } from 'react-hot-toast';
+import { Flatpickr } from 'components/shared/form/Flatpickr';
+import 'flatpickr/dist/themes/light.css';
 
 
 const Select = ({ options, value, onChange, placeholder, name, isSearchable = true, isLoading = false }) => {
@@ -51,7 +53,7 @@ const Select = ({ options, value, onChange, placeholder, name, isSearchable = tr
           </svg>
         </div>
       </div>
-      
+
       {isOpen && !isLoading && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto dark:bg-dark-800 dark:border-gray-700">
           {filteredOptions.map((option) => (
@@ -75,14 +77,14 @@ const Select = ({ options, value, onChange, placeholder, name, isSearchable = tr
 const AddNewInstrument = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+
   const labId = searchParams.get('labId');
-  
+
   const [formData, setFormData] = useState({
     category: '',
     productType: '',
     vertical: '',
-    instrumentLocation: labId || '', 
+    instrumentLocation: labId || '',
     instrumentName: '',
     description: '',
     nickName: '',
@@ -115,7 +117,7 @@ const AddNewInstrument = () => {
     submitting: false
   });
 
-  
+
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [subcategoryOptions, setSubcategoryOptions] = useState([]);
   const [verticalOptions, setVerticalOptions] = useState([]);
@@ -153,13 +155,13 @@ const AddNewInstrument = () => {
       try {
         setLoading(prev => ({ ...prev, categories: true }));
         const response = await axios.get('/inventory/category-list');
-        
+
         const categories = response.data?.data || [];
         const mappedCategories = categories.map(cat => ({
           value: cat.id,
           label: cat.name || cat.category_name
         }));
-        
+
         setCategoryOptions(mappedCategories);
       } catch (error) {
         console.error('❌ Error fetching categories:', error);
@@ -183,13 +185,13 @@ const AddNewInstrument = () => {
       try {
         setLoading(prev => ({ ...prev, subcategories: true }));
         const response = await axios.get('/inventory/subcategory-list');
-        
+
         const subcategories = response.data?.data || [];
         const mappedSubcategories = subcategories.map(sub => ({
           value: sub.id,
           label: sub.name || sub.subcategory_name
         }));
-        
+
         setSubcategoryOptions(mappedSubcategories);
       } catch (error) {
         console.error('❌ Error fetching subcategories:', error);
@@ -208,13 +210,13 @@ const AddNewInstrument = () => {
       try {
         setLoading(prev => ({ ...prev, verticals: true }));
         const response = await axios.get('/master/vertical-list');
-        
+
         const verticals = response.data?.data || [];
         const mappedVerticals = verticals.map(vertical => ({
           value: vertical.id,
           label: vertical.name || vertical.vertical_name
         }));
-        
+
         setVerticalOptions(mappedVerticals);
       } catch (error) {
         console.error('❌ Error fetching verticals:', error);
@@ -233,13 +235,13 @@ const AddNewInstrument = () => {
       try {
         setLoading(prev => ({ ...prev, labs: true }));
         const response = await axios.get('/master/list-lab');
-        
+
         const labs = response.data?.data || [];
         const mappedLabs = labs.map(lab => ({
           value: lab.id,
           label: lab.name
         }));
-        
+
         setLocationOptions(mappedLabs);
       } catch (error) {
         console.error('❌ Error fetching labs:', error);
@@ -258,7 +260,7 @@ const AddNewInstrument = () => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -271,16 +273,16 @@ const AddNewInstrument = () => {
   const validateForm = () => {
     const newErrors = {};
     const missingFields = [];
-    
+
     Object.keys(requiredFields).forEach(field => {
       if (!formData[field] || formData[field].toString().trim() === '') {
         newErrors[field] = `${requiredFields[field]} is required`;
         missingFields.push(requiredFields[field]);
       }
     });
-    
+
     setErrors(newErrors);
-    
+
     if (missingFields.length > 0) {
       toast.error(
         <div>
@@ -297,8 +299,25 @@ const AddNewInstrument = () => {
         { duration: 4000 }
       );
     }
-    
+
     return Object.keys(newErrors).length === 0;
+  };
+
+  // ✅ Helper function to convert date into YYYY-MM-DD format (API expects this)
+  const formatDateForAPI = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '';
+
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch {
+      return '';
+    }
   };
 
   const handleSubmit = async () => {
@@ -313,6 +332,8 @@ const AddNewInstrument = () => {
       setLoading(prev => ({ ...prev, submitting: true }));
 
       // Map form data to API request structure
+      const authToken = localStorage.getItem('authToken');
+
       const requestData = {
         name: formData.instrumentName,
         description: formData.description,
@@ -329,13 +350,13 @@ const AddNewInstrument = () => {
         manufacturer: formData.manufacturerDetails,
 
         batchno: formData.batchNo,
-        mfddate: formData.mfdDate,
-        expdate: formData.expiryDate,
-        purchasedate: formData.purchaseDate,
+        mfddate: formatDateForAPI(formData.mfdDate),
+        expdate: formatDateForAPI(formData.expiryDate),
+        purchasedate: formatDateForAPI(formData.purchaseDate),
 
         frequency: formData.calibrationFrequency,
         allowedfor: formData.instrumentAllowedFor,
-        instrumentlocation: parseInt(formData.instrumentLocation),
+        instrumentlocation: String(formData.instrumentLocation), // Changed to String to match your example
 
         iscalibrationrequired: formData.calibrationRequired,
         WIreference: formData.wiReference,
@@ -350,13 +371,19 @@ const AddNewInstrument = () => {
 
       console.log('📤 Submitting instrument data:', requestData);
 
-      const response = await axios.post('/material/mm-instrument-create', requestData);
-      
+      const response = await axios.post('/material/mm-instrument-create', requestData, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
       console.log('✅ Instrument created successfully:', response.data);
-      
+
       // Dismiss loading toast
       toast.dismiss(loadingToast);
-      
+
       // ✅ Fixed: Escaped quotes
       // Show success toast
       toast.success(
@@ -369,18 +396,18 @@ const AddNewInstrument = () => {
           icon: '✅',
         }
       );
-      
+
       // Wait a bit before navigation to show success message
       setTimeout(() => {
         navigate(-1);
       }, 1500);
-      
+
     } catch (error) {
       console.error('❌ Error creating instrument:', error);
-      
+
       // Dismiss loading toast
       toast.dismiss(loadingToast);
-      
+
       // Show error toast
       const errorMessage = error.response?.data?.message || 'Failed to create instrument. Please try again.';
       toast.error(
@@ -455,7 +482,7 @@ const AddNewInstrument = () => {
         <div className="flex items-center justify-between space-x-4">
           <div className="min-w-0">
             <h2 className="truncate text-xl font-medium tracking-wide text-gray-800 dark:text-dark-50">
-              Instrument Entry Form 
+              Instrument Entry Form
             </h2>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -463,7 +490,7 @@ const AddNewInstrument = () => {
               className="h-8 space-x-1.5 rounded-md px-3 text-xs text-white bg-indigo-500 hover:bg-fuchsia-500"
               onClick={handleBackToList}
             >
-              &lt;&lt; Back to MM Instrument 
+              &lt;&lt; Back to MM Instrument
             </Button>
           </div>
         </div>
@@ -472,7 +499,7 @@ const AddNewInstrument = () => {
         <Card className="mt-4">
           <div className="p-6">
             <div className="space-y-6">
-              
+
               {/* Category */}
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">
@@ -551,7 +578,7 @@ const AddNewInstrument = () => {
                   Instrument Name <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="instrumentName"
                     value={formData.instrumentName}
@@ -567,7 +594,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Description</label>
                 <div className="col-span-9">
-                  <textarea 
+                  <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
@@ -582,7 +609,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Nick Name</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="nickName"
                     value={formData.nickName}
@@ -599,7 +626,7 @@ const AddNewInstrument = () => {
                   ID No <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="idNo"
                     value={formData.idNo}
@@ -616,7 +643,7 @@ const AddNewInstrument = () => {
                   Serial No <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="serialNo"
                     value={formData.serialNo}
@@ -631,7 +658,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Make</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="make"
                     value={formData.make}
@@ -645,7 +672,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Model</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="model"
                     value={formData.model}
@@ -661,12 +688,22 @@ const AddNewInstrument = () => {
                   Purchase Date <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-9">
-                  <input 
-                    type="date"
+                  <Flatpickr
                     name="purchaseDate"
                     value={formData.purchaseDate}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white"
+                    onChange={(_, dateStr) => {
+                      setFormData(prev => ({ ...prev, purchaseDate: dateStr }));
+                      if (errors.purchaseDate) setErrors(prev => ({ ...prev, purchaseDate: '' }));
+                    }}
+                    options={{
+                      altInput: true,
+                      altInputClass: "w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white",
+                      altFormat: "d/m/y",
+                      dateFormat: "Y-m-d",
+                      allowInput: true
+                    }}
+                    placeholder="dd/mm/yy"
+                    className="hidden" // Base input hidden, altInput shown with altInputClass
                   />
                   {errors.purchaseDate && <p className="text-red-500 text-xs mt-1">{errors.purchaseDate}</p>}
                 </div>
@@ -676,7 +713,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Name and Address of manufacturer</label>
                 <div className="col-span-9">
-                  <textarea 
+                  <textarea
                     name="manufacturerDetails"
                     value={formData.manufacturerDetails}
                     onChange={handleInputChange}
@@ -690,7 +727,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Batch no</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="batchNo"
                     value={formData.batchNo}
@@ -704,12 +741,21 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">MFD Date</label>
                 <div className="col-span-9">
-                  <input 
-                    type="date"
+                  <Flatpickr
                     name="mfdDate"
                     value={formData.mfdDate}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white"
+                    onChange={(_, dateStr) => {
+                      setFormData(prev => ({ ...prev, mfdDate: dateStr }));
+                    }}
+                    options={{
+                      altInput: true,
+                      altInputClass: "w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white",
+                      altFormat: "d/m/y",
+                      dateFormat: "Y-m-d",
+                      allowInput: true
+                    }}
+                    placeholder="dd/mm/yy"
+                    className="hidden"
                   />
                 </div>
               </div>
@@ -718,12 +764,21 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Expiry Date</label>
                 <div className="col-span-9">
-                  <input 
-                    type="date"
+                  <Flatpickr
                     name="expiryDate"
                     value={formData.expiryDate}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white"
+                    onChange={(_, dateStr) => {
+                      setFormData(prev => ({ ...prev, expiryDate: dateStr }));
+                    }}
+                    options={{
+                      altInput: true,
+                      altInputClass: "w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white",
+                      altFormat: "d/m/y",
+                      dateFormat: "Y-m-d",
+                      allowInput: true
+                    }}
+                    placeholder="dd/mm/yy"
+                    className="hidden"
                   />
                 </div>
               </div>
@@ -732,7 +787,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Qty</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="number"
                     name="qty"
                     value={formData.qty}
@@ -746,7 +801,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Instrument Range</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="instrumentRange"
                     value={formData.instrumentRange}
@@ -760,7 +815,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Leastcount</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="leastCount"
                     value={formData.leastCount}
@@ -774,7 +829,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Frequency of calibration if required</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="calibrationFrequency"
                     value={formData.calibrationFrequency}
@@ -823,7 +878,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">WI Reference</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="wiReference"
                     value={formData.wiReference}
@@ -837,7 +892,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Software / Firmware details</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="softwareFirmwareDetails"
                     value={formData.softwareFirmwareDetails}
@@ -851,7 +906,7 @@ const AddNewInstrument = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Acceptance Criteria (KTRC/QF/0704/07)</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="acceptanceCriteria"
                     value={formData.acceptanceCriteria}
@@ -865,7 +920,7 @@ const AddNewInstrument = () => {
 
             {/* Submit Button */}
             <div className="flex justify-end mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Button 
+              <Button
                 onClick={handleSubmit}
                 color="primary"
                 className="px-6 py-2 bg-green-500 hover:bg-green-600"

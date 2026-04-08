@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import axios from "utils/axios";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // Local Imports
 import { Page } from "components/shared/Page";
@@ -35,7 +36,7 @@ export default function AddExpense() {
   // ── Fetch categories on mount (mirrors PHP selecttable("expensecategory")) ──
   useEffect(() => {
     axios
-      .get("/expense-categories")
+      .get("/accounts/get-expense-category-list")
       .then((res) => {
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setCategories(list);
@@ -81,12 +82,30 @@ export default function AddExpense() {
 
     try {
       setSubmitting(true);
-      await axios.post("/expenses", formData);
-      toast.success("Expense added successfully.");
-      navigate("/dashboards/accounts/expenses");
+      // Format date to DD/MM/YYYY if it's in YYYY-MM-DD
+      let formattedDate = formData.expensedate;
+      if (formattedDate.includes("-")) {
+        const [y, m, d] = formattedDate.split("-");
+        formattedDate = `${d}/${m}/${y}`;
+      }
+
+      const payload = {
+        ...formData,
+        expensedate: formattedDate,
+        category: Number(formData.category),
+        amount: Number(formData.amount),
+      };
+
+      const res = await axios.post("/accounts/add-expense", payload);
+      if (res.data?.status || res.data?.success) {
+        toast.success(res.data?.message || "Expense added successfully.");
+        navigate("/dashboards/accounts/expenses");
+      } else {
+        toast.error(res.data?.message || "Failed to add expense.");
+      }
     } catch (err) {
       console.error("Submit error:", err);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(err?.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -174,14 +193,17 @@ export default function AddExpense() {
 
             {/* Expense Date — mirrors PHP readonly date picker (onfocus="setcalender") */}
             <FormRow label="Expense Date" required error={errors.expensedate}>
-              <input
-                type="text"
-                name="expensedate"
-                id="expensedate"
+              <DatePicker
+                options={{
+                  dateFormat: "Y-m-d",
+                  altInput: true,
+                  altFormat: "d/m/Y",
+                  allowInput: true,
+                }}
                 value={formData.expensedate}
-                onChange={handleChange}
-                onFocus={(e) => (e.target.type = "date")}
-                onBlur={(e) => { if (!e.target.value) e.target.type = "text"; }}
+                onChange={(dates, dateStr) =>
+                  handleChange({ target: { name: "expensedate", value: dateStr } })
+                }
                 placeholder="Expense Date"
                 className={inputClass(errors.expensedate)}
               />

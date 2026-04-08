@@ -416,10 +416,10 @@ function ActionCell({ row, onRefresh }) {
   // Missing fields handled below:
 
   const testeventdata_id = raw.testeventdata_id; // PHP: $teid = $row['id']
-  const tid               = raw.tid;              // PHP: $tid (trfProducts.id)
-  const trfid             = raw.trfid;            // PHP: $trf
-  const status            = Number(raw.status ?? 0); // PHP: $row['status']
-  const witnesslock       = Number(raw.witnesslock ?? 0); // PHP: $witnesslock
+  const tid = raw.tid;              // PHP: $tid (trfProducts.id)
+  const trfid = raw.trfid;            // PHP: $trf
+  const status = Number(raw.status ?? 0); // PHP: $row['status']
+  const witnesslock = Number(raw.witnesslock ?? 0); // PHP: $witnesslock
 
   // PHP: $starttime = $row['startdate']  → "" means not started yet
   // API may send as "start_time", "startdate", or "startTime" — handle all
@@ -443,12 +443,12 @@ function ActionCell({ row, onRefresh }) {
       ? Boolean(raw.has_documents)
       : (raw.document_count !== undefined ? Number(raw.document_count) > 0 : false);
 
-  const [startDateModal,   setStartDateModal]   = useState(false);
-  const [uploadModal,      setUploadModal]      = useState(false);
-  const [viewDocsModal,    setViewDocsModal]    = useState(false);
+  const [startDateModal, setStartDateModal] = useState(false);
+  const [uploadModal, setUploadModal] = useState(false);
+  const [viewDocsModal, setViewDocsModal] = useState(false);
   const [viewRawDataModal, setViewRawDataModal] = useState(false);
-  const [startDate,        setStartDate]        = useState("");
-  const [submitting,       setSubmitting]       = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // ── POST /actionitem/start-test ───────────────────────────────────────────
   // PHP starttest.php: $data['startdate'] = changedateformatespecito($_POST['start_date'], "d/m/Y", "Y-m-d H:i:s")
@@ -587,7 +587,7 @@ function ActionCell({ row, onRefresh }) {
         );
       }
 
-    // ── status == 24 ─────────────────────────────────────────────────────
+      // ── status == 24 ─────────────────────────────────────────────────────
     } else if (status === 24) {
       // PHP: elseif ($row['status'] == 24)
       if (!isWitnessLocked) {
@@ -619,7 +619,7 @@ function ActionCell({ row, onRefresh }) {
         );
       }
 
-    // ── status other (completed) ──────────────────────────────────────────
+      // ── status other (completed) ──────────────────────────────────────────
     } else {
       // PHP: $flag = "Test Completed"
       //      $flag .= '<br/> <a target="_blank" href="viewrawdatasingle.php?hakuna={teid}"> View Raw Data</a>'
@@ -884,8 +884,8 @@ export default function PerformTestDetail() {
   const { id } = useParams();       // trfproduct id from route /perform-testing/:id
   const navigate = useNavigate();
 
-  const [rows,         setRows]         = useState([]);
-  const [loading,      setLoading]      = useState(true);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
 
   // ── Fetch rows ────────────────────────────────────────────────────────────
@@ -915,17 +915,17 @@ export default function PerformTestDetail() {
   const columns = buildColumns(fetchData);
 
   const table = useReactTable({
-    data:                  rows,
+    data: rows,
     columns,
-    state:                 { globalFilter },
-    onGlobalFilterChange:  setGlobalFilter,
-    filterFns:             { fuzzy: fuzzyFilter },
-    globalFilterFn:        fuzzyFilter,
-    getCoreRowModel:       getCoreRowModel(),
-    getFilteredRowModel:   getFilteredRowModel(),
-    getSortedRowModel:     getSortedRowModel(),
+    state: { globalFilter },
+    onGlobalFilterChange: setGlobalFilter,
+    filterFns: { fuzzy: fuzzyFilter },
+    globalFilterFn: fuzzyFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState:          { pagination: { pageSize: 25 } },
+    initialState: { pagination: { pageSize: 25 } },
   });
 
   // ── Loading state ─────────────────────────────────────────────────────────

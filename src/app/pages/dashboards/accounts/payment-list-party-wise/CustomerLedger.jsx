@@ -3,18 +3,20 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import dayjs from "dayjs";
 
 // Local Imports
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // ----------------------------------------------------------------------
 
 const fmtDate = (d) => {
   if (!d || d === "0000-00-00") return "—";
-  const dt = new Date(d);
-  if (isNaN(dt)) return d;
-  return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}/${dt.getFullYear()}`;
+  const dt = dayjs(d);
+  if (!dt.isValid()) return d;
+  return dt.format("DD/MM/YYYY");
 };
 
 // API expects dd-mm-yyyy
@@ -83,10 +85,15 @@ export default function CustomerLedger() {
             <label className="dark:text-dark-300 text-xs font-medium text-gray-600">
               Start Date
             </label>
-            <input
-              type="date"
+            <DatePicker
+              options={{
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d/m/Y",
+                allowInput: true,
+              }}
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(dates, dateStr) => setStartDate(dateStr)}
               className="focus:border-primary-500 focus:ring-primary-500 dark:border-dark-500 dark:bg-dark-800 dark:text-dark-100 h-9 rounded-md border border-gray-300 px-3 text-sm text-gray-700 focus:ring-1 focus:outline-none"
             />
           </div>
@@ -94,11 +101,16 @@ export default function CustomerLedger() {
             <label className="dark:text-dark-300 text-xs font-medium text-gray-600">
               End Date
             </label>
-            <input
-              type="date"
+            <DatePicker
+              options={{
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "d/m/Y",
+                allowInput: true,
+                minDate: startDate,
+              }}
               value={endDate}
-              min={startDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(dates, dateStr) => setEndDate(dateStr)}
               className="focus:border-primary-500 focus:ring-primary-500 dark:border-dark-500 dark:bg-dark-800 dark:text-dark-100 h-9 rounded-md border border-gray-300 px-3 text-sm text-gray-700 focus:ring-1 focus:outline-none"
             />
           </div>

@@ -3,7 +3,6 @@ import { createColumnHelper } from "@tanstack/react-table";
 
 // Local Imports
 import { RowActions } from "./RowActions";
-import { SelectCell, SelectHeader } from "components/shared/table/SelectCheckbox";
 
 const columnHelper = createColumnHelper();
 
@@ -27,12 +26,7 @@ function ParamList({ value }) {
 }
 
 export const columns = [
-  // PHP: <input type="checkbox" ... class="checkboxes" />
-  columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
+
 
   // PHP: $n[] = $i;  (S.NO — auto-incremented counter)
   columnHelper.display({

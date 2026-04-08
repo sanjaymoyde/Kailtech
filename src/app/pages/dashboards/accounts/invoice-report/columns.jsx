@@ -1,13 +1,7 @@
-// Import Dependencies
 import { createColumnHelper } from "@tanstack/react-table";
+import { StatusBadge } from "./StatusBadge";
 
 const columnHelper = createColumnHelper();
-
-const formatStatus = (status) => {
-  if (status === 99 || status === "99") return "Canceled";
-  if (status === 0 || status === "0") return "Pending";
-  return "Active";
-};
 
 export const columns = [
   columnHelper.display({
@@ -72,17 +66,17 @@ export const columns = [
   }),
   columnHelper.accessor("sgstamount", {
     id: "sgstamount",
-    header: "Sgst",
+    header: "SGST",
     cell: (info) => info.getValue() ?? "-",
   }),
   columnHelper.accessor("cgstamount", {
     id: "cgstamount",
-    header: "Cgst",
+    header: "CGST",
     cell: (info) => info.getValue() ?? "-",
   }),
   columnHelper.accessor("igstamount", {
     id: "igstamount",
-    header: "Igst",
+    header: "IGST",
     cell: (info) => info.getValue() ?? "-",
   }),
   columnHelper.accessor("finaltotal", {
@@ -103,6 +97,6 @@ export const columns = [
   columnHelper.accessor("status", {
     id: "status",
     header: "Status",
-    cell: (info) => formatStatus(info.getValue()),
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
 ];

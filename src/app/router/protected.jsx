@@ -1,11 +1,51 @@
-import { Navigate } from "react-router";
+import { Navigate, useLocation, useOutlet } from "react-router";
 
 // Local Imports
 import { AppLayout } from "app/layouts/AppLayout";
 import { DynamicLayout } from "app/layouts/DynamicLayout";
+import {
+  canAccessDashboardsRoute,
+  getStoredPermissions,
+} from "app/navigation/dashboards";
 import AuthGuard from "middleware/AuthGuard";
 
 // ----------------------------------------------------------------------
+
+import { useLabsContext } from "app/contexts/labs/context";
+
+function DashboardPermissionGuard() {
+  const outlet = useOutlet();
+  const { pathname, search } = useLocation();
+  const permissions = getStoredPermissions();
+  const { labs, loading } = useLabsContext();
+  const employeeId = Number(localStorage.getItem("userId") || 0);
+
+  if (loading) {
+    return null; // Or a loading spinner, but null is fine to defer rendering
+  }
+
+  if (
+    pathname.startsWith("/dashboards") &&
+    !canAccessDashboardsRoute({ pathname, search, permissions })
+  ) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+
+  // Check dynamic lab permissions
+  if (pathname.startsWith("/dashboards/material-list/")) {
+    const segments = pathname.split("/");
+    if (segments.length >= 4) {
+      const labSlug = segments[3];
+      const matchedLab = labs.find((lab) => lab.slug === labSlug);
+      
+      if (!matchedLab || !matchedLab.users?.includes(employeeId)) {
+        throw new Response("Unauthorized", { status: 401 });
+      }
+    }
+  }
+
+  return <>{outlet}</>;
+}
 
 const protectedRoutes = {
   id: "protected",
@@ -21,6 +61,7 @@ const protectedRoutes = {
         },
         {
           path: "dashboards",
+          Component: DashboardPermissionGuard,
           children: [
             {
               index: true,
@@ -2125,6 +2166,26 @@ const protectedRoutes = {
                       }),
                     },
                     {
+                      path: "slip/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/testing/trfs-starts-jobs/Slip"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "print-slip/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/testing/trfs-starts-jobs/PrintSlip"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
                       path: "pending-technical-acceptance",
                       lazy: async () => ({
                         Component: (
@@ -2834,31 +2895,71 @@ const protectedRoutes = {
                       }),
                     },
                     {
-                      path: "add",
+                      path: "create",
                       lazy: async () => ({
                         Component: (
                           await import(
-                            "app/pages/dashboards/accounts/testing-invoices/GenerateInvoiceTesting"
+                            "app/pages/dashboards/accounts/testing-invoices/AddTestingInvoice"
                           )
                         ).default,
                       }),
                     },
                     {
-                      path: "add-advance",
+                      path: "create-advance",
                       lazy: async () => ({
                         Component: (
                           await import(
-                            "app/pages/dashboards/accounts/testing-invoices/GenerateDirectInvoiceTesting"
+                            "app/pages/dashboards/accounts/testing-invoices/AddTestingAdvanceInvoice"
                           )
                         ).default,
                       }),
                     },
                     {
-                      path: "add-foc",
+                      path: "create-foc",
                       lazy: async () => ({
                         Component: (
                           await import(
-                            "app/pages/dashboards/accounts/testing-invoices/CreateFocBill"
+                            "app/pages/dashboards/accounts/testing-invoices/AddTestingFOCInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "edit/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/EditTestingInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "view/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/ViewInvoiceCalibration"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "view-detailed/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/ViewDetailedInvoice"
+                          )
+                        ).default,
+                      }),
+                    },
+                    {
+                      path: "view-itemized/:id",
+                      lazy: async () => ({
+                        Component: (
+                          await import(
+                            "app/pages/dashboards/accounts/testing-invoices/ViewItemizedBill"
                           )
                         ).default,
                       }),

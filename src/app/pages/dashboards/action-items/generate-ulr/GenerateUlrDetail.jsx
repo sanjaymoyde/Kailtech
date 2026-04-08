@@ -333,6 +333,7 @@ export default function GenerateUlrDetail() {
 
   const [report,   setReport]   = useState(null);
   const [formData, setFormData] = useState(null);
+  const [reportAddr, setReportAddr] = useState("");
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
 
@@ -353,8 +354,25 @@ export default function GenerateUlrDetail() {
         axios.get(`/actionitem/get-generate-ulr-data?${formParams}`),
       ]);
 
-      setReport(reportRes.data?.data ?? reportRes.data ?? null);
+      const rData = reportRes.data?.data ?? reportRes.data ?? null;
+      setReport(rData);
       setFormData(formRes.data?.data ?? formRes.data   ?? null);
+
+      // Fetch reporting address if needed
+      const custId = rData?.customer?.id;
+      const rAddrId = rData?.trf?.reportaddress;
+      if (custId && rAddrId) {
+        try {
+          const addrRes = await axios.get(`/people/get-customers-address/${custId}`);
+          const addrList = addrRes.data?.data ?? [];
+          const found = addrList.find((a) => String(a.id) === String(rAddrId));
+          if (found) {
+            setReportAddr(found.address);
+          }
+        } catch (e) {
+          console.error("Failed to fetch reporting address:", e);
+        }
+      }
     } catch (err) {
       setError(err?.response?.data?.message ?? "Failed to load report.");
     } finally {
@@ -468,7 +486,7 @@ export default function GenerateUlrDetail() {
   const paramCount = counts?.param_count ?? 0;
 
   const customerName    = customer?.name           ?? "—";
-  const customerAddress = customer?.address        ?? "";
+  const customerAddress = reportAddr || customer?.address || customer?.address_text || "—";
   const contactPerson   = customer?.contact_person ?? "";
   const showContact     = Number(trf?.specificpurpose ?? customer?.specific_purpose) === 2;
   const customerRef     = customer?.letterrefno    ?? "";

@@ -1,11 +1,10 @@
 // Import Dependencies
-import { Link } from "react-router"; // ✅ Corrected from "react-router"
+import { Link } from "react-router";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
-import {  useState } from "react";
-import { useNavigate, useLocation  } from "react-router";
-
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
 
 // Local Imports
 import { Button, Card, Checkbox, Input, InputErrorMsg } from "components/ui";
@@ -16,9 +15,31 @@ import { useAuthContext } from "app/contexts/auth/context";
 
 export default function SignIn() {
   const navigate = useNavigate();
-  const location = useLocation(); 
+  const location = useLocation();
   const [errorMessage, setErrorMessage] = useState(null);
   const { login } = useAuthContext();
+
+  // ── Brute Force Mitigation State ──
+  const [failedAttempts, setFailedAttempts] = useState(() =>
+    Number(localStorage.getItem("login_failed_attempts") || 0)
+  );
+  const [lockoutTime, setLockoutTime] = useState(() =>
+    Number(localStorage.getItem("login_lockout_until") || 0)
+  );
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  // Update cooldown timer every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now();
+      if (lockoutTime > now) {
+        setTimeLeft(Math.ceil((lockoutTime - now) / 1000));
+      } else {
+        if (timeLeft > 0) setTimeLeft(0);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutTime, timeLeft]);
 
   const {
     register,
@@ -29,36 +50,59 @@ export default function SignIn() {
     defaultValues: {
       username: "",
       password: "",
-      fiscalYear: "",
+      fiscalYear: "2026-27",
     },
   });
 
-   const onSubmit = async (data) => {
-    //  console.log("🚀 Form Data Submitted:", data); 
+  const onSubmit = async (data) => {
+    if (timeLeft > 0) return;
+
     try {
-      // Call login method from context
       await login({
         username: data.username,
         password: data.password,
         finyear: data.fiscalYear,
       });
 
-      // Handle redirect after login
+      // Reset on Success
+      setFailedAttempts(0);
+      setLockoutTime(0);
+      localStorage.removeItem("login_failed_attempts");
+      localStorage.removeItem("login_lockout_until");
+
       const searchParams = new URLSearchParams(location.search);
       const redirect = searchParams.get("redirect");
       const finalRedirect =
-       redirect && redirect !== "null" && redirect !== "undefined"
-    ? redirect
-    : "/dashboards/home";
+        redirect && redirect !== "null" && redirect !== "undefined"
+          ? redirect
+          : "/dashboards/home";
       navigate(finalRedirect, { replace: true });
 
-
     } catch (err) {
+      // Increment failed attempts
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      localStorage.setItem("login_failed_attempts", newAttempts);
+
+      // Determine Lockout/Throttle time
+      let waitDuration = 0;
+      if (newAttempts >= 5) waitDuration = 30000; // 30s lockout
+      else if (newAttempts === 4) waitDuration = 5000; // 5s throttle
+      else if (newAttempts === 3) waitDuration = 2000; // 2s throttle
+
+      if (waitDuration > 0) {
+        const until = Date.now() + waitDuration;
+        setLockoutTime(until);
+        localStorage.setItem("login_lockout_until", until);
+      }
+
       setErrorMessage(
         err?.response?.data?.message || err?.message || "Login failed. Please try again."
       );
     }
   };
+
+  const isLocked = timeLeft > 0;
 
   return (
     <Page title="Login">
@@ -91,6 +135,7 @@ export default function SignIn() {
                   prefix={<EnvelopeIcon className="size-5" strokeWidth="1" />}
                   {...register("username")}
                   error={errors?.username?.message}
+                  disabled={isLocked}
                 />
                 <Input
                   label="Password"
@@ -99,13 +144,20 @@ export default function SignIn() {
                   prefix={<LockClosedIcon className="size-5" strokeWidth="1" />}
                   {...register("password")}
                   error={errors?.password?.message}
+                  disabled={isLocked}
                 />
               </div>
 
               <div className="mt-2">
-                <InputErrorMsg when={errorMessage}>
-                  {errorMessage}
-                </InputErrorMsg>
+                {isLocked ? (
+                  <div className="rounded bg-red-50 p-2 text-center text-xs font-medium text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                    Too many failed attempts. Please wait {timeLeft}s
+                  </div>
+                ) : (
+                  <InputErrorMsg when={errorMessage}>
+                    {errorMessage}
+                  </InputErrorMsg>
+                )}
               </div>
 
               <div className="mt-4">
@@ -113,9 +165,11 @@ export default function SignIn() {
                   Select Financial Year
                 </label>
                 <select
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-dark-300 dark:bg-dark-600 dark:text-dark-100"
+                  disabled={isLocked}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-dark-300 dark:bg-dark-600 dark:text-dark-100 disabled:opacity-60"
                   {...register("fiscalYear")}
                 >
+                  <option value="2026-27">FY 2026-27</option>
                   <option value="2025-26">FY 2025-26</option>
                   <option value="2024-25">FY 2024-25</option>
                   <option value="2023-24">FY 2023-24</option>
@@ -126,7 +180,7 @@ export default function SignIn() {
               </div>
 
               <div className="mt-4 flex items-center justify-between space-x-2">
-                <Checkbox label="Remember me" />
+                <Checkbox label="Remember me" disabled={isLocked} />
                 <a
                   href="##"
                   className="text-xs text-gray-400 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100"
@@ -135,8 +189,13 @@ export default function SignIn() {
                 </a>
               </div>
 
-              <Button type="submit" className="mt-5 w-full" color="primary">
-                Sign In
+              <Button
+                type="submit"
+                className="mt-5 w-full"
+                color="primary"
+                disabled={isLocked}
+              >
+                {isLocked ? `Locked (${timeLeft}s)` : "Sign In"}
               </Button>
             </form>
           </Card>

@@ -2,7 +2,7 @@
 import { Button, Input, Select } from "components/ui";
 import ReactSelect from "react-select";
 
-function PriceListSection({ 
+function PriceListSection({
   priceLists,
   errors,
   currencyOptions,
@@ -20,8 +20,8 @@ function PriceListSection({
     <>
       {/* Price Lists and Matrices */}
       {priceLists.map((price, priceIndex) => (
-        <div 
-          key={priceIndex} 
+        <div
+          key={priceIndex}
           className="col-span-1 md:col-span-2 border border-gray-300 p-4 rounded bg-gray-50 dark:bg-gray-800"
         >
           <div className="flex items-center justify-between">
@@ -130,6 +130,7 @@ function PriceListSection({
                 name="daysrequired"
                 placeholder="Enter Days Required"
                 type="number"
+                min="1"
                 value={price.daysrequired}
                 onChange={(e) => handlePriceListChange(priceIndex, e)}
                 className={errors[`price_${priceIndex}_daysrequired`] ? "border-red-500 bg-red-50" : ""}
@@ -256,6 +257,22 @@ function PriceListSection({
                       placeholder="Select Tolerance Type"
                     />
                   </div>
+
+                  <Input
+                    label="Discipline"
+                    placeholder="Enter Discipline"
+                    name="discipline"
+                    value={matrix.discipline || ''}
+                    onChange={(e) => handleMatrixChange(priceIndex, matrixIndex, e)}
+                  />
+
+                  <Input
+                    label="Group"
+                    placeholder="Enter Group"
+                    name="group"
+                    value={matrix.group || ''}
+                    onChange={(e) => handleMatrixChange(priceIndex, matrixIndex, e)}
+                  />
                 </div>
               </div>
             ))}

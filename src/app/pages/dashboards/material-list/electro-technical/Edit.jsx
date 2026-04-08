@@ -4,6 +4,8 @@ import { Button, Card } from "components/ui";
 import axios from 'utils/axios';
 import toast, { Toaster } from 'react-hot-toast';
 import clsx from 'clsx';
+import { Flatpickr } from 'components/shared/form/Flatpickr';
+import 'flatpickr/dist/themes/light.css';
 
 // ✅ FIXED Select Component - Loose comparison like PHP
 const Select = ({ options, value, onChange, placeholder, name, isSearchable = true, isLoading = false, disabled = false }) => {
@@ -28,7 +30,7 @@ const Select = ({ options, value, onChange, placeholder, name, isSearchable = tr
       <div
         className={clsx(
           "w-full p-2 border rounded focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 cursor-pointer dark:border-gray-700",
-          disabled 
+          disabled
             ? "bg-gray-100 dark:bg-dark-700 opacity-60 cursor-not-allowed border-gray-300"
             : "bg-white dark:bg-dark-800 border-gray-300"
         )}
@@ -56,7 +58,7 @@ const Select = ({ options, value, onChange, placeholder, name, isSearchable = tr
           </svg>
         </div>
       </div>
-      
+
       {isOpen && !isLoading && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto dark:bg-dark-800 dark:border-gray-700">
           {filteredOptions.map((option) => (
@@ -80,7 +82,7 @@ const Select = ({ options, value, onChange, placeholder, name, isSearchable = tr
 const Edit = () => {
   const navigate = useNavigate();
   const { id: instrumentId } = useParams();
-  
+
   const [formData, setFormData] = useState({
     category: '',
     productType: '',
@@ -187,7 +189,7 @@ const Edit = () => {
         if (instrumentData.category) {
           const subcategoriesRes = await axios.get('/inventory/subcategory-list');
           const subcategories = subcategoriesRes.data?.data || [];
-          
+
           const mappedSubcategories = subcategories.map(sub => ({
             value: String(sub.id),
             label: sub.name || sub.subcategory_name
@@ -254,7 +256,7 @@ const Edit = () => {
       ...prev,
       [name]: value
     }));
-    
+
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -266,16 +268,16 @@ const Edit = () => {
   const validateForm = () => {
     const newErrors = {};
     const missingFields = [];
-    
+
     Object.keys(requiredFields).forEach(field => {
       if (!formData[field] || formData[field].toString().trim() === '') {
         newErrors[field] = `${requiredFields[field]} is required`;
         missingFields.push(requiredFields[field]);
       }
     });
-    
+
     setErrors(newErrors);
-    
+
     if (missingFields.length > 0) {
       toast.error(
         <div>
@@ -292,21 +294,21 @@ const Edit = () => {
         { duration: 4000 }
       );
     }
-    
+
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ Helper function to convert date from Y-m-d to d/m/Y format (PHP expects this)
+  // ✅ Helper function to convert date into YYYY-MM-DD format (API expects this)
   const formatDateForAPI = (dateString) => {
     if (!dateString) return '';
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return '';
-      
+
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = date.getFullYear();
-      
+
       return `${day}/${month}/${year}`;
     } catch {
       return '';
@@ -322,6 +324,8 @@ const Edit = () => {
 
     try {
       setLoading(prev => ({ ...prev, submitting: true }));
+
+      const authToken = localStorage.getItem('authToken');
 
       const requestData = {
         id: parseInt(instrumentId),
@@ -349,18 +353,24 @@ const Edit = () => {
         WIreference: formData.wiReference || '',
         software: formData.softwareFirmwareDetails || '',
         Acceptance: formData.acceptanceCriteria || '',
-        instrumentlocation: formData.instrumentLocation,
+        instrumentlocation: String(formData.instrumentLocation), // Standardized to String
         qty: formData.qty ? parseInt(formData.qty) : 0
       };
 
       console.log('📤 Submitting update request:', requestData);
 
-      const response = await axios.post('/material/update-mm-instrument', requestData);
-      
+      const response = await axios.post('/material/update-mm-instrument', requestData, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
       console.log('✅ Update successful:', response.data);
-      
+
       toast.dismiss(loadingToast);
-      
+
       toast.success(
         <div>
           <strong>Success!</strong>
@@ -371,18 +381,18 @@ const Edit = () => {
           icon: '✅',
         }
       );
-      
+
       setTimeout(() => {
         console.log('🔄 Navigating back...');
         navigate(-1);
       }, 1500);
-      
+
     } catch (error) {
       console.error('❌ Update error:', error);
       console.error('❌ Error details:', error.response?.data);
-      
+
       toast.dismiss(loadingToast);
-      
+
       const errorMessage = error.response?.data?.message || 'Failed to update instrument. Please try again.';
       toast.error(
         <div>
@@ -478,7 +488,7 @@ const Edit = () => {
         <Card className="mt-4">
           <div className="p-6">
             <div className="space-y-6">
-              
+
               {/* Category - Disabled */}
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">
@@ -538,7 +548,7 @@ const Edit = () => {
                   Instrument Name <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="instrumentName"
                     value={formData.instrumentName}
@@ -554,7 +564,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Description</label>
                 <div className="col-span-9">
-                  <textarea 
+                  <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
@@ -569,7 +579,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Nick Name</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="nickName"
                     value={formData.nickName}
@@ -586,7 +596,7 @@ const Edit = () => {
                   ID No <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="idNo"
                     value={formData.idNo}
@@ -604,7 +614,7 @@ const Edit = () => {
                     New ID No
                   </label>
                   <div className="col-span-9">
-                    <input 
+                    <input
                       type="text"
                       value={formData.newIdNo}
                       readOnly
@@ -620,7 +630,7 @@ const Edit = () => {
                   Serial No <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="serialNo"
                     value={formData.serialNo}
@@ -635,7 +645,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Make</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="make"
                     value={formData.make}
@@ -649,10 +659,65 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Model</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="model"
                     value={formData.model}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Purchase Date */}
+              <div className="grid grid-cols-12 gap-4 items-start">
+                <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">
+                  Purchase Date <span className="text-red-500">*</span>
+                </label>
+                <div className="col-span-9">
+                  <Flatpickr
+                    name="purchaseDate"
+                    value={formData.purchaseDate}
+                    onChange={(_, dateStr) => {
+                      setFormData(prev => ({ ...prev, purchaseDate: dateStr }));
+                      if (errors.purchaseDate) setErrors(prev => ({ ...prev, purchaseDate: '' }));
+                    }}
+                    options={{
+                      altInput: true,
+                      altInputClass: "w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white",
+                      altFormat: "d/m/y",
+                      dateFormat: "Y-m-d",
+                      allowInput: true
+                    }}
+                    placeholder="dd/mm/yy"
+                    className="hidden"
+                  />
+                  {errors.purchaseDate && <p className="text-red-500 text-xs mt-1">{errors.purchaseDate}</p>}
+                </div>
+              </div>
+
+              {/* Name and Address of manufacturer */}
+              <div className="grid grid-cols-12 gap-4 items-start">
+                <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Name and Address of manufacturer</label>
+                <div className="col-span-9">
+                  <textarea 
+                    name="manufacturerDetails"
+                    value={formData.manufacturerDetails}
+                    onChange={handleInputChange}
+                    rows="3"
+                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none dark:border-gray-700 dark:bg-dark-800 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Batch no */}
+              <div className="grid grid-cols-12 gap-4 items-start">
+                <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Batch no</label>
+                <div className="col-span-9">
+                  <input 
+                    type="text"
+                    name="batchNo"
+                    value={formData.batchNo}
                     onChange={handleInputChange}
                     className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white"
                   />
@@ -663,7 +728,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Instrument Range</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="instrumentRange"
                     value={formData.instrumentRange}
@@ -677,7 +742,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Accuracy</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="accuracy"
                     value={formData.accuracy}
@@ -691,7 +756,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Leastcount</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="leastCount"
                     value={formData.leastCount}
@@ -705,7 +770,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Frequency of calibration if required</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="calibrationFrequency"
                     value={formData.calibrationFrequency}
@@ -720,12 +785,21 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">MFD Date</label>
                 <div className="col-span-9">
-                  <input 
-                    type="date"
+                  <Flatpickr
                     name="mfdDate"
                     value={formData.mfdDate}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white"
+                    onChange={(_, dateStr) => {
+                      setFormData(prev => ({ ...prev, mfdDate: dateStr }));
+                    }}
+                    options={{
+                      altInput: true,
+                      altInputClass: "w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white",
+                      altFormat: "d/m/y",
+                      dateFormat: "Y-m-d",
+                      allowInput: true
+                    }}
+                    placeholder="dd/mm/yy"
+                    className="hidden"
                   />
                 </div>
               </div>
@@ -734,10 +808,33 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Expiry Date</label>
                 <div className="col-span-9">
-                  <input 
-                    type="date"
+                  <Flatpickr
                     name="expiryDate"
                     value={formData.expiryDate}
+                    onChange={(_, dateStr) => {
+                      setFormData(prev => ({ ...prev, expiryDate: dateStr }));
+                    }}
+                    options={{
+                      altInput: true,
+                      altInputClass: "w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white",
+                      altFormat: "d/m/y",
+                      dateFormat: "Y-m-d",
+                      allowInput: true
+                    }}
+                    placeholder="dd/mm/yy"
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Qty */}
+              <div className="grid grid-cols-12 gap-4 items-start">
+                <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Qty</label>
+                <div className="col-span-9">
+                  <input 
+                    type="number"
+                    name="qty"
+                    value={formData.qty}
                     onChange={handleInputChange}
                     className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none dark:border-gray-700 dark:bg-dark-800 dark:text-white"
                   />
@@ -782,7 +879,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">WI Reference</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="wiReference"
                     value={formData.wiReference}
@@ -796,7 +893,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Software / Firmware details</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="softwareFirmwareDetails"
                     value={formData.softwareFirmwareDetails}
@@ -810,7 +907,7 @@ const Edit = () => {
               <div className="grid grid-cols-12 gap-4 items-start">
                 <label className="col-span-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">Acceptance Criteria (KTRC/QF/0704/07)</label>
                 <div className="col-span-9">
-                  <input 
+                  <input
                     type="text"
                     name="acceptanceCriteria"
                     value={formData.acceptanceCriteria}
@@ -824,7 +921,7 @@ const Edit = () => {
 
             {/* Submit Button */}
             <div className="flex justify-end mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Button 
+              <Button
                 onClick={handleSubmit}
                 color="primary"
                 className="px-6 py-2 bg-green-500 hover:bg-green-600"

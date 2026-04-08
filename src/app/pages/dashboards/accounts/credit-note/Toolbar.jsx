@@ -11,6 +11,9 @@ export function Toolbar({ table }) {
   const isFullScreenEnabled = table.getState().tableSettings.enableFullScreen;
   const navigate = useNavigate();
 
+  const permissions =
+    localStorage.getItem("userPermissions")?.split(",").map(Number) || [];
+
   return (
     <div className="table-toolbar">
       <div
@@ -22,13 +25,15 @@ export function Toolbar({ table }) {
         <h2 className="text-xl font-semibold tracking-wide text-gray-800 dark:text-dark-50">
           Credit Note List
         </h2>
-        <Button
-          onClick={() => navigate("/dashboards/accounts/credit-note/add")}
-          className="h-9 rounded-md px-4 text-sm font-medium"
-          color="primary"
-        >
-          + New Credit Note
-        </Button>
+        {permissions.includes(335) && (
+          <Button
+            onClick={() => navigate("/dashboards/accounts/credit-note/add")}
+            className="h-9 rounded-md px-4 text-sm font-medium"
+            color="primary"
+          >
+            + New Credit Note
+          </Button>
+        )}
       </div>
 
       <div

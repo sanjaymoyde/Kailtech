@@ -1,19 +1,9 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { RowActions } from "./RowActions";
-import {
-  SelectCell,
-  SelectHeader,
-} from "components/shared/table/SelectCheckbox";
 
 const columnHelper = createColumnHelper();
 
 export const columns = [
-  // ✅ Select Checkbox
-  columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
 
   // ✅ Serial Number
   // columnHelper.accessor((_row, index) => index + 1, {

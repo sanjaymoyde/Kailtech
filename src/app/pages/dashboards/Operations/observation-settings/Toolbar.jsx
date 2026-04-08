@@ -1,5 +1,5 @@
 // Import Dependencies
-import {MagnifyingGlassIcon} from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 // import { TbUpload } from "react-icons/tb";
 import clsx from "clsx";
 import {
@@ -23,7 +23,7 @@ import { useBreakpointsContext } from "app/contexts/breakpoint/context";
 export function Toolbar({ table }) {
   const { isXs } = useBreakpointsContext();
   const isFullScreenEnabled = table.getState().tableSettings.enableFullScreen;
-  
+
 
   return (
     <div className="table-toolbar">
@@ -33,25 +33,25 @@ export function Toolbar({ table }) {
           isFullScreenEnabled ? "px-4 sm:px-5" : "px-(--margin-x) pt-4",
         )}
       >
-          {/*  */}
+        {/*  */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           {/* Heading */}
           <div className="min-w-0">
             <h2 className="text-xl font-semibold tracking-wide text-gray-800 dark:text-dark-50">
-            Observation Settings
+              Observation Settings
             </h2>
           </div>
           {/* ADD BUTTON */}
           <div className="flex items-center space-x-3">
-            <Button 
-            onClick={() => window.location.href="/dashboards/Operations/observation-settings/create"}
-            variant="solid" className="btn-base btn bg-indigo-500  text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            color="primary" >
+            <Button
+              onClick={() => window.location.href = "/dashboards/Operations/observation-settings/create"}
+              variant="solid" className="btn-base btn bg-blue-600  text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              color="primary" >
               + Add New Observation
             </Button>
           </div>
         </div>
-        
+
         {isXs ? (
           <Menu as="div" className="relative inline-block text-left">
             <MenuButton
@@ -77,7 +77,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>+ Add New Unittype/ Parameter</span>
@@ -90,7 +90,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>Share</span>
@@ -103,7 +103,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>Print</span>
@@ -117,7 +117,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>Import Orders</span>
@@ -131,7 +131,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>Export as PDF</span>
@@ -144,7 +144,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>Export as CSV</span>
@@ -157,7 +157,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>Save Table as View</span>
@@ -168,10 +168,10 @@ export function Toolbar({ table }) {
           </Menu>
         ) : (
           <div className="flex space-x-2 ">
-          
 
-          
-            
+
+
+
           </div>
         )}
       </div>
@@ -193,7 +193,7 @@ export function Toolbar({ table }) {
               isFullScreenEnabled ? "px-4 sm:px-5" : "px-(--margin-x)",
             )}
           >
-          
+
           </div>
         </>
       ) : (
@@ -210,10 +210,10 @@ export function Toolbar({ table }) {
         >
           <div className="flex shrink-0 space-x-2 ">
             <SearchInput table={table} />
-            
+
           </div>
 
-          
+
         </div>
       )}
     </div>

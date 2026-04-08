@@ -2,30 +2,105 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import dayjs from "dayjs";
+
 import axios from "utils/axios";
 
 // Local Imports
 import { Page } from "components/shared/Page";
-import { JWT_HOST_API } from "configs/auth.config";
+import appLogo from "assets/logo.png";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import ExportToPdfConsentLetter from "./ExportToPdfConsentLetter";
 
-// ----------------------------------------------------------------------
+// --- Capture PDF Helper ---
+async function toBase64(url) {
+  if (!url) return "";
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      try {
+        resolve(canvas.toDataURL("image/png"));
+      } catch (err) {
+        console.error("Canvas toDataURL failed:", err);
+        resolve("");
+      }
+    };
+    img.onerror = () => {
+      console.error("Signature image load failed via Canvas:", url);
+      resolve("");
+    };
+    // Add cache buster to help bypass CORS/Cache issues
+    img.src = `${url}${url.includes('?') ? '&' : '?'}v_cb=${Date.now()}`;
+  });
+}
+
+async function capturePdf(printRef, filename) {
+  try {
+    const el = printRef.current;
+    el.style.display = "block";
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      onclone: (clonedDoc) => {
+        clonedDoc.querySelectorAll('style').forEach(st => {
+          if (st.innerHTML.includes('oklch')) {
+            st.innerHTML = st.innerHTML.replace(/oklch\([^)]+\)/g, 'rgb(0,0,0)');
+          }
+        });
+        const clonedEl = clonedDoc.querySelector(`[data-export-root]`) || clonedDoc.body;
+        clonedEl.style.display = "block";
+      }
+    });
+    el.style.display = "none";
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    pdf.addImage(canvas.toDataURL("image/jpeg", 1.0), "JPEG", 0, 0, pageW, pageH);
+    pdf.save(filename);
+  } catch (err) {
+    console.error("PDF generation failed:", err);
+    toast.error("Failed to generate PDF locally.");
+  }
+}
 
 export default function ViewConsentLetter() {
   const navigate = useNavigate();
   const { id } = useParams();
   const printRef = useRef();
+  const exportRef = useRef();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [companyInfo, setCompanyInfo] = useState(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [logoBase64, setLogoBase64] = useState("");
+  const [sigBase64, setSigBase64] = useState("");
 
   useEffect(() => {
-    axios
-      .get(`/consent-letters/${id}`)
+    toBase64(appLogo).then(setLogoBase64);
+    axios.get("/get-company-info")
+      .then(res => setCompanyInfo(res.data?.data))
+      .catch(err => console.error("Failed to load company info:", err));
+  }, []);
+
+  useEffect(() => {
+    axios.get(`/accounts/view-consentletter/${id}`)
       .then((res) => {
         const d = Array.isArray(res.data) ? res.data[0] : res.data?.data ?? res.data;
-        if (d) setData(d);
-        else toast.error("Consent letter not found.");
+        if (d) {
+          setData(d);
+          if (d.digital_signature) {
+            toBase64(d.digital_signature).then(setSigBase64);
+          }
+        } else toast.error("Consent letter not found.");
       })
       .catch((err) => {
         console.error("Failed to load consent letter:", err);
@@ -34,171 +109,149 @@ export default function ViewConsentLetter() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleExportPdf = () => {
-    const base = JWT_HOST_API.replace(/\/api\/?$/, "");
-    const pdfUrl = `${base}/exporttopdfconsentletter.php?hakuna=${id}`;
-    const newTab = window.open(pdfUrl, "_blank", "noopener,noreferrer");
-    if (!newTab) {
-      toast.error("Popup blocked. Please allow popups for this site.");
-    }
+  const handleExportPdf = async () => {
+    if (!exportRef.current) return;
+    setPdfBusy(true);
+    await capturePdf(exportRef, `ConsentLetter_${data?.conosentletterno || id}.pdf`);
+    setPdfBusy(false);
   };
 
-  if (loading) {
-    return (
-      <Page title="View Consent Letter">
-        <div className="flex h-[60vh] items-center justify-center text-gray-500">
-          Loading...
-        </div>
-      </Page>
-    );
-  }
+  if (loading) return <Page title="View Consent Letter"><div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">Loading...</div></Page>;
+  if (!data) return <Page title="View Consent Letter"><div className="flex h-[60vh] items-center justify-center text-gray-500">No data found.</div></Page>;
 
-  if (!data) {
-    return (
-      <Page title="View Consent Letter">
-        <div className="flex h-[60vh] items-center justify-center text-gray-500">
-          No data found.
-        </div>
-      </Page>
-    );
-  }
-
-  const formattedDate = dayjs(data.consentletterdate).format("DD.MM.YYYY");
-  const isDraft = data.status === 0;
+  const isDraft = data.status === 0 || data.status === "0";
 
   return (
     <Page title="View Consent Letter">
       <div className="p-4 sm:p-6">
-        {/* Draft watermark — mirrors PHP's status==0 background-image: draft.png */}
         <style>{`
           @media print {
-            .print\\:hidden { display: none !important; }
+            .print\\:hidden, .sidebar-panel, .app-header { display: none !important; }
             .draft-watermark {
-              background-image: url("/images/draft.png");
-              background-repeat: no-repeat;
-              background-position: center;
+              background-image: url("/images/draft.png") !important;
+              background-repeat: no-repeat !important;
+              background-position: center !important;
             }
           }
         `}</style>
+
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 print:hidden">
-          <h1 className="text-xl font-semibold text-gray-800 dark:text-dark-50">
-            View Consent Letter
-          </h1>
+          <div style={{ position: "absolute", top: -9999, left: -9999, zIndex: -1 }}>
+            <div ref={exportRef} style={{ display: "none" }} data-export-root>
+              <ExportToPdfConsentLetter
+                data={data}
+                companyInfo={companyInfo}
+                logoBase64={logoBase64}
+                sigBase64={sigBase64}
+                withLH={true}
+              />
+            </div>
+          </div>
+
+          <h1 className="text-xl font-semibold text-gray-800 dark:text-dark-50">View Consent Letter</h1>
           <div className="flex gap-2">
-            <button
-              onClick={handleExportPdf}
-              className="rounded bg-primary-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
-            >
-              Export to PDF
+            <button onClick={handleExportPdf} disabled={pdfBusy} className="rounded bg-primary-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
+              {pdfBusy ? "Exporting..." : "Export to PDF"}
             </button>
-            <button
-              onClick={() => window.print()}
-              className="rounded bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700"
-            >
-              Download Consent Letter
+            <button onClick={() => window.print()} className="rounded bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700">
+              Print Consent Letter
             </button>
-            <button
-              onClick={() => navigate("/dashboards/accounts/consent-letter")}
-              className="rounded border border-gray-300 bg-primary-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
-            >
+            <button onClick={() => navigate("/dashboards/accounts/consent-letter")} className="rounded border border-gray-300 bg-primary-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-700">
               &laquo; Back to List
             </button>
           </div>
         </div>
 
-        <div
-          ref={printRef}
-          className={`relative mx-auto max-w-4xl rounded border border-gray-200 bg-white p-8 dark:border-dark-600 dark:bg-dark-800 print:border-0 print:p-0 ${isDraft ? "draft-watermark" : ""}`}
-        >
-          <div className="flex items-start justify-between border-b border-gray-300 pb-4">
+        <div ref={printRef} className={`relative mx-auto max-w-4xl rounded border border-gray-200 bg-white p-8 dark:border-dark-600 dark:bg-dark-800 print:border-0 print:p-0 ${isDraft ? "draft-watermark" : ""}`}>
+          {/* Header: Logo (col-xs-3) + Info (col-xs-9) */}
+          <div className="mb-8 flex items-start border-gray-100 pb-4">
             <div className="w-1/4">
-              {data.company_logo ? (
-                <img
-                  src={data.company_logo}
-                  alt="Company Logo"
-                  className="max-h-20 object-contain"
-                />
-              ) : (
-                <div className="flex h-16 w-32 items-center justify-center rounded border border-dashed border-gray-300 text-xs text-gray-400">
-                  Logo
-                </div>
-              )}
-            </div>
-            <div className="w-3/4 text-right">
-              <p className="font-mono text-sm italic text-gray-600 dark:text-dark-300">
-                NABL Accredited as per IS/ISO/IEC 17025 (Certificate Nos. TC-7832 & CC-2348),
-                <br />
-                BIS Recognized & ISO 9001 Certified Test & Calibration Laboratory
-              </p>
-              <h2 className="mt-1 text-lg font-bold text-blue-900 dark:text-blue-300">
-                {data.company_name}
-              </h2>
-            </div>
-          </div>
-
-          {data.letterhead_footer && (
-            <div className="hidden print:block print:absolute print:bottom-0 print:left-0 print:w-full">
               <img
-                src={data.letterhead_footer}
-                alt="Letterhead Footer"
-                className="w-full"
+                src={companyInfo?.branding?.logo || data.company_logo || appLogo}
+                alt="Logo"
+                className="max-h-[90px] object-contain"
               />
             </div>
-          )}
-
-          <div className="mt-6 flex justify-end">
-            <div className="text-right text-sm">
-              <p className="font-medium">{data.conosentletterno}</p>
-              <p className="text-gray-600 dark:text-dark-300">{formattedDate}</p>
+            <div className="w-3/4 text-right">
+              <div className="font-mono text-[13px] italic leading-tight text-black opacity-80">
+                NABL Accredited as per IS/ISO/IEC 17025 (Certificate Nos. TC-7832 &amp; CC-2348),<br />
+                BIS Recognized &amp; ISO 9001 Certified Test &amp; Calibration Laboratory
+              </div>
+              <h1 className="mt-2 text-2xl font-bold text-[#000080]">
+                {companyInfo?.company?.name || data.company_name || "KAILTECH TEST & RESEARCH CENTRE PVT. LTD."}
+              </h1>
             </div>
           </div>
 
-          <div className="mt-4 pl-8 text-sm">
-            <p className="font-bold">{data.customername}</p>
-            <p className="mt-1 whitespace-pre-line text-gray-700 dark:text-dark-300">
+          {/* Header Tier 3: Document Title (Visible only in Print/PDF) */}
+          <div className="mb-6 text-center hidden print:block">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-900 border-b border-gray-100 pb-2">
+              CONSENT LETTER
+            </h2>
+          </div>
+
+          {/* Metadata (Right Aligned) */}
+          <div className="mb-6 flex justify-end">
+            <div className="text-right text-[13px] leading-relaxed">
+              <p className="font-semibold">{data.conosentletterno}</p>
+              <p>{data.datedon}</p>
+            </div>
+          </div>
+
+          {/* Customer Information (Left Aligned) */}
+          <div className="mb-8 max-w-[70%]">
+            <h2 className="text-[14px] font-bold uppercase text-gray-900 leading-tight">
+              {data.customername}
+            </h2>
+            <p className="mt-1 text-[13px] leading-snug text-gray-600">
               {data.customeraddress}
             </p>
           </div>
 
-          <div className="mt-6 pl-8 pr-4 text-sm leading-7 text-gray-800 dark:text-dark-100">
+          {/* Body text */}
+          <div className="mt-8 text-[14px] leading-relax text-gray-800 dark:text-dark-100 pr-4">
             <p>Dear Sir,</p>
             <br />
             <p>With reference to your email regarding the consent letter.</p>
             <br />
-            <p>
-              We intimate you that we have fully equipped laboratory for the
-              complete testing as per <strong>{data.standard_name}</strong> {data.remark}
+            <p className="text-justify">
+              We intimate you that we have fully equipped laboratory for the complete testing as per <strong>{data.standard}</strong> {data.remark}
             </p>
             <br />
-            <p>
-              We hereby give consent for complete testing as per <strong>{data.standard_name}</strong>
-              as and when the sample is provided by you on chargeable basis. {data.remark2}
+            <p className="text-justify">
+              We hereby give consent for complete testing as per <strong>{data.standard}</strong> as and when the sample is provided by you on chargeable basis. {data.remark2}
             </p>
             <br />
             <p>Assuring you of the best services at our end.</p>
-            <br />
             <p>Please feel free to contact us for any of your query.</p>
-            <br />
-            <p className="font-bold">{data.company_name}</p>
           </div>
 
-          {data.approved_by_name && (
-            <div className="mt-8 pl-8">
-              {data.digital_sign_url ? (
+          {/* Footer Signature Block (Left Aligned) */}
+          <div className="mt-12 text-left relative min-h-[100px]">
+            <p className="text-sm font-bold text-gray-900 mb-1">
+              {companyInfo?.company?.name || data.company_name || "KAILTECH TEST & RESEARCH CENTRE PVT. LTD."}
+            </p>
+
+            {data.digital_signature ? (
+              <div className="mt-2 opacity-100">
                 <img
-                  src={data.digital_sign_url}
-                  alt="Digital Signature"
-                  className="max-h-24"
+                  src={data.digital_signature}
+                  alt="Signature"
+                  className="max-h-[110px] object-contain"
                 />
-              ) : (
-                <div className="rounded border border-dashed border-gray-300 p-3 text-xs text-gray-500 dark:border-dark-500">
-                  <p>Electronically signed by</p>
-                  <p className="font-medium">{data.approved_by_name}</p>
-                  <p>{data.approved_by_designation}</p>
-                  <p>{data.approved_by_empid}</p>
-                  <p>{data.approved_on}</p>
-                </div>
-              )}
+              </div>
+            ) : (
+              <div className="mt-1 font-mono text-[12px] leading-tight text-gray-800 whitespace-pre-line">
+                <p>Electronically signed by</p>
+                <p>{data.approved_by_name || "Authorized Signatory"}</p>
+                <p>{data.datedon || ""}</p>
+              </div>
+            )}
+          </div>
+
+          {data.letterhead_footer && (
+            <div className="hidden print:block absolute bottom-0 left-0 w-full">
+              <img src={data.letterhead_footer} alt="Letterhead Footer" className="w-full" />
             </div>
           )}
         </div>

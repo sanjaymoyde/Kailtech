@@ -265,9 +265,9 @@ const Calibratestep2 = () => {
                             // Unit ka data find karo unitsList se
                             const unitData = data.data.units.find(u => u.id == unitId);
 
-                            // Unit name aur description prepare karo
+                            // Prepare Unit name and description
                             // const unitName = unitData ? unitData.name : 'N/A';
-                            // API se unitName directly use karo agar available hai
+                            // Use unitName directly from API if available
                             const unitName = point.unitName || (unitData ? unitData.name : 'N/A');
 
 
@@ -277,7 +277,7 @@ const Calibratestep2 = () => {
                                 id: point.id,
                                 calibpointid: point.id,
                                 label: `(${index + 1}). ${point.point} ${unitName} (${unitType})${point.matrixtype && point.matrixtype !== 'N.A.' ? ' ' + point.matrixtype : ''}`,
-                                masterUnit: unitId, // Yeh value pre-set hogi
+                                masterUnit: unitId, // This value will be pre-set
                                 masterMode: point.mastermode || 'Not Specified',
                                 masters: [],
                                 supportMasterMode: point.supportmastermode || 'Not Specified',
@@ -291,7 +291,7 @@ const Calibratestep2 = () => {
 
                         setCalibPointsState(initialCalibPoints);
 
-                        // Select For All Point ke liye bhi first point ka unit set karo
+                        // Set unit for Select For All Point
                         if (initialCalibPoints.length > 0 && initialCalibPoints[0].masterUnit) {
                             setSelectForAllPoint(prev => ({
                                 ...prev,
@@ -708,16 +708,16 @@ const Calibratestep2 = () => {
                 }
 
                 if (response.data.errors) {
-                  if (Array.isArray(response.data.errors)) {
-                    newGeneralErrors.push(...response.data.errors);
-                  } else if (typeof response.data.errors === "object") {
-                    newFieldErrors = response.data.errors;
-                    // ADD THIS: flatten field errors into general errors too
-                    Object.values(response.data.errors).forEach((errArr) => {
-                      if (Array.isArray(errArr))
-                        newGeneralErrors.push(...errArr);
-                    });
-                  }
+                    if (Array.isArray(response.data.errors)) {
+                        newGeneralErrors.push(...response.data.errors);
+                    } else if (typeof response.data.errors === "object") {
+                        newFieldErrors = response.data.errors;
+                        // ADD THIS: flatten field errors into general errors too
+                        Object.values(response.data.errors).forEach((errArr) => {
+                            if (Array.isArray(errArr))
+                                newGeneralErrors.push(...errArr);
+                        });
+                    }
                 }
 
                 setGeneralErrors(newGeneralErrors);
@@ -726,57 +726,57 @@ const Calibratestep2 = () => {
                 toast.error('Please fix the errors and try again');
             }
         } catch (err) {
-          console.error("Error submitting step2 data:", err);
+            console.error("Error submitting step2 data:", err);
 
-          let newGeneralErrors = [];
-          let newFieldErrors = {};
+            let newGeneralErrors = [];
+            let newFieldErrors = {};
 
-          // WITH THIS:
-          const errData =
-            err.response?.data ||
-            err.data ||
-            (typeof err === "object" && err?.message ? err : null);
-          if (errData) {
-            if (errData.message) {
-              newGeneralErrors.push(errData.message);
-            }
-            if (errData.errors) {
-              if (Array.isArray(errData.errors)) {
-                newGeneralErrors.push(...errData.errors);
-              } else if (typeof errData.errors === "object") {
-                newFieldErrors = errData.errors;
-                Object.values(errData.errors).forEach((errArr) => {
-                  if (Array.isArray(errArr)) newGeneralErrors.push(...errArr);
-                });
-              }
-            }
-            if (
-              newGeneralErrors.length === 0 &&
-              Object.keys(newFieldErrors).length === 0
-            ) {
-              newGeneralErrors.push("Server error occurred. Please try again.");
-            }
-          } else if (err.request) {
-            newGeneralErrors.push(
-              "Network Error: Please check your connection",
-            );
-          } else {
-            // Try to extract from err directly
-            if (
-              err?.response?.data?.errors &&
-              Array.isArray(err.response.data.errors)
-            ) {
-              newGeneralErrors.push(...err.response.data.errors);
-            } else if (err?.response?.data?.message) {
-              newGeneralErrors.push(err.response.data.message);
+            // WITH THIS:
+            const errData =
+                err.response?.data ||
+                err.data ||
+                (typeof err === "object" && err?.message ? err : null);
+            if (errData) {
+                if (errData.message) {
+                    newGeneralErrors.push(errData.message);
+                }
+                if (errData.errors) {
+                    if (Array.isArray(errData.errors)) {
+                        newGeneralErrors.push(...errData.errors);
+                    } else if (typeof errData.errors === "object") {
+                        newFieldErrors = errData.errors;
+                        Object.values(errData.errors).forEach((errArr) => {
+                            if (Array.isArray(errArr)) newGeneralErrors.push(...errArr);
+                        });
+                    }
+                }
+                if (
+                    newGeneralErrors.length === 0 &&
+                    Object.keys(newFieldErrors).length === 0
+                ) {
+                    newGeneralErrors.push("Server error occurred. Please try again.");
+                }
+            } else if (err.request) {
+                newGeneralErrors.push(
+                    "Network Error: Please check your connection",
+                );
             } else {
-              newGeneralErrors.push("Error saving data. Please try again.");
+                // Try to extract from err directly
+                if (
+                    err?.response?.data?.errors &&
+                    Array.isArray(err.response.data.errors)
+                ) {
+                    newGeneralErrors.push(...err.response.data.errors);
+                } else if (err?.response?.data?.message) {
+                    newGeneralErrors.push(err.response.data.message);
+                } else {
+                    newGeneralErrors.push("Error saving data. Please try again.");
+                }
             }
-          }
 
-          setGeneralErrors(newGeneralErrors);
-          setFieldErrors(newFieldErrors);
-          toast.error("Error occurred while submitting");
+            setGeneralErrors(newGeneralErrors);
+            setFieldErrors(newFieldErrors);
+            toast.error("Error occurred while submitting");
         } finally {
             setIsSubmitting(false);
         }
@@ -1310,14 +1310,14 @@ const Calibratestep2 = () => {
                                     </div>
                                     <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-300 space-y-1">
                                         {generalErrors.map((error, index) => (
-                                                <li key={index}>
-                                                    {error === 'Validation failed' ? null : (
-                                                        <span>
-                                                            <strong>⚠</strong> {error.replace('is not valid with provided masterss', 'has no valid master selected')}
-                                                        </span>
-                                                    )}
-                                                </li>
-                                            ))}
+                                            <li key={index}>
+                                                {error === 'Validation failed' ? null : (
+                                                    <span>
+                                                        <strong>⚠</strong> {error.replace('is not valid with provided masterss', 'has no valid master selected')}
+                                                    </span>
+                                                )}
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
                             )}

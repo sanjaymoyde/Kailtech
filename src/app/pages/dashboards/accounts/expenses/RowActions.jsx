@@ -31,18 +31,18 @@ import { useNavigate } from "react-router";
 const confirmMessages = {
   pending: {
     description:
-      "Are you sure you want to delete this modes? Once deleted, it cannot be restored.",
+      "Are you sure you want to delete this expense? Once deleted, it cannot be restored.",
   },
   success: {
-    title: "modes Deleted",
+    title: "Expense Deleted",
   },
 };
 
 export function RowActions({ row, table }) {
   const navigate = useNavigate(); // 👈 Hook
    const handleEdit = () => {
-    const id = row.original.id; // 👈 your API data should return "id"
-    navigate(`/dashboards/master-data/modes/edit/${id}`);
+    const id = row.original.id; 
+    navigate(`/dashboards/accounts/expenses/edit/${id}`);
   };
 
 

@@ -537,7 +537,9 @@ export default function EditTestPermissibleValue() {
         });
 
         setTimeout(() => {
-          navigate("/dashboards/testing/test-permissible-values");
+          navigate("/dashboards/testing/test-permissible-values", { 
+            state: { updatedId: parseInt(id) } 
+          });
         }, 1500);
       } else {
         toast.error(result.message || "Failed to update test permissible value ❌");

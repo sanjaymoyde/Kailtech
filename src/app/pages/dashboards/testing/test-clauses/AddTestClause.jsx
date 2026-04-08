@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { useState } from "react";
 import { Button, Input } from "components/ui";
 import { Page } from "components/shared/Page";
-import axios from "utils/axios"; 
+import axios from "utils/axios";
 import { toast } from "sonner";
 
 export default function AddModes() {
@@ -20,7 +20,7 @@ export default function AddModes() {
       ...prev,
       [name]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -33,15 +33,15 @@ export default function AddModes() {
   // Custom validation function
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = "This is required field";
     }
-    
+
     if (!formData.description.trim()) {
       newErrors.description = "This is required field";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -49,12 +49,12 @@ export default function AddModes() {
   // ✅ Form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form before submitting
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -62,7 +62,7 @@ export default function AddModes() {
       form.append("name", formData.name);
       form.append("description", formData.description);
 
-      await axios.post("/testing/add-clauses", form); 
+      await axios.post("/testing/add-clauses", form);
 
       toast.success("Test clause created successfully ✅", {
         duration: 1000,
@@ -101,10 +101,10 @@ export default function AddModes() {
             <Input
               label=" Name"
               name="name"
-              placeholder="Enter grade name"
+              placeholder="Clause Name"
               value={formData.name}
               onChange={handleChange}
-              // removed required attribute
+            // removed required attribute
             />
             {errors.name && (
               <p className="text-red-500 text-sm mt-1">{errors.name}</p>
@@ -115,10 +115,10 @@ export default function AddModes() {
             <Input
               label="Description"
               name="description"
-              placeholder="Enter grade description"
+              placeholder="Clause Description"
               value={formData.description}
               onChange={handleChange}
-              // removed required attribute
+            // removed required attribute
             />
             {errors.description && (
               <p className="text-red-500 text-sm mt-1">{errors.description}</p>

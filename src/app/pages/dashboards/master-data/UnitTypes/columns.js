@@ -3,22 +3,13 @@ import { createColumnHelper } from "@tanstack/react-table";
 
 // Local Imports
 import { RowActions } from "./RowActions";
-import {
-  SelectCell,
-  SelectHeader,
-} from "components/shared/table/SelectCheckbox";
 
 // ----------------------------------------------------------------------
 
 const columnHelper = createColumnHelper();
 
 export const columns = [
-  // ✅ Checkbox Selection
-  columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
+
 
   // ✅ S No (Index)
   columnHelper.accessor((_row, index) => index + 1, {
@@ -31,6 +22,11 @@ export const columns = [
   columnHelper.accessor("name", {
     id: "name",
     header: "Name",
+    sortingFn: (rowA, rowB, columnId) => {
+      const a = rowA.getValue(columnId)?.toString().trim() || "";
+      const b = rowB.getValue(columnId)?.toString().trim() || "";
+      return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+    },
   }),
 
   // ✅ Description Column

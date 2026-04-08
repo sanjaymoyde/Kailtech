@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "utils/axios";
+import Select from "react-select";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SEALED_OPTIONS = [
@@ -269,7 +270,6 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
         setSubmitError("Failed to load item details.");
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isClone, cloneId, isEdit, itemId]);
 
   useEffect(() => {
@@ -316,7 +316,6 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
       finally { setLoadingGradeSize(false); }
     };
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.product]);
 
   // ── 5. Product + package_type → package list ──────────────────────────────
@@ -417,9 +416,16 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = () => {
-    const required = ["product","brand","qrcode","testrequest","grade","size","package","isok","disposable","condition","specification","conformity"];
+    const required = ["product","brand","grade","size","package","isok","disposable","condition","specification","conformity"];
     const errs = {};
     required.forEach((f) => { if (!form[f] && form[f] !== 0) errs[f] = "This is a required field"; });
+    
+    // Validate received quantities - at least one must be > 0
+    const totalReceived = received.reduce((sum, v) => sum + (Number(v) || 0), 0);
+    if (quantities.length > 0 && totalReceived === 0) {
+      errs.received = "At least one received quantity must be greater than 0";
+    }
+    
     return errs;
   };
 
@@ -523,14 +529,59 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
       {/* ════ SECTION 1 — Product ════ */}
       <div>
         <label className={labelCls}>Product <span className="text-red-500">*</span></label>
-        <select name="product" className={sCls(errors.product)} value={form.product} onChange={handleChange}>
-          <option value="">Select Product</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}{p.description ? ` (${p.description})` : ""}
-            </option>
-          ))}
-        </select>
+        <Select
+          options={products.map((p) => ({
+            value: String(p.id),
+            label: `${p.name}${p.description ? ` (${p.description})` : ""}`
+          }))}
+          value={products.map((p) => ({
+            value: String(p.id),
+            label: `${p.name}${p.description ? ` (${p.description})` : ""}`
+          })).find(opt => opt.value === String(form.product)) || null}
+          onChange={(selectedOption) => {
+            const value = selectedOption ? selectedOption.value : "";
+            setForm((prev) => ({ ...prev, product: value }));
+            setErrors((prev) => ({ ...prev, product: "" }));
+          }}
+          placeholder="Search and select product..."
+          isClearable
+          isSearchable
+          styles={{
+            control: (base, state) => ({
+              ...base,
+              minHeight: "42px",
+              borderColor: errors.product
+                ? "#ef4444"
+                : state.isFocused
+                  ? "#3b82f6"
+                  : "rgb(209 213 219)",
+              boxShadow: errors.product
+                ? "0 0 0 1px #ef4444"
+                : state.isFocused
+                  ? "0 0 0 2px rgb(59 130 246 / 0.5)"
+                  : "none",
+              "&:hover": { borderColor: errors.product ? "#ef4444" : "#3b82f6" },
+              backgroundColor: "white",
+              borderRadius: "0.5rem",
+            }),
+            menu: (base) => ({ ...base, borderRadius: "0.5rem", zIndex: 9999 }),
+            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            placeholder: (base) => ({ ...base, color: "#9ca3af", fontSize: "0.875rem" }),
+            singleValue: (base) => ({ ...base, fontSize: "0.875rem" }),
+            option: (base, state) => ({
+              ...base,
+              fontSize: "0.875rem",
+              backgroundColor: state.isSelected
+                ? "#3b82f6"
+                : state.isFocused
+                  ? "#eff6ff"
+                  : "white",
+              color: state.isSelected ? "white" : "#374151",
+              "&:active": { backgroundColor: "#bfdbfe" },
+            }),
+          }}
+          menuPortalTarget={document.body}
+        />
         {errors.product && <p className={errCls}>{errors.product}</p>}
       </div>
 
@@ -542,12 +593,12 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
           {errors.brand && <p className={errCls}>{errors.brand}</p>}
         </div>
         <div>
-          <label className={labelCls}>QR Code <span className="text-red-500">*</span></label>
+          <label className={labelCls}>QR Code</label>
           <input name="qrcode" className={iCls(errors.qrcode)} value={form.qrcode} onChange={handleChange} placeholder="QR Code" />
           {errors.qrcode && <p className={errCls}>{errors.qrcode}</p>}
         </div>
         <div>
-          <label className={labelCls}>Test Request <span className="text-red-500">*</span></label>
+          <label className={labelCls}>Test Request</label>
           <input name="testrequest" className={iCls(errors.testrequest)} value={form.testrequest} onChange={handleChange} placeholder="Test Request" />
           {errors.testrequest && <p className={errCls}>{errors.testrequest}</p>}
         </div>
@@ -723,42 +774,50 @@ export default function TrfItemForm({ trfId, itemId, cloneId, onSuccess, onCance
       )}
 
       {!loadingPkgDetails && quantities.length > 0 && (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-          <div className="grid grid-cols-2 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700">
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Required Quantity</span>
-            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Received Quantity</span>
-          </div>
-          {quantities.map((qty, idx) => (
-            <div key={qty.id} className="grid grid-cols-2 items-center px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
-              <div>
-                <input type="hidden" name="quantities[]" value={qty.id} />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {qty.name}
-                  {qty.quantity  ? ` ${qty.quantity}` : ""}
-                  {qty.unit_name ? ` ${qty.unit_name}` : ""}
-                </span>
-              </div>
-              <div>
-                <input
-                  type="number"
-                  min="0"
-                  className={`receivedquantities ${inputCls}`}
-                  value={received[idx] ?? ""}
-                  onChange={(e) => handleReceivedChange(idx, e.target.value)}
-                  placeholder={`enter value in ${qty.unit_name || "units"}`}
-                />
-              </div>
+        <div>
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-2 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Required Quantity</span>
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Received Quantity <span className="text-red-500">*</span></span>
             </div>
-          ))}
-          <div className="grid grid-cols-2 items-center px-4 py-2.5 bg-gray-50 dark:bg-gray-800">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total Quantity</span>
-            <input
-              type="number"
-              readOnly
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-sm bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 outline-none cursor-default"
-              value={received.reduce((sum, v) => sum + (Number(v) || 0), 0)}
-            />
+            {quantities.map((qty, idx) => (
+              <div key={qty.id} className="grid grid-cols-2 items-center px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+                <div>
+                  <input type="hidden" name="quantities[]" value={qty.id} />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {qty.name}
+                    {qty.quantity  ? ` ${qty.quantity}` : ""}
+                    {qty.unit_name ? ` ${qty.unit_name}` : ""}
+                  </span>
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    min="0"
+                    className={`receivedquantities ${errors.received ? inputErrCls : inputCls}`}
+                    value={received[idx] ?? ""}
+                    onChange={(e) => {
+                      handleReceivedChange(idx, e.target.value);
+                      if (errors.received) {
+                        setErrors((prev) => ({ ...prev, received: "" }));
+                      }
+                    }}
+                    placeholder={`enter value in ${qty.unit_name || "units"}`}
+                  />
+                </div>
+              </div>
+            ))}
+            <div className="grid grid-cols-2 items-center px-4 py-2.5 bg-gray-50 dark:bg-gray-800">
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total Quantity</span>
+              <input
+                type="number"
+                readOnly
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-sm bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 outline-none cursor-default"
+                value={received.reduce((sum, v) => sum + (Number(v) || 0), 0)}
+              />
+            </div>
           </div>
+          {errors.received && <p className={errCls}>{errors.received}</p>}
         </div>
       )}
 

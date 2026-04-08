@@ -403,6 +403,17 @@ export default function AddInwardEntry() {
     }
   };
 
+  const validateFile = (file) => {
+    if (!file) return true;
+    const allowedExtensions = ["doc", "docx", "pdf", "jpg", "jpeg", "png"];
+    const fileExtension = file.name.split(".").pop().toLowerCase();
+    if (!allowedExtensions.includes(fileExtension)) {
+      toast.error(`Invalid file type. Allowed: ${allowedExtensions.join(", ")}`);
+      return false;
+    }
+    return true;
+  };
+
   const fetchConcernPersons = async (customerId) => {
     try {
       const res = await axios.get(`/get-concern-person/${customerId}`);
@@ -1061,14 +1072,20 @@ export default function AddInwardEntry() {
                   <input
                     type="file"
                     name="wupload"
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        wupload: e.target.files[0],
-                      }))
-                    }
+                    accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (validateFile(file)) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          wupload: file,
+                        }));
+                      } else {
+                        e.target.value = ""; // Reset input
+                      }
+                    }}
                     className="block w-full cursor-pointer border"
-                    style={{background:"#00ffff"}}
+                    style={{ background: "#00ffff" }}
                   />
                 </div>
 
@@ -1164,15 +1181,20 @@ export default function AddInwardEntry() {
                   <input
                     type="file"
                     name="rupload"
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        rupload: e.target.files[0],
-                      }))
-                    }
+                    accept=".doc,.docx,.pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (validateFile(file)) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          rupload: file,
+                        }));
+                      } else {
+                        e.target.value = ""; // Reset input
+                      }
+                    }}
                     className="block w-full cursor-pointer border"
-                    style={{background:"#00ffff"}}
-
+                    style={{ background: "#00ffff" }}
                   />
                 </div>
               </div>

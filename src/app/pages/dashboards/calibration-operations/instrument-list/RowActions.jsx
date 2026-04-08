@@ -6,7 +6,7 @@ import {
   MenuItems,
   Transition,
 } from "@headlessui/react";
-import { 
+import {
   EllipsisHorizontalIcon,
   PencilIcon,
   TrashIcon,
@@ -73,29 +73,29 @@ export function RowActions({ row, table }) {
 
 
 
-const handleDeleteRows = useCallback(async () => {
-  const id = row.original.id; // Assuming your row contains `id`
-  setConfirmDeleteLoading(true);
+  const handleDeleteRows = useCallback(async () => {
+    const id = row.original.id; // Assuming your row contains `id`
+    setConfirmDeleteLoading(true);
 
-  try {
-  
-    await axios.delete(`/calibrationoperations/delete-Calibration-price/${id}`);
-    table.options.meta?.deleteRow(row); // remove row from UI
-    setDeleteSuccess(true);
-     toast.success("calibration operations deleted successfully ✅", {
-      duration: 1000,
-      icon: "🗑️",
-    });
-  } catch (error) {
-    console.error("Delete failed:", error);
-    setDeleteError(true);
-     toast.error("Failed to delete calibration operations ❌", {
-      duration: 2000,
-    });
-  } finally {
-    setConfirmDeleteLoading(false);
-  }
-}, [row, table]);
+    try {
+
+      await axios.delete(`/calibrationoperations/delete-instrument/${id}`);
+      table.options.meta?.deleteRow(row); // remove row from UI
+      setDeleteSuccess(true);
+      toast.success("calibration operations deleted successfully ✅", {
+        duration: 1000,
+        icon: "🗑️",
+      });
+    } catch (error) {
+      console.error("Delete failed:", error);
+      setDeleteError(true);
+      toast.error("Failed to delete calibration operations ❌", {
+        duration: 2000,
+      });
+    } finally {
+      setConfirmDeleteLoading(false);
+    }
+  }, [row, table]);
 
   const state = deleteError ? "error" : deleteSuccess ? "success" : "pending";
 
@@ -126,7 +126,7 @@ const handleDeleteRows = useCallback(async () => {
                     className={clsx(
                       "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100"
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100"
                     )}
                   >
                     <PencilIcon className="size-4.5 stroke-1" />
@@ -142,7 +142,7 @@ const handleDeleteRows = useCallback(async () => {
                     className={clsx(
                       "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100"
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100"
                     )}
                   >
                     <DocumentDuplicateIcon className="size-4.5 stroke-1" />
@@ -158,7 +158,7 @@ const handleDeleteRows = useCallback(async () => {
                     className={clsx(
                       "flex h-9 w-full items-center space-x-3 px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100"
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100"
                     )}
                   >
                     <CurrencyDollarIcon className="size-4.5 stroke-1" />

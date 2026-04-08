@@ -1,5 +1,5 @@
 // Import Dependencies
-import {MagnifyingGlassIcon} from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import {
   Menu,
@@ -29,8 +29,10 @@ export function Toolbar({ table }) {
           isFullScreenEnabled ? "px-4 sm:px-5" : "px-(--margin-x) pt-4",
         )}
       >
-        
-        
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-dark-50">
+          TRF Products
+        </h2>
+
         {isXs ? (
           <Menu as="div" className="relative inline-block text-left">
             <MenuButton
@@ -56,7 +58,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>Export as PDF</span>
@@ -69,7 +71,7 @@ export function Toolbar({ table }) {
                     className={clsx(
                       "flex h-9 w-full items-center px-3 tracking-wide outline-hidden transition-colors",
                       focus &&
-                        "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
+                      "bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100",
                     )}
                   >
                     <span>Export as CSV</span>

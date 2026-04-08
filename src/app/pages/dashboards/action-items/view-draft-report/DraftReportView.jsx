@@ -262,14 +262,12 @@ export default function DraftReportView() {
   const canRequestRetest =
     permissions.includes(180) || permissions.includes(181);
 
-  // PHP: if(in_array(180,$perm)||in_array(181,$perm)) if($reportstatus<9 && !empty($leftmydepartment)) → show Actions <th>
+  // PHP: if(in_array(180,$perm)||in_array(181,$perm)) if($reportstatus<9) → show Actions <th>
   const showActionsColumn =
-    canRequestRetest && report_status < 9 && left_my_department_count > 0;
+    canRequestRetest && report_status < 9;
 
-  // PHP per-row: if($reportstatus<9 && in_array($rows['id'], explode(",", $leftmydepartment)))
-  // Backend sets can_retest: true/false per result row
-  const shouldShowRetestBtn = (row) =>
-    canRequestRetest && report_status < 9 && row.can_retest === true;
+  // PHP: every row gets the button when permissions + reportstatus < 9 are satisfied
+  const shouldShowRetestBtn = () => showActionsColumn;
 
   const showPartialHod =
     left_my_department_count > 0 &&
@@ -342,9 +340,9 @@ export default function DraftReportView() {
           <div className="px-6 py-6">
             {/* NABL logo + heading */}
             <div className="mb-2 flex flex-col items-center gap-1">
-              {nabl === true && (
+              {nabl && nabl !== "0" && nabl !== 0 && (
                 <img
-                  src="/images/nabltest.png"
+                  src="/images/nabl2348.png"
                   alt="NABL Logo"
                   className="h-16 w-auto"
                 />
@@ -356,7 +354,7 @@ export default function DraftReportView() {
 
             {/* ULR + Ref No */}
             <div className="mb-4 flex justify-between text-xs font-semibold text-gray-700 dark:text-gray-300">
-              <span>{nabl === true && ulr ? `ULR: ${ulr}` : ""}</span>
+              <span>{nabl && nabl !== "0" && nabl !== 0 && ulr ? `ULR: ${ulr}` : ""}</span>
               <span>{reference_no ?? ""}</span>
             </div>
 

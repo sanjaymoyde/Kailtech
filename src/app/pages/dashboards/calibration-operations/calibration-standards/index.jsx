@@ -45,27 +45,27 @@ export default function OrdersDatatableV1() {
   }, []);
 
   const fetchModes = async () => {
-  try {
-    setLoading(true); // start loader
-    const response = await axios.get("/calibrationoperations/calibration-standard-list");
-    
-    // console.log("API response:", response.data); // debug
+    try {
+      setLoading(true); // start loader
+      const response = await axios.get("/calibrationoperations/calibration-standard-list");
 
-    if (response.data.status && Array.isArray(response.data.data)) {
-      setOrders(response.data.data); // ✅ correct assignment
-    } else {
-      console.warn("Unexpected response structure:", response.data);
-      setOrders([]); // fallback
+      // console.log("API response:", response.data); // debug
+
+      if (response.data.status && Array.isArray(response.data.data)) {
+        setOrders(response.data.data); // ✅ correct assignment
+      } else {
+        console.warn("Unexpected response structure:", response.data);
+        setOrders([]); // fallback
+      }
+
+    } catch (err) {
+      console.error("Error fetching mode list:", err);
+    } finally {
+      setLoading(false); // stop loader
     }
+  };
 
-  } catch (err) {
-    console.error("Error fetching mode list:", err);
-  } finally {
-    setLoading(false); // stop loader
-  }
-};
 
-  
   const [tableSettings, setTableSettings] = useState({
     enableFullScreen: false,
     enableRowDense: false,
@@ -98,33 +98,33 @@ export default function OrdersDatatableV1() {
       tableSettings,
     },
     meta: {
-  updateData: (rowIndex, columnId, value) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.map((row, index) => {
-        if (index === rowIndex) {
-          return {
-            ...old[rowIndex],
-            [columnId]: value,
-          };
-        }
-        return row;
-      })
-    );
-  },
-  deleteRow: (row) => {
-    skipAutoResetPageIndex();
-    setOrders((old) =>
-      old.filter((oldRow) => oldRow.id !== row.original.id)
-    );
-  },
-  deleteRows: (rows) => {
-    skipAutoResetPageIndex();
-    const rowIds = rows.map((row) => row.original.id);
-    setOrders((old) => old.filter((row) => !rowIds.includes(row.id)));
-  },
-  setTableSettings
-},
+      updateData: (rowIndex, columnId, value) => {
+        skipAutoResetPageIndex();
+        setOrders((old) =>
+          old.map((row, index) => {
+            if (index === rowIndex) {
+              return {
+                ...old[rowIndex],
+                [columnId]: value,
+              };
+            }
+            return row;
+          })
+        );
+      },
+      deleteRow: (row) => {
+        skipAutoResetPageIndex();
+        setOrders((old) =>
+          old.filter((oldRow) => oldRow.id !== row.original.id)
+        );
+      },
+      deleteRows: (rows) => {
+        skipAutoResetPageIndex();
+        const rowIds = rows.map((row) => row.original.id);
+        setOrders((old) => old.filter((row) => !rowIds.includes(row.id)));
+      },
+      setTableSettings
+    },
     filterFns: {
       fuzzy: fuzzyFilter,
     },
@@ -149,23 +149,23 @@ export default function OrdersDatatableV1() {
   useDidUpdate(() => table.resetRowSelection(), [orders]);
 
   useLockScrollbar(tableSettings.enableFullScreen);
-  
+
   // ✅ Loading UI
   if (loading) {
     return (
-      <Page title="Modes List">
+      <Page title="Calibration Standards List">
         <div className="flex h-[60vh] items-center justify-center text-gray-600">
           <svg className="animate-spin h-6 w-6 mr-2 text-blue-600" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z"></path>
           </svg>
-          Loading Modes...
+          Loading Calibration Standards...
         </div>
       </Page>
     );
   }
 
-  
+
   return (
     <Page title="Calibration Method List">
       <div className="transition-content w-full pb-5">
@@ -173,7 +173,7 @@ export default function OrdersDatatableV1() {
           className={clsx(
             "flex h-full w-full flex-col",
             tableSettings.enableFullScreen &&
-              "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
+            "fixed inset-0 z-61 bg-white pt-3 dark:bg-dark-900",
           )}
         >
           <Toolbar table={table} />
@@ -208,9 +208,9 @@ export default function OrdersDatatableV1() {
                               "bg-gray-200 font-semibold uppercase text-gray-800 dark:bg-dark-800 dark:text-dark-100 first:ltr:rounded-tl-lg last:ltr:rounded-tr-lg first:rtl:rounded-tr-lg last:rtl:rounded-tl-lg",
                               header.column.getCanPin() && [
                                 header.column.getIsPinned() === "left" &&
-                                  "sticky z-2 ltr:left-0 rtl:right-0",
+                                "sticky z-2 ltr:left-0 rtl:right-0",
                                 header.column.getIsPinned() === "right" &&
-                                  "sticky z-2 ltr:right-0 rtl:left-0",
+                                "sticky z-2 ltr:right-0 rtl:left-0",
                               ],
                             )}
                           >
@@ -223,9 +223,9 @@ export default function OrdersDatatableV1() {
                                   {header.isPlaceholder
                                     ? null
                                     : flexRender(
-                                        header.column.columnDef.header,
-                                        header.getContext(),
-                                      )}
+                                      header.column.columnDef.header,
+                                      header.getContext(),
+                                    )}
                                 </span>
                                 <TableSortIcon
                                   sorted={header.column.getIsSorted()}
@@ -250,7 +250,7 @@ export default function OrdersDatatableV1() {
                           className={clsx(
                             "relative border-y border-transparent border-b-gray-200 dark:border-b-dark-500",
                             row.getIsSelected() && !isSafari &&
-                              "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
+                            "row-selected after:pointer-events-none after:absolute after:inset-0 after:z-2 after:h-full after:w-full after:border-3 after:border-transparent after:bg-primary-500/10 ltr:after:border-l-primary-500 rtl:after:border-r-primary-500",
                           )}
                         >
                           {/* first row is a normal row */}
@@ -265,9 +265,9 @@ export default function OrdersDatatableV1() {
                                     : "dark:bg-dark-900",
                                   cell.column.getCanPin() && [
                                     cell.column.getIsPinned() === "left" &&
-                                      "sticky z-2 ltr:left-0 rtl:right-0",
+                                    "sticky z-2 ltr:left-0 rtl:right-0",
                                     cell.column.getIsPinned() === "right" &&
-                                      "sticky z-2 ltr:right-0 rtl:left-0",
+                                    "sticky z-2 ltr:right-0 rtl:left-0",
                                   ],
                                 )}
                               >
@@ -300,7 +300,7 @@ export default function OrdersDatatableV1() {
                   className={clsx(
                     "px-4 pb-4 sm:px-5 sm:pt-4",
                     tableSettings.enableFullScreen &&
-                      "bg-gray-50 dark:bg-dark-800",
+                    "bg-gray-50 dark:bg-dark-800",
                     !(
                       table.getIsSomeRowsSelected() ||
                       table.getIsAllRowsSelected()

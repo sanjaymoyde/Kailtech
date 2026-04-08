@@ -48,7 +48,18 @@ export default function GSTR1IGST() {
 
     try {
       setLoading(true);
-      const res = await axios.get("/gstr1-igst", { params: filters });
+      // Format dates to DD/MM/YYYY as requested/implied by user example
+      const params = { ...filters };
+      if (params.startdate) {
+        const [y, m, d] = params.startdate.split("-");
+        params.startdate = `${d}/${m}/${y}`;
+      }
+      if (params.enddate) {
+        const [y, m, d] = params.enddate.split("-");
+        params.enddate = `${d}/${m}/${y}`;
+      }
+
+      const res = await axios.get("/accounts/get-igst_report", { params });
       setData(Array.isArray(res.data) ? res.data : res.data?.data || []);
     } catch (err) {
       console.error("Error fetching IGST data:", err);
@@ -72,9 +83,10 @@ export default function GSTR1IGST() {
       acc.finaltotal += Number(row.finaltotal || 0);
       acc.subtotal2 += Number(row.subtotal2 || 0);
       acc.igstamount += Number(row.igstamount || 0);
+      acc.roundoff += Number(row.roundoff || 0);
       return acc;
     },
-    { finaltotal: 0, subtotal2: 0, igstamount: 0 },
+    { finaltotal: 0, subtotal2: 0, igstamount: 0, roundoff: 0 },
   );
 
   return (
@@ -207,6 +219,12 @@ export default function GSTR1IGST() {
                                     return (
                                       <Td key={col.id}>
                                         {totals.igstamount.toFixed(2)}
+                                      </Td>
+                                    );
+                                  if (col.id === "roundoff")
+                                    return (
+                                      <Td key={col.id}>
+                                        {totals.roundoff.toFixed(2)}
                                       </Td>
                                     );
                                   return <Td key={col.id} />;

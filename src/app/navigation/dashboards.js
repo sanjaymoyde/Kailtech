@@ -30,19 +30,393 @@ const ROOT_DASHBOARDS = "/dashboards";
 
 const path = (root, item) => `${root}${item}`;
 
-// Function to generate dynamic dashboard config
-export const generateDashboardsConfig = (labs = []) => {
-  // Generate child items dynamically from API data
-  const materialListChildren = labs.map((lab) => ({
-    id: `dashboards.${lab.slug}`,
-    type: NAV_TYPE_ITEM,
-    path: path(ROOT_DASHBOARDS, `/material-list/${lab.slug}?labId=${lab.id}`),
-    title: lab.name,
-    // transKey: `nav.dashboards.${lab.slug}`,
-  }));
-  console.log("✅ Generated material list children:", materialListChildren);
+const DASHBOARD_PERMISSION_RULES = {
+  "/dashboards/master-data": [382, 381, 79, 87, 74, 69, 343],
+  "/dashboards/master-data/unit-types": [87],
+  "/dashboards/master-data/modes": [87],
+  "/dashboards/master-data/tax-slabs": [79],
+  "/dashboards/master-data/verticals": [79],
+  "/dashboards/master-data/document-master": [74],
+  "/dashboards/master-data/currencies": [79],
+  "/dashboards/master-data/units": [79],
+  "/dashboards/master-data/statuary-detail": [79],
+  "/dashboards/master-data/units-conversion": [79],
+  "/dashboards/master-data/manage-labs": [87],
+  "/dashboards/master-data/view-activity-log": [381],
+  "/dashboards/master-data/master-calibration-return": [69],
+  "/dashboards/master-data/general-checklists": [382],
+  "/dashboards/calibration-operations": [87, 204, 380, 83],
+  "/dashboards/calibration-operations/calibration-standards": [87],
+  "/dashboards/calibration-operations/calibration-methods": [87],
+  "/dashboards/calibration-operations/bio-medical-visual-test": [87],
+  "/dashboards/calibration-operations/bio-medical-safety-test": [87],
+  "/dashboards/calibration-operations/instrument-list": [87],
+  "/dashboards/calibration-operations/discipline": [87],
+  "/dashboards/calibration-operations/revision-requests": [204],
+  "/dashboards/calibration-operations/lrn-cancel-requests": [380],
+  "/dashboards/calibration-operations/cmc-scope-sheet": [83],
+  "/dashboards/calibration-process": [368, 97, 369, 370, 112, 110, 109, 481],
+  "/dashboards/calibration-process/inward-entry-lab": [368, 97, 369, 370],
+  "/dashboards/calibration-process/inward-entry-lab?caliblocation=lab&calibacc=nabl":
+    [368],
+  "/dashboards/calibration-process/inward-entry-lab?caliblocation=lab&calibacc=non nabl":
+    [97],
+  "/dashboards/calibration-process/inward-entry-lab?caliblocation=site&calibacc=nabl":
+    [369],
+  "/dashboards/calibration-process/inward-entry-lab?caliblocation=site&calibacc=non nabl":
+    [370],
+  "/dashboards/calibration-process/dispatch-list": [112],
+  "/dashboards/calibration-process/dispatch-register": [112],
+  "/dashboards/calibration-process/ulr-list": [110],
+  "/dashboards/calibration-process/lrn-brn-register": [109],
+  "/dashboards/calibration-process/lead-managements": [481],
+  "/dashboards/testing": [189, 200, 190, 191, 194, 195, 196, 197, 198, 199],
+  "/dashboards/testing/products": [189],
+  "/dashboards/testing/product-grades": [190],
+  "/dashboards/testing/product-size": [191],
+  "/dashboards/testing/measurements": [194],
+  "/dashboards/testing/standards": [195],
+  "/dashboards/testing/test-methods": [196],
+  "/dashboards/testing/test-clauses": [197],
+  "/dashboards/testing/test-parameters": [198],
+  "/dashboards/testing/test-permissible-values": [199],
+  "/dashboards/testing/trfs-starts-jobs": [200],
+  "/dashboards/testing/lrn-cancel-requests": [330],
+  "/dashboards/testing/revision-requests": [412],
+  "/dashboards/action-items": [128, 288, 6, 7, 179, 180, 181, 137],
+  "/dashboards/action-items/pending-technical-acceptance": [126],
+  "/dashboards/action-items/allot-sample": [128],
+  "/dashboards/action-items/accept-sample": [288],
+  "/dashboards/action-items/assign-chemist": [6],
+  "/dashboards/action-items/perform-testing": [7],
+  "/dashboards/action-items/view-draft-report": [179],
+  "/dashboards/action-items/review-by-hod": [180],
+  "/dashboards/action-items/review-by-qa": [181],
+  "/dashboards/action-items/generate-ulr": [137],
+  "/dashboards/action-items/pending-upload-reports": [333],
+  "/dashboards/action-items/final-reports-unsigned": [137],
+  "/dashboards/action-items/signed-reports": [137],
+  "/dashboards/approvals": [392, 393, 403],
+  "/dashboards/approvals/priority-approval": [392],
+  "/dashboards/approvals/payment-approval-testing": [392],
+  "/dashboards/approvals/payment-approval-calibration": [392],
+  "/dashboards/approvals/payment-hold-notification-1": [403],
+  "/dashboards/approvals/payment-approval-2": [403],
+  "/dashboards/approvals/witness-approval": [392],
+  "/dashboards/approvals/witness-lock": [393],
+  "/dashboards/approvals/payment-hold-notification-2": [403],
+  "/dashboards/approvals/calibration-payment-approval-2": [403],
+  "/dashboards/sales": [164, 91, 385, 140, 141, 165],
+  "/dashboards/sales/website-enquiry": [385],
+  "/dashboards/sales/enquiry": [91],
+  "/dashboards/sales/test-packages": [164],
+  "/dashboards/sales/calibration-quotations": [93],
+  "/dashboards/sales/testing-quotations": [141],
+  "/dashboards/role-management": [169, 168, 166],
+  "/dashboards/role-management/modules": [169],
+  "/dashboards/role-management/roles": [168],
+  "/dashboards/role-management/permissions": [168],
+  "/dashboards/role-management/process-guide": [166],
+  "/dashboards/role-management/organisation-setting": [377],
+  "/dashboards/records/lrn-brn-register": [109],
+  "/dashboards/records/equipment-list": [355],
+  "/dashboards/records/calibration-schedule-period": [354],
+  "/dashboards/records/dispatch-register": [162],
+  "/dashboards/records/service-report-list": [108],
+  "/dashboards/records/ulr-list": [110],
+  "/dashboards/records/cmc-scope-sheet": [83],
+  "/dashboards/registers/assigned-calibration-register": [478],
+  "/dashboards/registers/testing-track-report": [479],
+  "/dashboards/registers/calibration-track-report": [480],
+  "/dashboards/registers/pending-for-testing-lrn-wise": [156],
+  "/dashboards/registers/pending-for-testing-parameter-wise": [156],
+  "/dashboards/registers/parameter-wise-status-list": [156],
+  "/dashboards/registers/ulr-register": [159],
+  "/dashboards/registers/alloted-items": [158],
+  "/dashboards/registers/sample-inward-register": [160],
+  "/dashboards/registers/bis-sample-inward-register": [161],
+  "/dashboards/registers/received-register": [160, 161],
+  "/dashboards/registers/remnant-register": [163],
+  "/dashboards/registers/dispatch-register": [162],
+  "/dashboards/registers/disposal-register": [353],
+  "/dashboards/registers/bis-disposal-register": [353],
+  "/dashboards/registers/calibration-schedule-period": [354],
+  "/dashboards/registers/equipment-list": [355],
+  "/dashboards/registers/crm-list": [356],
+  "/dashboards/registers/pending-samples": [357],
+  "/dashboards/registers/environmental-condition": [411],
+  "/dashboards/inventory": [302, 401, 170, 192, 134, 136, 150, 287, 172, 173, 174],
+  "/dashboards/inventory/categories": [170],
+  "/dashboards/inventory/subcategories": [192],
+  "/dashboards/inventory/product-type-stock": [192],
+  "/dashboards/inventory/purchase-requisition": [134, 136, 150],
+  "/dashboards/inventory/purchase-order": [287],
+  "/dashboards/inventory/mrn": [172],
+  "/dashboards/inventory/pending-for-coding": [172],
+  "/dashboards/inventory/pending-location": [172],
+  "/dashboards/inventory/pending-verification": [396],
+  "/dashboards/inventory/stock": [173],
+  "/dashboards/inventory/din-list": [302],
+  "/dashboards/inventory/dispatch-return": [315],
+  "/dashboards/inventory/instrument-transfer": [399],
+  "/dashboards/inventory/create-solutions": [401],
+  "/dashboards/inventory/issue-return": [174],
+  "/dashboards/people": [183, 184, 169, 155, 153, 187, 188],
+  "/dashboards/people/customer-categories": [183],
+  "/dashboards/people/customer-types": [184],
+  "/dashboards/people/specific-purposes": [169],
+  "/dashboards/people/customers": [155],
+  "/dashboards/people/promoters": [153],
+  "/dashboards/people/suppliers": [187],
+  "/dashboards/people/users": [412],
+  "/dashboards/profile/din-list": [301],
+  "/dashboards/profile/request-new-customer": [360],
+  "/dashboards/profile/my-department-stock": [347],
+  "/dashboards/profile/my-sales-report": [309],
+  "/dashboards/profile/invoice-report": [338],
+  "/dashboards/profile/payment-report": [339],
+  "/dashboards/profile/mom-list": [439],
+  "/dashboards/profile/my-kra": [442],
+  "/dashboards/profile/customer-complaint-record": [444],
+  "/dashboards/profile/non-confirming-record": [451],
+  "/dashboards/profile/raise-incidence-deviation": [453],
+  "/dashboards/profile/incidence-deviation-record": [453],
+  "/dashboards/accounts/payment-list": [275],
+  "/dashboards/accounts/payment-list-party-wise": [275],
+  "/dashboards/accounts/testing-unbilled-items": [143],
+  "/dashboards/accounts/calibration-unbilled-items": [146],
+  "/dashboards/accounts/proforma-invoice": [41],
+  "/dashboards/accounts/calibration-invoice-list": [146],
+  "/dashboards/accounts/testing-invoices": [143],
+  "/dashboards/accounts/past-invoices": [299],
+  "/dashboards/accounts/canceled-invoices": [143],
+  "/dashboards/accounts/invoice-cancelation-request": [340],
+  "/dashboards/accounts/credit-note": [334],
+  "/dashboards/accounts/invoice-report": [146],
+  "/dashboards/accounts/complete-ledger": [146],
+  "/dashboards/accounts/sales-report": [146],
+  "/dashboards/accounts/gstr-1": [146],
+  "/dashboards/accounts/consent-letter": [362],
+  "/dashboards/hrm/manage-branch": [209],
+  "/dashboards/hrm/manage-departments": [213],
+  "/dashboards/hrm/manage-designations": [217],
+  "/dashboards/hrm/manage-policies": [221],
+  "/dashboards/hrm/salary-structure-design": [225],
+  "/dashboards/hrm/professional-tax": [229],
+  "/dashboards/hrm/view-all-attendance": [230],
+  "/dashboards/hrm/view-all-leaves": [231],
+  "/dashboards/hrm/manage-leave-rules": [234],
+  "/dashboards/hrm/view-attendance-policies": [238],
+  "/dashboards/hrm/add-attendance-policy": [241],
+  "/dashboards/hrm/holidays": [242],
+  "/dashboards/hrm/view-offer-letters-list": [246],
+  "/dashboards/hrm/manage-employee": [188],
+  "/dashboards/hrm/approve-employee": [233],
+  "/dashboards/hrm/employee-termination": [209],
+  "/dashboards/hrm/pending-appraisal-list": [256],
+  "/dashboards/training": [198, 201, 202],
+  "/dashboards/training/employees-in-induction": [198],
+  "/dashboards/training/employee-pending-for-training": [201],
+  "/dashboards/training/employee-in-training": [202],
+  "/dashboards/gate-entry/gate-entry": [289],
+  "/dashboards/gate-entry/issued-entry": [296],
+  "/dashboards/quality-documents": [467, 469, 468],
+  "/dashboards/quality-documents/role-request": [467],
+  "/dashboards/quality-documents/verification-lims": [469],
+  "/dashboards/quality-documents/quality-objectives": [468],
+};
 
-  return {
+const normalizeQueryParams = (query = "") => {
+  if (!query) return "";
+
+  const params = new URLSearchParams(query);
+  const normalizedEntries = [...params.entries()].map(([key, value]) => [
+    String(key).trim().toLowerCase(),
+    String(value).trim().toLowerCase(),
+  ]);
+
+  normalizedEntries.sort((a, b) => {
+    const keyCompare = a[0].localeCompare(b[0]);
+    if (keyCompare !== 0) return keyCompare;
+    return a[1].localeCompare(b[1]);
+  });
+
+  const normalizedParams = new URLSearchParams();
+  normalizedEntries.forEach(([key, value]) => {
+    normalizedParams.append(key, value);
+  });
+
+  return normalizedParams.toString();
+};
+
+const normalizeRouteKey = (route = "") => {
+  if (!route) return "";
+
+  const [rawPath = "", rawQuery = ""] = route.split("?");
+  const normalizedPath =
+    rawPath.trim().toLowerCase().replace(/\/+$/, "") || "/";
+  const normalizedQuery = normalizeQueryParams(rawQuery);
+
+  return normalizedQuery
+    ? `${normalizedPath}?${normalizedQuery}`
+    : normalizedPath;
+};
+
+const normalizePermissionValue = (value) => {
+  const numericPermission = Number(value);
+  return Number.isFinite(numericPermission) ? numericPermission : null;
+};
+
+export const normalizePermissions = (rawPermissions) => {
+  if (Array.isArray(rawPermissions)) {
+    return [...new Set(rawPermissions.map(normalizePermissionValue).filter(Boolean))];
+  }
+
+  if (rawPermissions == null) return [];
+
+  if (typeof rawPermissions === "number") {
+    return Number.isFinite(rawPermissions) ? [rawPermissions] : [];
+  }
+
+  let rawValue = String(rawPermissions).trim();
+  if (!rawValue) return [];
+
+  // If encased in quotes entirely (e.g., `"1,2,3"`), strip them.
+  if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
+    rawValue = rawValue.slice(1, -1);
+  } else if (rawValue.startsWith("'") && rawValue.endsWith("'")) {
+    rawValue = rawValue.slice(1, -1);
+  }
+
+  try {
+    // If it was already a valid JSON array string
+    const parsed = JSON.parse(rawValue);
+    if (Array.isArray(parsed)) {
+      return [...new Set(parsed.map(normalizePermissionValue).filter(Boolean))];
+    }
+    if (typeof parsed === "number" && Number.isFinite(parsed)) {
+      return [parsed];
+    }
+    if (typeof parsed === "string") {
+      rawValue = parsed.trim();
+    }
+  } catch {
+    // Fallback to CSV-style parsing.
+  }
+
+  return [
+    ...new Set(
+      rawValue
+        .replace(/^\[/, "")
+        .replace(/\]$/, "")
+        .split(",")
+        .map((permission) => normalizePermissionValue(permission))
+        .filter(Boolean),
+    ),
+  ];
+};
+
+export const getStoredPermissions = () => {
+  if (typeof window === "undefined") return [];
+  return normalizePermissions(window.localStorage.getItem("userPermissions"));
+};
+
+const hasAnyPermission = (permissions = [], requiredPermissions = []) => {
+  if (!requiredPermissions.length) return true;
+  return requiredPermissions.some((permission) => permissions.includes(permission));
+};
+
+const DASHBOARD_PERMISSION_RULE_ENTRIES = Object.entries(
+  DASHBOARD_PERMISSION_RULES,
+).map(([route, requiredPermissions]) => ({
+  route: normalizeRouteKey(route),
+  requiredPermissions,
+}));
+
+const DASHBOARD_PERMISSION_RULE_MAP = new Map(
+  DASHBOARD_PERMISSION_RULE_ENTRIES.map(({ route, requiredPermissions }) => [
+    route,
+    requiredPermissions,
+  ]),
+);
+
+const splitRoute = (route = "") => {
+  const [pathPart = "", queryPart = ""] = route.split("?");
+  return { pathPart, queryPart };
+};
+
+const isRouteMatched = (currentRoute, ruleRoute) => {
+  const { pathPart: currentPath, queryPart: currentQuery } =
+    splitRoute(currentRoute);
+  const { pathPart: rulePath, queryPart: ruleQuery } = splitRoute(ruleRoute);
+
+  if (ruleQuery) {
+    return currentPath === rulePath && currentQuery === ruleQuery;
+  }
+
+  return (
+    currentPath === rulePath || currentPath.startsWith(`${rulePath}/`)
+  );
+};
+
+const filterDashboardItemsByPermissions = (items, permissions) => {
+  return items.reduce((allowedItems, item) => {
+    const requiredPermissions = item.path
+      ? DASHBOARD_PERMISSION_RULE_MAP.get(normalizeRouteKey(item.path))
+      : null;
+
+    if (requiredPermissions && !hasAnyPermission(permissions, requiredPermissions)) {
+      return allowedItems;
+    }
+
+    const nextItem = { ...item };
+
+    if (Array.isArray(item.childs)) {
+      nextItem.childs = filterDashboardItemsByPermissions(item.childs, permissions);
+
+      if (item.type === NAV_TYPE_COLLAPSE && nextItem.childs.length === 0) {
+        return allowedItems;
+      }
+    }
+
+    allowedItems.push(nextItem);
+    return allowedItems;
+  }, []);
+};
+
+export const canAccessDashboardsRoute = ({
+  pathname = "",
+  search = "",
+  permissions = [],
+} = {}) => {
+  const normalizedRoute = normalizeRouteKey(`${pathname}${search}`);
+  const normalizedPermissions = normalizePermissions(permissions);
+  const matchedRules = DASHBOARD_PERMISSION_RULE_ENTRIES.filter(({ route }) =>
+    isRouteMatched(normalizedRoute, route),
+  );
+
+  return matchedRules.every(({ requiredPermissions }) =>
+    hasAnyPermission(normalizedPermissions, requiredPermissions),
+  );
+};
+
+// Function to generate dynamic dashboard config
+export const generateDashboardsConfig = (labs = [], userPermissions = []) => {
+  const permissions = normalizePermissions(userPermissions);
+  const employeeId = Number(localStorage.getItem("userId") || 0);
+
+  // Generate child items dynamically from API data
+  const materialListChildren = labs
+    .filter((lab) => lab.users && lab.users.includes(employeeId))
+    .map((lab) => ({
+      id: `dashboards.${lab.slug}`,
+      type: NAV_TYPE_ITEM,
+      path: path(ROOT_DASHBOARDS, `/material-list/${lab.slug}?labId=${lab.id}`),
+      title: lab.name,
+      // transKey: `nav.dashboards.${lab.slug}`,
+    }));
+
+  const dashboardsConfig = {
     id: "dashboards",
     type: NAV_TYPE_ROOT,
     path: "/dashboards",
@@ -1761,6 +2135,15 @@ export const generateDashboardsConfig = (labs = []) => {
       },
     ],
   };
+
+  return {
+    ...dashboardsConfig,
+    childs: filterDashboardItemsByPermissions(
+      dashboardsConfig.childs,
+      permissions,
+    ),
+  };
 };
 // Default export with empty array (will be replaced by dynamic data)
-export const dashboards = generateDashboardsConfig([]);
+export const dashboards = generateDashboardsConfig([], []);
+

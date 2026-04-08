@@ -23,7 +23,7 @@ const LrnBrnRegister = () => {
       setErrorMessage('');
       try {
         const token = localStorage.getItem('authToken');
-        
+
         if (!token) {
           throw new Error('Authentication token not found in local storage');
         }
@@ -36,9 +36,9 @@ const LrnBrnRegister = () => {
         });
 
         const data = response.data;
-        
+
         console.log('Customers API Response:', data);
-        
+
         if (data && Array.isArray(data)) {
           setCustomers(data);
         } else if (data && data.data && Array.isArray(data.data)) {
@@ -67,15 +67,15 @@ const LrnBrnRegister = () => {
 
   // Format date for display (YYYY-MM-DD to DD/MM/YYYY)
   // Format date for display
-const formatDateForDisplay = (dateStr) => {
-  if (!dateStr || dateStr === '0000-00-00') return '-';
-  try {
-    const [year, month, day] = dateStr.split('-');
-    return `${day}/${month}/${year}`;
-  } catch  {
-    return dateStr;
-  }
-};
+  const formatDateForDisplay = (dateStr) => {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    try {
+      const [year, month, day] = dateStr.split('-');
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateStr;
+    }
+  };
 
 
   // Calculate TAT (Turn Around Time) in days
@@ -89,7 +89,7 @@ const formatDateForDisplay = (dateStr) => {
       const diffTime = Math.abs(date2 - date1);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return `${diffDays} days`;
-    } catch  {
+    } catch {
       return '-';
     }
   };
@@ -122,9 +122,9 @@ const formatDateForDisplay = (dateStr) => {
   };
 
   const handleSearch = async () => {
-    if (!startDate || !endDate || !selectedCustomer || !selectedReportCustomer) {
-      setErrorMessage('Please fill in all search fields');
-      alert('Please fill in all fields (Start Date, End Date, Customer, and Report Customer) before searching.');
+    if (!startDate || !endDate) {
+      setErrorMessage('Please select Start Date and End Date');
+      alert('Please fill Start Date and End Date before searching.');
       return;
     }
 
@@ -140,7 +140,7 @@ const formatDateForDisplay = (dateStr) => {
 
     try {
       const token = localStorage.getItem('authToken');
-      
+
       if (!token) {
         throw new Error('Authentication token not found');
       }
@@ -152,8 +152,21 @@ const formatDateForDisplay = (dateStr) => {
         reportCustomerId: selectedReportCustomer
       });
 
+      const queryParams = new URLSearchParams({
+        startdate: formatDateForAPI(startDate),
+        enddate: formatDateForAPI(endDate),
+      });
+
+      if (selectedCustomer) {
+        queryParams.set('customerid', selectedCustomer);
+      }
+
+      if (selectedReportCustomer) {
+        queryParams.set('reportcustomerid', selectedReportCustomer);
+      }
+
       const response = await axios.get(
-        `/calibrationprocess/search-lrn-brn-register?startdate=${formatDateForAPI(startDate)}&enddate=${formatDateForAPI(endDate)}&customerid=${selectedCustomer}&reportcustomerid=${selectedReportCustomer}`,
+        `/calibrationprocess/search-lrn-brn-register?${queryParams.toString()}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -182,7 +195,7 @@ const formatDateForDisplay = (dateStr) => {
 
   const handleExport = () => {
     setShowExport(true);
-    
+
     const exportContent = `
 LRN BRN Register Export
 ======================
@@ -190,8 +203,8 @@ LRN BRN Register Export
 Search Parameters:
 - Start Date: ${formatDateForDisplay(startDate)}
 - End Date: ${formatDateForDisplay(endDate)}
-- Customer ID: ${selectedCustomer}
-- Report Customer ID: ${selectedReportCustomer}
+- Customer ID: ${selectedCustomer || 'All'}
+- Report Customer ID: ${selectedReportCustomer || 'All'}
 
 Total Records: ${registerData.length}
 
@@ -206,7 +219,7 @@ Record ${index + 1}:
 - Total Amount: ${record.total || '-'}
 `).join('\n')}
 `;
-    
+
     const blob = new Blob([exportContent], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -243,7 +256,7 @@ Record ${index + 1}:
               </div>
             </div>
             <div className="mt-4 text-center">
-              <Button 
+              <Button
                 onClick={() => setShowExport(false)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
               >
@@ -257,15 +270,15 @@ Record ${index + 1}:
   }
 
   return (
-    <div className="min-h-screen bg-gray-100" style={{background:"none"}}>
+    <div className="min-h-screen bg-gray-100" style={{ background: "none" }}>
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-2">
-        <h1 className="text-lg font-medium text-gray-800" style={{marginLeft:"20px"}}>LRN BRN Register</h1>
+        <h1 className="text-lg font-medium text-gray-800" style={{ marginLeft: "20px" }}>LRN BRN Register</h1>
       </div>
 
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          
+
           {/* Search Form */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <div className="grid grid-cols-2 gap-8">
@@ -277,12 +290,15 @@ Record ${index + 1}:
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
+                    placeholder="mm/dd/yyyy"
+                    title="mm/dd/yyyy"
+                    lang="en-US"
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer (Optional)</label>
                   <select
                     value={selectedCustomer}
                     onChange={(e) => setSelectedCustomer(e.target.value)}
@@ -290,11 +306,11 @@ Record ${index + 1}:
                     disabled={loadingCustomers}
                   >
                     <option value="">
-                      {loadingCustomers ? 'Loading customers...' : errorMessage ? 'Error loading customers' : 'Select Customer'}
+                      {loadingCustomers ? 'Loading customers...' : errorMessage ? 'Error loading customers' : 'All Customers'}
                     </option>
                     {customers.map((customer) => (
-                      <option 
-                        key={getCustomerId(customer)} 
+                      <option
+                        key={getCustomerId(customer)}
                         value={getCustomerId(customer)}
                       >
                         {getCustomerDisplayName(customer)}
@@ -312,12 +328,15 @@ Record ${index + 1}:
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    placeholder="mm/dd/yyyy"
+                    title="mm/dd/yyyy"
+                    lang="en-US"
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Report Customer (Optional)</label>
                   <select
                     value={selectedReportCustomer}
                     onChange={(e) => setSelectedReportCustomer(e.target.value)}
@@ -325,11 +344,11 @@ Record ${index + 1}:
                     disabled={loadingCustomers}
                   >
                     <option value="">
-                      {loadingCustomers ? 'Loading customers...' : errorMessage ? 'Error loading customers' : 'Select Customer'}
+                      {loadingCustomers ? 'Loading customers...' : errorMessage ? 'Error loading customers' : 'All Customers'}
                     </option>
                     {customers.map((customer) => (
-                      <option 
-                        key={getCustomerId(customer)} 
+                      <option
+                        key={getCustomerId(customer)}
                         value={getCustomerId(customer)}
                       >
                         {getCustomerDisplayName(customer)}
@@ -372,11 +391,11 @@ Record ${index + 1}:
               {/* Header Section with Logo and Document Info */}
               <div className="grid grid-cols-12 gap-0 border-b border-gray-200">
                 {/* Logo Section */}
-                <div className="col-span-3 bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-tl-lg flex items-center justify-center" style={{background:"none"}}>
+                <div className="col-span-3 bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-tl-lg flex items-center justify-center" style={{ background: "none" }}>
                   <div className="text-center">
-                    <img 
-                      src={appLogo} 
-                      alt="App Logo" 
+                    <img
+                      src={appLogo}
+                      alt="App Logo"
                       className="h-16 w-auto mx-auto mb-2 bg-white p-2 rounded"
                     />
                     <div className="text-gray-800 text-xs font-medium">
@@ -489,9 +508,8 @@ Record ${index + 1}:
                           <td className="px-3 py-2 text-xs border border-gray-300">{calculateTAT(record.deadline, record.updated_on?.split(' ')[0])}</td>
                           <td className="px-3 py-2 text-xs border border-gray-300">{record.remark || '-'}</td>
                           <td className="px-3 py-2 text-xs border border-gray-300">
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              record.status === 4 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                            }`}>
+                            <span className={`px-2 py-1 rounded text-xs ${record.status === 4 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                              }`}>
                               {record.status === 4 ? 'Completed' : 'In Progress'}
                             </span>
                           </td>
@@ -516,4 +534,4 @@ Record ${index + 1}:
   );
 };
 
-export default LrnBrnRegister;
+export default LrnBrnRegister; 

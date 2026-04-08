@@ -3,10 +3,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import dayjs from "dayjs";
 
 // Local Imports
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 // ----------------------------------------------------------------------
 
@@ -412,10 +414,17 @@ export default function AddPayment() {
                   />
                 </FormRow>
                 <FormRow label="Cheque Date">
-                  <input
-                    type="date"
+                  <DatePicker
+                    options={{
+                      dateFormat: "Y-m-d", // Value in state: yyyy-mm-dd
+                      altInput: true,
+                      altFormat: "d/m/Y", // Displayed as: dd/mm/yyyy
+                      allowInput: true,
+                    }}
                     value={form.chequedate}
-                    onChange={(e) => handleChange("chequedate", e.target.value)}
+                    onChange={(dates, dateStr) =>
+                      handleChange("chequedate", dateStr)
+                    }
                     className={inputCls}
                   />
                 </FormRow>
@@ -435,10 +444,17 @@ export default function AddPayment() {
 
             {/* Payment Date */}
             <FormRow label="Payment Date">
-              <input
-                type="date"
+              <DatePicker
+                options={{
+                  dateFormat: "Y-m-d",
+                  altInput: true,
+                  altFormat: "d/m/Y",
+                  allowInput: true,
+                }}
                 value={form.paymentdate}
-                onChange={(e) => handleChange("paymentdate", e.target.value)}
+                onChange={(dates, dateStr) =>
+                  handleChange("paymentdate", dateStr)
+                }
                 className={inputCls}
               />
             </FormRow>
@@ -450,11 +466,10 @@ export default function AddPayment() {
                 {totalRemainingAmount !== null && (
                   <FormRow label="Total Remaining Amount">
                     <p
-                      className={`py-2 text-sm font-semibold ${
-                        parseFloat(totalRemainingAmount) < 0
+                      className={`py-2 text-sm font-semibold ${parseFloat(totalRemainingAmount) < 0
                           ? "text-red-600 dark:text-red-400"
                           : "dark:text-dark-200 text-gray-700"
-                      }`}
+                        }`}
                     >
                       {parseFloat(totalRemainingAmount).toFixed(2)}
                     </p>
@@ -573,7 +588,9 @@ export default function AddPayment() {
                               {inv.invoiceno ?? inv.invoice_no ?? "-"}
                             </td>
                             <td className={tdCls}>
-                              {inv.invoicedate ?? inv.invoice_date ?? "-"}
+                              {(inv.invoicedate || inv.invoice_date) 
+                                ? dayjs(inv.invoicedate ?? inv.invoice_date).format("DD/MM/YYYY") 
+                                : "-"}
                             </td>
                             <td className={tdCls}>
                               {parseFloat(
@@ -675,11 +692,10 @@ export default function AddPayment() {
                       Total Remaining Amount:
                     </span>
                     <span
-                      className={`font-semibold ${
-                        parseFloat(totalRemainingAmount) < 0
+                      className={`font-semibold ${parseFloat(totalRemainingAmount) < 0
                           ? "text-red-600 dark:text-red-400"
                           : "dark:text-dark-200 text-gray-700"
-                      }`}
+                        }`}
                     >
                       {parseFloat(totalRemainingAmount).toFixed(2)}
                     </span>

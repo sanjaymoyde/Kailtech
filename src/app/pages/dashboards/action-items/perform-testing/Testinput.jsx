@@ -275,6 +275,10 @@ export default function TestInput() {
   // ── Derived values ────────────────────────────────────────────────────────
   const evt = testData?.test_event ?? {};
   const status = Number(evt.status ?? 0);
+  
+  // Debug: Log status to console
+  console.log("Test Event Status:", status, "Raw:", evt.status);
+
   const trfproduct = evt.trfproduct ?? ""; // PHP: $trfproduct → back button
   const has_documents = Boolean(testData?.has_documents ?? false);
   const lrn = testData?.lrn ?? "";
@@ -379,7 +383,10 @@ export default function TestInput() {
       });
 
       toast.success("Test data submitted successfully ✅");
-      navigate(`/dashboards/action-items/perform-testing/${trfproduct}`);
+      
+      // Refetch data to get updated status and show results on same page
+      await fetchData();
+      await fetchResults();
     } catch (err) {
       console.error("Submit error:", err);
       toast.error(err?.response?.data?.message ?? "Submit failed ❌");

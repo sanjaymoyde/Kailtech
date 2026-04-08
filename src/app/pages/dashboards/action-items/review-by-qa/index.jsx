@@ -17,13 +17,13 @@ import axios from "utils/axios";
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
 import { TableSortIcon } from "components/shared/table/TableSortIcon";
 import { Page } from "components/shared/Page";
-import { useLockScrollbar, useDidUpdate, useLocalStorage } from "hooks";
+import { useLockScrollbar, useDidUpdate, useLocalStorage, useDebounceValue } from "hooks";
 import { fuzzyFilter } from "utils/react-table/fuzzyFilter";
 import { useSkipper } from "utils/react-table/useSkipper";
 import { Toolbar } from "./Toolbar";
 import { columns } from "./columns.jsx";
 import { PaginationSection } from "components/shared/table/PaginationSection";
-import { SelectedRowsActions } from "./SelectedRowsActions";
+import { SelectedRowsActions } from "components/shared/table/SelectedRowsActions";
 import { useThemeContext } from "app/contexts/theme/context";
 import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
@@ -41,7 +41,6 @@ const selectCls =
   "focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition";
 
 // ----------------------------------------------------------------------
-
 export default function QAReview() {
   const { cardSkin } = useThemeContext();
   const permissions  = usePermissions();
@@ -60,6 +59,13 @@ export default function QAReview() {
   const [specificpurpose, setSpecificpurpose] = useState(""); // ?specificpurpose
   const [department,      setDepartment]      = useState(""); // ?department
   const [cname,           setCname]           = useState(""); // ?cname
+  const [startDate,       setStartDate]       = useState(""); // ?startdate
+  const [endDate,         setEndDate]         = useState(""); // ?enddate
+  const [lrn,             setLrn]             = useState(""); // ?lrn
+
+  const [globalFilter, setGlobalFilter] = useState("");
+  // Debounce global filter to avoid excessive API calls
+  const [debouncedSearch] = useDebounceValue(globalFilter, 500);
 
   // ── Table data ────────────────────────────────────────────────────────────
   const [products, setProducts] = useState([]);
@@ -118,6 +124,10 @@ export default function QAReview() {
       if (specificpurpose) params.append("specificpurpose", specificpurpose);
       if (department)      params.append("department",      department);
       if (cname)           params.append("cname",           cname);
+      if (startDate)       params.append("startdate",       startDate);
+      if (endDate)         params.append("enddate",         endDate);
+      if (lrn)             params.append("lrn",             lrn);
+      if (debouncedSearch) params.append("search",          debouncedSearch);
 
       const res = await axios.get(`/actionitem/qa-report-list?${params.toString()}`);
 
@@ -130,7 +140,7 @@ export default function QAReview() {
     } finally {
       setLoading(false);
     }
-  }, [ctype, specificpurpose, department, cname]);
+  }, [ctype, specificpurpose, department, cname, startDate, endDate, lrn, debouncedSearch]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -152,7 +162,6 @@ export default function QAReview() {
     enableColumnFilters: false,
   });
 
-  const [globalFilter,      setGlobalFilter]      = useState("");
   const [sorting,           setSorting]           = useState([]);
   const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
 
@@ -224,7 +233,8 @@ export default function QAReview() {
   }
 
   // ── Loading state ─────────────────────────────────────────────────────────
-  if (loading) {
+  // Subtle loading: Only show full-page spinner on initial load (when no data exists)
+  if (loading && products.length === 0) {
     return (
       <Page title="QA Review">
         <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">
@@ -232,7 +242,7 @@ export default function QAReview() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
           </svg>
-          <span className="text-sm">Loading…</span>
+          <span className="text-sm tracking-wide">Loading report data…</span>
         </div>
       </Page>
     );
@@ -319,9 +329,35 @@ export default function QAReview() {
                     ))}
                   </select>
                 </div>
+
+                {/* Start Date */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Start Date:
+                  </label>
+                  <input
+                    type="date"
+                    className={selectCls}
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+
+                {/* End Date */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    End Date:
+                  </label>
+                  <input
+                    type="date"
+                    className={selectCls}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
               </div>
 
-              {/* Row 2 — Customer Name + Clear Filters */}
+              {/* Row 2 — Customer Name · LRN · Clear Filters */}
               <div className="mt-3 flex flex-wrap items-end gap-4">
 
                 {/* Customer Name — PHP: customers where status=1 */}
@@ -341,12 +377,30 @@ export default function QAReview() {
                   </select>
                 </div>
 
+                {/* LRN Filter */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    LRN:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter LRN"
+                    className={selectCls}
+                    value={lrn}
+                    onChange={(e) => setLrn(e.target.value)}
+                  />
+                </div>
+
                 <button
                   onClick={() => {
                     setCtype("");
                     setSpecificpurpose("");
                     setDepartment("");
                     setCname("");
+                    setStartDate("");
+                    setEndDate("");
+                    setLrn("");
+                    setGlobalFilter("");
                   }}
                   className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
                 >
@@ -358,10 +412,18 @@ export default function QAReview() {
             {/* ─── Table ────────────────────────────────────────────────── */}
             <Card
               className={clsx(
-                "relative flex grow flex-col",
+                "relative flex grow flex-col overflow-hidden",
                 tableSettings.enableFullScreen && "overflow-hidden",
               )}
             >
+              {/* Subtle Progress Bar for re-fetching */}
+              {loading && products.length > 0 && (
+                <div className="absolute top-0 left-0 z-10 w-full">
+                  <div className="h-0.5 w-full overflow-hidden bg-blue-100 dark:bg-blue-900/30">
+                    <div className="h-full w-1/3 animate-progress bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.5)]" />
+                  </div>
+                </div>
+              )}
               <div className="table-wrapper min-w-full grow overflow-x-auto">
                 <Table
                   hoverable
@@ -403,8 +465,11 @@ export default function QAReview() {
                       </Tr>
                     ))}
                   </THead>
-
-                  <TBody>
+ 
+                  <TBody className={clsx(
+                    "transition-opacity duration-300",
+                    loading && products.length > 0 ? "opacity-50 grayscale-[20%]" : "opacity-100"
+                  )}>
                     {table.getRowModel().rows.length === 0 ? (
                       <Tr>
                         <Td colSpan={99} className="py-12 text-center text-sm text-gray-400">
@@ -453,7 +518,7 @@ export default function QAReview() {
                 </Table>
               </div>
 
-              <SelectedRowsActions table={table} />
+              <SelectedRowsActions table={table} title="Review By QA" showDelete={false} />
 
               {table.getCoreRowModel().rows.length > 0 && (
                 <div

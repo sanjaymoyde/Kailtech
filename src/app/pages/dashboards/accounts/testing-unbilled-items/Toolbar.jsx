@@ -1,5 +1,5 @@
 // Toolbar.jsx — Unbilled Testing Items
-// TableConfig: payment-list folder se copy karke is folder mein rakhna
+// TableConfig: copied from the payment-list folder into this folder
 // Path: src/app/pages/dashboards/accounts/testing-unbilled-items/TableConfig.jsx
 
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
@@ -13,9 +13,10 @@ import {
 } from "@headlessui/react";
 import { EllipsisHorizontalIcon } from "@heroicons/react/20/solid";
 import PropTypes from "prop-types";
+import { DatePicker } from "components/shared/form/Datepicker";
 
 import { Button, Input } from "components/ui";
-import { TableConfig } from "./TableConfig"; // ← payment-list/TableConfig.jsx copy karke yahan rakhna
+import { TableConfig } from "./TableConfig"; // ← copy payment-list/TableConfig.jsx here
 import { useBreakpointsContext } from "app/contexts/breakpoint/context";
 
 // ── Style tokens ──────────────────────────────────────────────────────────
@@ -111,19 +112,29 @@ export function Toolbar({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className={labelCls}>Start Date</label>
-                <input
-                  type="date"
+                <DatePicker
+                  options={{
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    allowInput: true,
+                  }}
                   value={filters.startdate}
-                  onChange={(e) => setFilter("startdate", e.target.value)}
+                  onChange={(dates, dateStr) => setFilter("startdate", dateStr)}
                   className={inputCls}
                 />
               </div>
               <div>
                 <label className={labelCls}>End Date</label>
-                <input
-                  type="date"
+                <DatePicker
+                  options={{
+                    dateFormat: "Y-m-d",
+                    altInput: true,
+                    altFormat: "d/m/Y",
+                    allowInput: true,
+                  }}
                   value={filters.enddate}
-                  onChange={(e) => setFilter("enddate", e.target.value)}
+                  onChange={(dates, dateStr) => setFilter("enddate", dateStr)}
                   className={inputCls}
                 />
               </div>
@@ -188,19 +199,29 @@ export function Toolbar({
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div>
               <label className={labelCls}>Start Date</label>
-              <input
-                type="date"
+              <DatePicker
+                options={{
+                  dateFormat: "Y-m-d",
+                  altInput: true,
+                  altFormat: "d/m/Y",
+                  allowInput: true,
+                }}
                 value={filters.startdate}
-                onChange={(e) => setFilter("startdate", e.target.value)}
+                onChange={(dates, dateStr) => setFilter("startdate", dateStr)}
                 className={inputCls}
               />
             </div>
             <div>
               <label className={labelCls}>End Date</label>
-              <input
-                type="date"
+              <DatePicker
+                options={{
+                  dateFormat: "Y-m-d",
+                  altInput: true,
+                  altFormat: "d/m/Y",
+                  allowInput: true,
+                }}
                 value={filters.enddate}
-                onChange={(e) => setFilter("enddate", e.target.value)}
+                onChange={(dates, dateStr) => setFilter("enddate", dateStr)}
                 className={inputCls}
               />
             </div>

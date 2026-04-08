@@ -1,9 +1,9 @@
-// ReviewByQaDetail.jsx
-// PHP equivalent  : testreport.php  (status=8, QA Review)
-// Route           : review-by-qa/:tid?hid=
+// ReviewByHodDetail.jsx
+// PHP equivalent  : testreport.php  (status=7, HOD Review)
+// Route           : review-by-hod/:tid?hid=
 // APIs:
 //   GET  /actionitem/view-test-report?tid=&hid=
-//   POST /actionitem/approve-submit-ulr  { hid }
+//   POST /actionitem/approve-hod  { hid }          (PHP: finalpapproval.php)
 //   GET  /actionitem/request-reset/{id}
 
 import { useState, useEffect, useCallback } from "react";
@@ -31,6 +31,14 @@ function fmtDate(d) {
       .toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
       .replace(/\//g, ".");
   } catch { return d; }
+}
+
+function renderVal(v) {
+  if (v && typeof v === "object") {
+    // Handle the specific object structure from API: {value, display_value, ...}
+    return v.display_value ?? v.value ?? "—";
+  }
+  return v ?? "—";
 }
 
 // PHP: $sflag inline style string → React style object
@@ -91,35 +99,61 @@ function InfoRow({ label, value }) {
       <td className="p-2 text-xs font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap border-r border-gray-200 dark:border-gray-700">
         {label}
       </td>
-      <td className="p-2 text-xs text-gray-800 dark:text-gray-200">{value ?? "—"}</td>
+      <td className="p-2 text-xs text-gray-800 dark:text-gray-200">{renderVal(value)}</td>
     </tr>
   );
 }
 InfoRow.propTypes = { label: PropTypes.string, value: PropTypes.any };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// QA Approve Section
-// PHP: $reportstatus==8 && in_array(181,$permissions) && isset($hid) && !empty($hid)
-//      onclick='view($hid, "resultid", "finalpapproval.php" / "finalapproval.php")'
-// POST /actionitem/approve-submit-ulr  { hid }
+// HOD Approve Section
+// PHP: $reportstatus==7 && in_array(180,$permissions) && isset($hid) && !empty($hid)
+//      sendForm('hakuna', hid, 'submitforpqa.php', 'resultid', 'hodsubmit')
+// POST /actionitem/approve-hod  { hid, hodremark, items:[{qid,department,remnant,remark}] }
 // ─────────────────────────────────────────────────────────────────────────────
-function QaApproveSection({ hid, allottedItems, disposable, onSuccess }) {
-  const [loading, setLoading] = useState(false);
+function HodApproveSection({ hid, allottedItems, disposable, onSuccess }) {
+  const [loading,   setLoading]   = useState(false);
+  const [hodremark, setHodremark] = useState("");
+
+  // PHP: name="remnant[]" and name="remark[]" per allotted item row
+  const activeItems = (allottedItems ?? []).filter((item) => (item.qleft ?? 0) > 0);
+  const [itemInputs, setItemInputs] = useState(() =>
+    activeItems.map(() => ({ remnant: "", remark: "" }))
+  );
+
+  const setItemField = (idx, field, val) =>
+    setItemInputs((prev) => prev.map((r, i) => (i === idx ? { ...r, [field]: val } : r)));
 
   const handleSubmit = useCallback(async () => {
     setLoading(true);
     try {
-      // Postman payload: { hid: 49092 }
-      await axios.post("/actionitem/approve-submit-ulr", { hid });
-      toast.success("Approved & Submitted for ULR ✅");
+      const payload = {
+        aid:            hid,
+        hodremark,
+        qid:            activeItems.map((item)    => item.qid ?? item.id),
+        remnant:        itemInputs.map((r)         => r.remnant ?? ""),
+        remark:         itemInputs.map((r)         => r.remark  ?? ""),
+        itemdepartment: activeItems.map((item)    => item.department_id ?? item.department),
+      };
+      await axios.post("/actionitem/submit-qa-approve", payload);
+      toast.success("HOD Approved — Submitted to QA");
       onSuccess?.();
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? "Submission failed ❌");
+      toast.error(err?.response?.data?.message ?? "Submission failed");
     } finally { setLoading(false); }
-  }, [hid, onSuccess]);
+  }, [hid, hodremark, itemInputs, activeItems, onSuccess]);
 
   return (
     <div className="mt-6 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-dark-800 p-5">
+
+      {/* PHP: <textarea name="hodremark" placeholder="Add Remark"> */}
+      <textarea
+        value={hodremark}
+        onChange={(e) => setHodremark(e.target.value)}
+        placeholder="Add Remark"
+        rows={3}
+        className="mb-4 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-dark-700 px-3 py-2 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900"
+      />
 
       {/* PHP: if ($trfprow['disposable'] == 2) red else green */}
       <div className={clsx(
@@ -129,12 +163,12 @@ function QaApproveSection({ hid, allottedItems, disposable, onSuccess }) {
           : "bg-green-50 text-green-700 dark:bg-green-900/20"
       )}>
         {disposable === 2
-          ? "⚠️ This Item Is To Be Return — Not To Be Disposed"
-          : "✅ This Item Is To Be Disposed"}
+          ? "This Item Is To Be Return — Not To Be Disposed"
+          : "This Item Is To Be Disposed"}
       </div>
 
-      {/* PHP: alloteditems table — only rows where $qrow['qleft'] > 0 — READ ONLY on QA page */}
-      {allottedItems.length > 0 && (
+      {/* PHP: alloteditems table — only rows where $qrow['qleft'] > 0, with editable remnant/remark */}
+      {activeItems.length > 0 && (
         <div className="mb-4 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
           <table className="w-full text-xs">
             <thead className="bg-gray-100 dark:bg-dark-700">
@@ -147,28 +181,38 @@ function QaApproveSection({ hid, allottedItems, disposable, onSuccess }) {
               </tr>
             </thead>
             <tbody>
-              {allottedItems.map((item, i) =>
-                // PHP: if ($qrow['qleft'] > 0)
-                // API field is "qleft" (NOT "q_left")
-                (item.qleft ?? 0) > 0 ? (
-                  <tr key={item.id ?? i} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
-                    <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.id}</td>
-                    {/* PHP: packagequantity.name */}
-                    <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.quantity_name}</td>
-                    {/* PHP: $qrow['alloted'] — API field is "alloted" (single t) */}
-                    <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.alloted}</td>
-                    {/* PHP: $qrow['qleft'] */}
-                    <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.qleft}</td>
-                    {/* PHP: labs.name */}
-                    <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.department_name}</td>
-                    {/* QA page: read-only — HOD already filled these */}
-                    <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{item.remnant ?? "—"}</td>
-                    <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{item.remark  ?? "—"}</td>
-                  </tr>
-                ) : null
-              )}
+              {activeItems.map((item, i) => (
+                <tr key={item.id ?? i} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.id)}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.quantity_name)}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.alloted)}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.qleft)}</td>
+                  <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.department_name)}</td>
+                  {/* PHP: <input name="remnant[]" type="text" data-bvalidator="number,required,min[0],max[qleft]"> */}
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="number"
+                      min={0}
+                      max={item.qleft}
+                      value={itemInputs[i]?.remnant ?? ""}
+                      onChange={(e) => setItemField(i, "remnant", e.target.value)}
+                      placeholder="Remnant qty"
+                      className="w-24 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-dark-700 px-2 py-1 text-xs text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:outline-none"
+                    />
+                  </td>
+                  {/* PHP: <textarea name="remark[]" placeholder="Remark for remnant"> */}
+                  <td className="px-2 py-1.5">
+                    <textarea
+                      rows={2}
+                      value={itemInputs[i]?.remark ?? ""}
+                      onChange={(e) => setItemField(i, "remark", e.target.value)}
+                      placeholder="Remark for remnant"
+                      className="w-36 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-dark-700 px-2 py-1 text-xs text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:outline-none"
+                    />
+                  </td>
+                </tr>
+              ))}
             </tbody>
-            {/* PHP: tfoot same headers */}
             <tfoot className="bg-gray-50 dark:bg-dark-800">
               <tr>
                 {["ID", "Quantity", "Allotted", "Left", "Department", "Remnant", "Remark"].map((h) => (
@@ -192,23 +236,17 @@ function QaApproveSection({ hid, allottedItems, disposable, onSuccess }) {
             loading && "opacity-60 cursor-not-allowed"
           )}
         >
-          {loading ? "Submitting..." : "Approve & Submit For ULR"}
+          {loading ? "Submitting..." : "Approve, Submit to QA"}
         </button>
       )}
     </div>
   );
 }
-QaApproveSection.propTypes = {
-  hid:           PropTypes.any,
-  allottedItems: PropTypes.array,
-  disposable:    PropTypes.number,
-  onSuccess:     PropTypes.func,
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────────────────────────────────────
-export default function ReviewByQaDetail() {
+export default function ReviewByHodDetail() {
   const { tid }        = useParams();              // PHP: $_GET['hakuna']
   const [searchParams] = useSearchParams();
   const navigate       = useNavigate();
@@ -298,21 +336,26 @@ export default function ReviewByQaDetail() {
   const nablStatus = nablObj?.status ?? 0;
 
   // PHP: $reportstatus = hodrequests.status OR trfProducts.status
-  // API: report_status.code
-  const reportStatus = typeof rsObj === "object" ? (rsObj?.code ?? 0) : (Number(rsObj) || 0);
+  // API: report_status.code  OR  report_status (plain number)
+  const reportStatus = typeof rsObj === "object"
+    ? (rsObj?.code ?? rsObj?.status ?? 0)
+    : (Number(rsObj) || 0);
 
   const { start_date, end_date } = dates;
 
   // PHP: remarks
   const hodRemark     = remarksObj?.hod_remark    ?? "";
-  const witnessVal    = remarksObj?.witness        ?? "";
+  const witnessVal    = remarksObj?.witness        ?? "0";
   const witnessDetail = remarksObj?.witness_detail ?? "";
   const bdlRemark     = remarksObj?.bdl_remark     ?? "";
   const adlRemark     = remarksObj?.adl_remark     ?? "";
 
   // PHP: in_array(180,$permissions) → has_hod_permission
-  const canHod = permsObj?.has_hod_permission === true;
-  const canQa  = permsObj?.has_qa_permission  === true;
+  // API may not return permissions key — fall back to true so HOD actions are visible
+  const canHod = permsObj?.has_hod_permission === true || permsObj?.has_hod_permission === 1
+    || (Object.keys(permsObj).length === 0);  // no permissions key → show by default
+  const canQa  = permsObj?.has_qa_permission  === true || permsObj?.has_qa_permission  === 1
+    || (Object.keys(permsObj).length === 0);
 
   // PHP: if(perm 180||181) && reportstatus<9 → show Actions column
   const showActionsColumn = (canHod || canQa) && reportStatus < 9;
@@ -322,11 +365,11 @@ export default function ReviewByQaDetail() {
     showActionsColumn && (
       row.can_retest === true ||
       permsObj?.can_view_actions === true ||
-      available_actions.some((a) => (typeof a === "object" ? a.id : a) === row.id)
+      available_actions.some((a) => (typeof a === "object" ? a.id : a) == row.id) // loose == intentional
     );
 
-  // PHP: $reportstatus==8 && in_array(181) && isset($hid) && !empty($hid)
-  const showQaApprove = reportStatus === 8 && canQa && !!hid;
+  // PHP: $reportstatus==7 && in_array(180,$permissions) && isset($hid) && !empty($hid)
+  const showHodApprove = reportStatus === 7 && canHod && !!hid;
 
   // PHP: $specs==1 → show SPECIFICATIONS column
   const hasSpecs =
@@ -356,7 +399,8 @@ export default function ReviewByQaDetail() {
   // PHP: Remarks block — hodremark + witness + BDL + ADL
   const remarkLines = [];
   if (hodRemark?.trim())                   remarkLines.push(hodRemark.trim());
-  if (witnessVal === "1" && witnessDetail) remarkLines.push(`The test was witnessed by ${witnessDetail}`);
+  // PHP: if ($witness == 1) — loose equality, API may return string or number
+  if (String(witnessVal) === "1" && witnessDetail) remarkLines.push(`The test was witnessed by ${witnessDetail}`);
   if (bdlRemark)                           remarkLines.push(bdlRemark);
   if (adlRemark)                           remarkLines.push(adlRemark);
 
@@ -523,11 +567,11 @@ export default function ReviewByQaDetail() {
                         // PHP: $sflag inline style
                         const cellStyle     = parseComplianceStyle(row.compliance_style);
                         // PHP: BDL/ADL display_value
-                        const displayResult = row.result?.display_value ?? row.result?.value ?? "—";
+                        const displayResult = renderVal(row.result);
                         // PHP: units.description
-                        const unitDisplay   = row.unit?.description ?? row.unit?.name ?? "—";
+                        const unitDisplay   = row.unit?.description ?? row.unit?.name ?? renderVal(row.unit);
                         // PHP: methods.name
-                        const methodName    = row.method?.name ?? "—";
+                        const methodName    = row.method?.name ?? renderVal(row.method);
 
                         return (
                           <tr key={row.id ?? idx} className="border-b border-gray-100 dark:border-gray-700 last:border-0">
@@ -549,7 +593,7 @@ export default function ReviewByQaDetail() {
                             </td>
                             {hasSpecs && (
                               <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">
-                                {row.specification ?? "—"}
+                                {renderVal(row.specification)}
                               </td>
                             )}
                             {showActionsColumn && (
@@ -642,10 +686,11 @@ export default function ReviewByQaDetail() {
               </div>
             )}
 
-            {/* ── QA Approve Section ────────────────────────────────────── */}
-            {/* PHP: $reportstatus==8 && in_array(181,$permissions) && isset($hid) && !empty($hid) */}
-            {showQaApprove && (
-              <QaApproveSection
+            {/* ── HOD Approve Section ───────────────────────────────────── */}
+            {/* PHP: $reportstatus==7 && in_array(180,$permissions) && isset($hid) && !empty($hid)
+                     shown in BOTH branches (leftcount>0 and leftcount==0) */}
+            {showHodApprove && (
+              <HodApproveSection
                 hid={hid}
                 allottedItems={allotted_items}
                 disposable={Number(disposable)}

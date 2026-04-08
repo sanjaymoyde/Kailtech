@@ -20,7 +20,7 @@ export default function AddInstrument() {
   const [savedInstrumentId, setSavedInstrumentId] = useState(null);
   const [savedFormatId, setSavedFormatId] = useState(null);
   const [savedUncertaintyId, setSavedUncertaintyId] = useState(null);
-  
+
   // Form state management
   const [formData, setFormData] = useState({
     name: "",
@@ -29,8 +29,8 @@ export default function AddInstrument() {
     typeofsupport: [],
     typeofmaster: [],
     description: "",
-    discipline: "",
-    groups: "",
+    discipline: [],
+    groups: [],
     remark: "",
     range: "",
     leastcount: "",
@@ -98,6 +98,9 @@ export default function AddInstrument() {
 
   const [sopOptions, setSopOptions] = useState([]);
   const [standardOptions, setStandardOptions] = useState([]);
+  const [disciplineOptions, setDisciplineOptions] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [groupOptions, setGroupOptions] = useState([]);
   const [subcategoryOne, setSubcategoryOne] = useState([]);
   const [subcategoryTwo, setSubcategoryTwo] = useState([]);
   const [formateOptions, setFormateOptions] = useState([]);
@@ -162,6 +165,7 @@ export default function AddInstrument() {
           unitTypeRes,
           unitRes,
           modeRes,
+          disciplineRes,
         ] = await Promise.all([
           axios.get("/calibrationoperations/calibration-method-list"),
           axios.get("/calibrationoperations/calibration-standard-list"),
@@ -173,6 +177,7 @@ export default function AddInstrument() {
           axios.get("/master/unit-type-list"),
           axios.get("/master/units-list"),
           axios.get("/master/mode-list"),
+          axios.get("/calibrationoperations/get-disciplines"),
         ]);
 
         const safeArray = (data) => (Array.isArray(data) ? data : []);
@@ -191,6 +196,15 @@ export default function AddInstrument() {
           })),
         );
 
+        if (disciplineRes?.data?.data) {
+          setDisciplineOptions(
+            safeArray(disciplineRes.data.data).map((item) => ({
+              label: item.name || item.discipline_name,
+              value: (item.id || item.discipline_id || item.name)?.toString(),
+            })),
+          );
+        }
+
         setSubcategoryOne(
           safeArray(subcategoryoneRes.data.data).map((item) => ({
             label: item.name,
@@ -204,7 +218,7 @@ export default function AddInstrument() {
             value: item.id.toString(),
           })),
         );
-        
+
         setFormateOptions(
           safeArray(formatelist.data.data).map((item) => ({
             label: item.name,
@@ -357,6 +371,8 @@ export default function AddInstrument() {
       const newMatrices = [...(selectedPrice.matrices || [])];
 
       const newMatrix = {
+        discipline: "",
+        group: "",
         unittype: "",
         unit: "",
         mode: "",
@@ -365,14 +381,6 @@ export default function AddInstrument() {
         tolerance: "",
         tolerancetype: "",
       };
-
-      if (
-        newMatrices.length > 0 &&
-        JSON.stringify(newMatrices[newMatrices.length - 1]) ===
-          JSON.stringify(newMatrix)
-      ) {
-        return prev;
-      }
 
       newMatrices.push(newMatrix);
       selectedPrice.matrices = newMatrices;
@@ -415,12 +423,18 @@ export default function AddInstrument() {
     const newErrors = {};
 
     Object.keys(requiredFields).forEach((field) => {
-      if (field === "sop") {
-        if (!formData[field] || formData[field].length === 0) {
+      const value = formData[field];
+      const isArray = Array.isArray(value);
+      const isEmptyArray = isArray && value.length === 0;
+      const isEmptyString =
+        typeof value === "string" && value.toString().trim() === "";
+
+      if (field === "sop" || field === "discipline" || field === "groups") {
+        if (isEmptyArray || value == null) {
           newErrors[field] = true;
         }
       } else {
-        if (!formData[field] || formData[field].toString().trim() === "") {
+        if (isEmptyArray || isEmptyString || value == null) {
           newErrors[field] = true;
         }
       }
@@ -471,6 +485,12 @@ export default function AddInstrument() {
     try {
       const payload = {
         ...formData,
+        discipline: Array.isArray(formData.discipline)
+          ? formData.discipline.join(",")
+          : formData.discipline || "",
+        groups: Array.isArray(formData.groups)
+          ? formData.groups.join(",")
+          : formData.groups || "",
         suffix: Array.isArray(formData.suffix)
           ? formData.suffix[0] || ""
           : formData.suffix || "",
@@ -576,7 +596,7 @@ export default function AddInstrument() {
 
           toast.success(
             `Step 1 Complete! Instrument ID: ${finalInstrumentId}, Format ID: ${finalFormatId}` +
-              (uncertaintyId ? `, Uncertainty ID: ${uncertaintyId}` : ""),
+            (uncertaintyId ? `, Uncertainty ID: ${uncertaintyId}` : ""),
           );
 
           setTimeout(() => {
@@ -617,19 +637,17 @@ export default function AddInstrument() {
         {[1, 2, 3, 4].map((step) => (
           <div key={step} className="flex items-center">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                currentStep >= step
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-300 text-gray-600"
-              }`}
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${currentStep >= step
+                ? "bg-blue-600 text-white"
+                : "bg-gray-300 text-gray-600"
+                }`}
             >
               {step}
             </div>
             {step < 4 && (
               <div
-                className={`h-1 w-16 ${
-                  currentStep > step ? "bg-blue-600" : "bg-gray-300"
-                }`}
+                className={`h-1 w-16 ${currentStep > step ? "bg-blue-600" : "bg-gray-300"
+                  }`}
               />
             )}
           </div>
@@ -649,7 +667,7 @@ export default function AddInstrument() {
             {currentStep === 4 && "Step 4: Certificate Settings"}
           </h2>
           <Button
-            variant="outline"
+            variant="outlined"
             className="bg-blue-600 text-white hover:bg-blue-700"
             onClick={() =>
               navigate("/dashboards/calibration-operations/instrument-list")
@@ -673,6 +691,8 @@ export default function AddInstrument() {
               handleMultiSelectChange={handleMultiSelectChange}
               sopOptions={sopOptions}
               standardOptions={standardOptions}
+              disciplineOptions={disciplineOptions}
+              groupOptions={groupOptions}
             />
 
             <ValidationFields
@@ -795,7 +815,7 @@ export default function AddInstrument() {
                 instrumentId={savedInstrumentId}
                 formatId={savedFormatId}
                 uncertaintyId={savedUncertaintyId}
-                onComplete={() => setCurrentStep(4)} 
+                onComplete={() => setCurrentStep(4)}
                 onBack={() => setCurrentStep(2)}
               />
             ) : (

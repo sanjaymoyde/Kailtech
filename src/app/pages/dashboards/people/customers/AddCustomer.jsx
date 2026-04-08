@@ -23,6 +23,7 @@ export default function AddCustomer() {
     email: "",
     country: "",
     stateid: "",
+    state: "", // For non-India countries (text input)
     city: "",
     gstno: "",
     pan: "",
@@ -34,24 +35,36 @@ export default function AddCustomer() {
   const [paymentModes, setPaymentModes] = useState([]);
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
+  const [isIndianCountry, setIsIndianCountry] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Required fields (thumb_image is optional)
-  const requiredFields = {
-    name: "Customer Name",
-    customertype: "Customer Type",
-    modeofpayment: "Mode of Payment",
-    creditdays: "Credit Days",
-    creditamount: "Credit Amount",
-    mobile: "Mobile",
-    pname: "Contact Person Name",
-    pnumber: "Contact Person Number",
-    email: "Email",
-    country: "Country",
-    stateid: "State",
-    city: "City",
-    gstno: "GST No",
-    pan: "PAN",
-    discount: "Discount %"
+  const getRequiredFields = () => {
+    const fields = {
+      name: "Customer Name",
+      customertype: "Customer Type",
+      modeofpayment: "Mode of Payment",
+      creditdays: "Credit Days",
+      creditamount: "Credit Amount",
+      mobile: "Mobile",
+      pname: "Contact Person Name",
+      pnumber: "Contact Person Number",
+      email: "Email",
+      country: "Country",
+      city: "City",
+      gstno: "GST No",
+      pan: "PAN",
+      discount: "Discount %"
+    };
+    
+    // Add state field based on country
+    if (isIndianCountry) {
+      fields.stateid = "State";
+    } else {
+      fields.state = "State";
+    }
+    
+    return fields;
   };
 
   useEffect(() => {
@@ -133,7 +146,8 @@ export default function AddCustomer() {
   };
 
   const handleSelectChange = (e, name) => {
-    setFormData((prev) => ({ ...prev, [name]: e.target.value }));
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
     // Clear error when user makes selection
     if (errors[name]) {
@@ -142,10 +156,67 @@ export default function AddCustomer() {
         [name]: false
       }));
     }
+
+    // Handle country change - check if India (id = "1")
+    if (name === "country") {
+      const isIndia = value === "1";
+      setIsIndianCountry(isIndia);
+      
+      // Reset state fields when country changes
+      setFormData((prev) => ({
+        ...prev,
+        stateid: "",
+        state: ""
+      }));
+      
+      // Clear state errors
+      setErrors(prev => ({
+        ...prev,
+        stateid: false,
+        state: false
+      }));
+    }
   };
 
-  const validateForm = () => {
+  // Validation: Check duplicate customer name
+  const checkCustomerName = async (name) => {
+    if (!name || name.trim() === "") return true;
+    
+    try {
+      const res = await axios.post("/people/check-customer-name", { customername: name });
+      return res.data?.status === "ok" || res.data?.message === "ok";
+    } catch (err) {
+      console.error("Customer name check error:", err);
+      return true; // Allow on error
+    }
+  };
+
+  // Validation: Check duplicate email
+  const checkEmail = async (email) => {
+    if (!email || email.trim() === "") return true;
+    
+    try {
+      const res = await axios.post("/people/check-customer-email", { email });
+      return res.data?.status === "ok" || res.data?.message === "ok";
+    } catch (err) {
+      console.error("Email check error:", err);
+      return true; // Allow on error
+    }
+  };
+
+  // Validation: GST format (15 characters alphanumeric)
+  const validateGST = (gst) => {
+    if (!gst || gst.trim() === "") return true;
+    
+    // GST format: 2 digits (state code) + 10 chars (PAN) + 1 digit + 1 char + 1 char
+    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    return gstRegex.test(gst.toUpperCase());
+  };
+
+  const validateForm = async () => {
     const newErrors = {};
+    const newValidationErrors = {};
+    const requiredFields = getRequiredFields();
     
     // Check all required fields
     Object.keys(requiredFields).forEach(field => {
@@ -162,11 +233,35 @@ export default function AddCustomer() {
       }
     });
 
+    // Custom validations (only if fields are filled)
+    if (formData.name && formData.name.trim() !== "") {
+      const isNameValid = await checkCustomerName(formData.name);
+      if (!isNameValid) {
+        newValidationErrors.name = "Customer name already exists";
+      }
+    }
+
+    if (formData.email && formData.email.trim() !== "") {
+      const isEmailValid = await checkEmail(formData.email);
+      if (!isEmailValid) {
+        newValidationErrors.email = "Email already exists";
+      }
+    }
+
+    if (formData.gstno && formData.gstno.trim() !== "") {
+      const isGSTValid = validateGST(formData.gstno);
+      if (!isGSTValid) {
+        newValidationErrors.gstno = "Invalid GST format (e.g., 22AAAAA0000A1Z5)";
+      }
+    }
+
     setErrors(newErrors);
+    setValidationErrors(newValidationErrors);
 
     // If there are errors, focus on the first error field
-    if (Object.keys(newErrors).length > 0) {
-      const firstErrorField = Object.keys(newErrors)[0];
+    const allErrors = { ...newErrors, ...newValidationErrors };
+    if (Object.keys(allErrors).length > 0) {
+      const firstErrorField = Object.keys(allErrors)[0];
       const element = document.querySelector(`[name="${firstErrorField}"]`);
       if (element) {
         element.focus();
@@ -182,8 +277,9 @@ export default function AddCustomer() {
     e.preventDefault();
     
     // Validate form before submission
-    if (!validateForm()) {
-      toast.error("Please fill all required fields");
+    const isValid = await validateForm();
+    if (!isValid) {
+      toast.error("Please fix all errors before submitting");
       return;
     }
 
@@ -192,12 +288,22 @@ export default function AddCustomer() {
     try {
       const payload = new FormData();
 
+      // Add sapua field (from PHP: <input name="sapua" value="1" type="hidden" />)
+      payload.append("sapua", "1");
+
       Object.entries(formData).forEach(([key, value]) => {
         if (key === "customertype") {
           value.forEach((v) => payload.append("customertype[]", v));
         } else if (key === "thumb_image" && value) {
           // Only append image if file is selected
           payload.append(key, value);
+        } else if (key === "stateid" || key === "state") {
+          // Only send the relevant state field based on country
+          if (isIndianCountry && key === "stateid" && value) {
+            payload.append(key, value);
+          } else if (!isIndianCountry && key === "state" && value) {
+            payload.append(key, value);
+          }
         } else if (key !== "thumb_image") {
           // Append all other fields
           payload.append(key, value);
@@ -205,9 +311,20 @@ export default function AddCustomer() {
       });
 
       const res = await axios.post("/people/add-customer", payload);
+      console.log("Add Customer Response:", res.data);
+      
       if (res.data.status === "true") {
         toast.success("Customer added successfully");
-        navigate("/dashboards/people/customers");
+        // Redirect to edit page to add addresses and contacts
+        const customerId = res.data.id || res.data.data?.id || res.data.customer_id;
+        console.log("Customer ID:", customerId);
+        
+        if (customerId) {
+          navigate(`/dashboards/people/customers/edit/${customerId}`);
+        } else {
+          console.warn("No customer ID found in response, redirecting to list");
+          navigate("/dashboards/people/customers");
+        }
       } else {
         toast.error(res.data.message || "Failed to add customer");
       }
@@ -241,10 +358,13 @@ export default function AddCustomer() {
               placeholder="Customer name"
               onChange={handleInputChange}
               value={formData.name}
-              className={errors.name ? "border-red-500 bg-red-50" : ""}
+              className={errors.name || validationErrors.name ? "border-red-500 bg-red-50" : ""}
             />
             {errors.name && (
               <p className="text-red-600 text-sm mt-1">This field is required</p>
+            )}
+            {validationErrors.name && (
+              <p className="text-red-600 text-sm mt-1">{validationErrors.name}</p>
             )}
           </div>
 
@@ -371,10 +491,13 @@ export default function AddCustomer() {
               placeholder="Email address"
               onChange={handleInputChange}
               value={formData.email}
-              className={errors.email ? "border-red-500 bg-red-50" : ""}
+              className={errors.email || validationErrors.email ? "border-red-500 bg-red-50" : ""}
             />
             {errors.email && (
               <p className="text-red-600 text-sm mt-1">This field is required</p>
+            )}
+            {validationErrors.email && (
+              <p className="text-red-600 text-sm mt-1">{validationErrors.email}</p>
             )}
           </div>
 
@@ -401,26 +524,43 @@ export default function AddCustomer() {
             )}
           </div>
 
-          {/* State */}
+          {/* State - Dynamic: Dropdown for India, Text input for others */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
               State <span className="text-red-500">*</span>
             </label>
-            <Select 
-              name="stateid" 
-              onChange={(e) => handleSelectChange(e, "stateid")}
-              value={formData.stateid}
-              className={errors.stateid ? "border-red-500 bg-red-50" : ""}
-            >
-              <option value="">Choose state...</option>
-              {states.map((state) => (
-                <option key={state.value} value={state.value}>
-                  {state.label}
-                </option>
-              ))}
-            </Select>
-            {errors.stateid && (
-              <p className="text-red-600 text-sm mt-1">This field is required</p>
+            {isIndianCountry ? (
+              <>
+                <Select 
+                  name="stateid" 
+                  onChange={(e) => handleSelectChange(e, "stateid")}
+                  value={formData.stateid}
+                  className={errors.stateid ? "border-red-500 bg-red-50" : ""}
+                >
+                  <option value="">Choose state...</option>
+                  {states.map((state) => (
+                    <option key={state.value} value={state.value}>
+                      {state.label}
+                    </option>
+                  ))}
+                </Select>
+                {errors.stateid && (
+                  <p className="text-red-600 text-sm mt-1">This field is required</p>
+                )}
+              </>
+            ) : (
+              <>
+                <Input 
+                  name="state" 
+                  placeholder="Enter state"
+                  onChange={handleInputChange}
+                  value={formData.state}
+                  className={errors.state ? "border-red-500 bg-red-50" : ""}
+                />
+                {errors.state && (
+                  <p className="text-red-600 text-sm mt-1">This field is required</p>
+                )}
+              </>
             )}
           </div>
 
@@ -442,13 +582,16 @@ export default function AddCustomer() {
             <Input 
               label="GST No" 
               name="gstno" 
-              placeholder="GST number"
+              placeholder="GST number (e.g., 22AAAAA0000A1Z5)"
               onChange={handleInputChange}
               value={formData.gstno}
-              className={errors.gstno ? "border-red-500 bg-red-50" : ""}
+              className={errors.gstno || validationErrors.gstno ? "border-red-500 bg-red-50" : ""}
             />
             {errors.gstno && (
               <p className="text-red-600 text-sm mt-1">This field is required</p>
+            )}
+            {validationErrors.gstno && (
+              <p className="text-red-600 text-sm mt-1">{validationErrors.gstno}</p>
             )}
           </div>
 

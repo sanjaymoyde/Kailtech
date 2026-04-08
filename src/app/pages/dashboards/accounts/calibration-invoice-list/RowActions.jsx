@@ -8,6 +8,11 @@
 //   permission(273) + (status==0||1) → Edit
 //   OR permission(383) + status==0 + empty invoiceno → Edit
 //   permission(271) → Request Cancel
+//
+// API: POST /accounts/approve-calibration-invoice
+//   body:    { invoiceid: number }
+//   success: { status: true, message: "Invoice Approved Successfully", invoice_no: "KTRC/..." }
+//   failure: { status: false, message: "..." }
 
 import clsx from "clsx";
 import { useCallback, useState } from "react";
@@ -92,7 +97,7 @@ function ApproveModal({ show, onClose, onOk, loading }) {
   );
 }
 
-// ── Cancel Request Modal (PHP: requestinvoicecancel.php) ──────────────────
+// ── Cancel Request Modal ──────────────────────────────────────────────────
 function CancelRequestModal({ show, onClose, onOk, invoiceno, loading }) {
   const [reason, setReason] = useState("");
   if (!show) return null;
@@ -160,21 +165,19 @@ export function RowActions({ row, table }) {
   const status = Number(rowData.status);
   const invoiceno = rowData.invoiceno || "";
 
-  // PHP: $next5 = date("Y-m-05", strtotime("+1 month", strtotime($row['invoicedate'])));
-  // if (empty($row['invoiceno']) || date("Y-m-d") <= $next5 || in_array(314,$permissions))
+  // PHP: next month's 5th — edit window
   const withinEditWindow = (() => {
     if (!invoiceno) return true;
     if (permissions.includes(314)) return true;
     if (rowData.invoicedate) {
       const d = new Date(rowData.invoicedate);
-      // next month's 5th
       const next5 = new Date(d.getFullYear(), d.getMonth() + 1, 5);
       if (new Date() <= next5) return true;
     }
     return false;
   })();
 
-  // PHP: permission(269) + finaltotal<=5000 | permission(270) + finaltotal>5000
+  // PHP: permission(269) <=5000 | permission(270) >5000
   const canApprove =
     (permissions.includes(269) && finaltotal <= 5000) ||
     (permissions.includes(270) && finaltotal > 5000);
@@ -187,52 +190,72 @@ export function RowActions({ row, table }) {
   // PHP: permission(271)
   const canRequestCancel = permissions.includes(271);
 
-  // ── Approve (PHP: approveinvoice.php) ─────────────────────────────────
+  // ── Approve ──────────────────────────────────────────────────────────────
+  // POST /accounts/approve-calibration-invoice
+  // body:    { invoiceid }
+  // success: { status: true, message: "Invoice Approved Successfully", invoice_no: "KTRC/..." }
   const handleApprove = useCallback(async () => {
     setApproveLoading(true);
     try {
-      const res = await axios.post(
-        `/accounts/approve-calibration-invoice/${rowData.id}`,
-      );
-      if (
-        res.data.success === true ||
+      const res = await axios.post("/accounts/approve-calibration-invoice", {
+        invoiceid: rowData.id,
+      });
+
+      // API returns: { status: true/false, message: "...", invoice_no: "KTRC/..." }
+      const ok =
         res.data.status === true ||
-        res.data.status === "true"
-      ) {
-        toast.success("Invoice approved ✅");
-        table.options.meta?.updateRow(row.index, { status: 1 });
+        res.data.status === "true" ||
+        res.data.success === true;
+
+      if (ok) {
+        const invNo = res.data.invoice_no ?? res.data.invoiceno ?? "";
+        toast.success(
+          invNo
+            ? `${res.data.message ?? "Invoice approved"} — ${invNo}`
+            : (res.data.message ?? "Invoice approved successfully"),
+        );
+        // Optimistic update: status 0→1, update invoiceno if it was just generated
+        table.options.meta?.updateRow(row.index, {
+          status: 1,
+          ...(invNo ? { invoiceno: invNo } : {}),
+        });
         setApproveOpen(false);
       } else {
         toast.error(res.data.message ?? "Approval failed");
       }
-    } catch {
-      toast.error("Failed to approve invoice");
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? "Failed to approve invoice");
     } finally {
       setApproveLoading(false);
     }
   }, [rowData.id, row.index, table]);
 
-  // ── Request Cancel (PHP: insertInvoiceCancelationRequest.php) ────────
+  // ── Request Cancel ────────────────────────────────────────────────────────
   const handleCancelRequest = useCallback(
     async (reason) => {
       setCancelLoading(true);
       try {
-        const res = await axios.post("/accounts/request-invoice-cancel", {
+        const res = await axios.post("/accounts/cancel-request", {
           invoiceid: rowData.id,
           reason,
         });
-        if (
-          res.data.success === true ||
+        const ok =
           res.data.status === true ||
-          res.data.status === "true"
-        ) {
-          toast.success("Cancellation request submitted ✅");
+          res.data.status === "true" ||
+          res.data.success === true;
+        if (ok) {
+          toast.success(
+            res.data.message ?? "Cancellation request submitted ✅",
+          );
           setCancelOpen(false);
         } else {
           toast.error(res.data.message ?? "Request failed");
         }
-      } catch {
-        toast.error("Failed to submit cancellation request");
+      } catch (err) {
+        toast.error(
+          err?.response?.data?.message ??
+            "Failed to submit cancellation request",
+        );
       } finally {
         setCancelLoading(false);
       }
@@ -243,7 +266,7 @@ export function RowActions({ row, table }) {
   return (
     <>
       <div className="flex flex-wrap gap-1.5">
-        {/* PHP: always → View Invoice */}
+        {/* Always visible */}
         <ActionBtn
           color="primary"
           onClick={() =>
@@ -255,14 +278,14 @@ export function RowActions({ row, table }) {
           View Invoice
         </ActionBtn>
 
-        {/* PHP: status==0 + canApprove */}
+        {/* status==0 + canApprove */}
         {status === 0 && canApprove && (
           <ActionBtn color="success" onClick={() => setApproveOpen(true)}>
             Approve
           </ActionBtn>
         )}
 
-        {/* PHP: (status==0||1||2) + withinEditWindow + canEdit */}
+        {/* (status==0||1||2) + withinEditWindow + canEdit */}
         {(status === 0 || status === 1 || status === 2) &&
           withinEditWindow &&
           canEdit && (
@@ -278,7 +301,7 @@ export function RowActions({ row, table }) {
             </ActionBtn>
           )}
 
-        {/* PHP: (status==0||1||2) + withinEditWindow + permission(271) */}
+        {/* (status==0||1||2) + withinEditWindow + permission(271) */}
         {(status === 0 || status === 1 || status === 2) &&
           withinEditWindow &&
           canRequestCancel && (

@@ -6,6 +6,7 @@ import { Input, Button } from "components/ui";
 export function Toolbar({ table }) {
   const navigate = useNavigate();
   const isFullScreenEnabled = table.getState().tableSettings.enableFullScreen;
+  const permissions = table.options.meta?.permissions ?? [];
   const totalRows = table.getCoreRowModel().rows.length;
   const { pageIndex, pageSize } = table.getState().pagination ?? { pageIndex: 0, pageSize: 25 };
   const from = totalRows === 0 ? 0 : pageIndex * pageSize + 1;
@@ -22,13 +23,15 @@ export function Toolbar({ table }) {
         <h2 className="text-xl font-semibold tracking-wide text-gray-800 dark:text-dark-50">
           Invoice List
         </h2>
-        <Button
-          color="primary"
-          className="h-9 rounded-md px-4 text-sm font-medium"
-          onClick={() => navigate("/dashboards/accounts/past-invoices/add-opening-balance")}
-        >
-          + Add Opening Balance
-        </Button>
+        {permissions.includes(298) && (
+          <Button
+            color="primary"
+            className="h-9 rounded-md px-4 text-sm font-medium"
+            onClick={() => navigate("/dashboards/accounts/past-invoices/add-opening-balance")}
+          >
+            + Add Opening Balance
+          </Button>
+        )}
       </div>
 
       <div className="mt-2 flex items-center justify-between">

@@ -3,21 +3,50 @@ import { useState, useEffect } from "react";
 import clsx from "clsx";
 import { useNavigate } from "react-router";
 import axios from "utils/axios";
+import Select from "react-select";
 
 export function IgstToolbar({ table, filters, onChange, onSearch }) {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
 
-  // Fetch active customers — same as PHP selectextrawhere("customers", "status=1 order by name")
+  // Fetch active customers
   useEffect(() => {
     axios
-      .get("/customers", { params: { status: 1 } })
+      .get("/people/get-all-customers")
       .then((res) => {
-        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const list = Array.isArray(res.data) ? res.data : res.data?.data || res.data?.Data || [];
         setCustomers(list);
       })
       .catch((err) => console.error("Failed to load customers:", err));
   }, []);
+
+  const customerOptions = customers.map((c) => ({
+    value: c.id,
+    label: c.name,
+  }));
+
+  const selectStyles = {
+    control: (base) => ({
+      ...base,
+      height: "40px",
+      minHeight: "40px",
+      borderRadius: "0.25rem",
+      borderColor: "#d1d5db",
+      "&:hover": {
+        borderColor: "#3b82f6",
+      },
+      fontSize: "0.875rem",
+    }),
+    valueContainer: (base) => ({
+      ...base,
+      padding: "0 12px",
+    }),
+    option: (base) => ({
+      ...base,
+      fontSize: "0.875rem",
+      color: "#374151",
+    }),
+  };
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -65,95 +94,91 @@ export function IgstToolbar({ table, filters, onChange, onSearch }) {
 
   return (
     <div className="px-(--margin-x) pt-4">
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-xl font-semibold tracking-wide text-gray-800 dark:text-dark-50">
-          Invoice List
+          GSTR-1 IGST Report
         </h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex h-10 items-center rounded-md border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-dark-500 dark:bg-dark-600 dark:text-dark-100"
+          >
+            &laquo; Back
+          </button>
+          <button
+            onClick={() => navigate("/dashboards/accounts/gstr-1")}
+            className="inline-flex h-10 items-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            SGST + CGST
+          </button>
+        </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          &laquo; Back
-        </button>
-        <button
-          onClick={() => navigate("/dashboards/accounts/gstr-1")}
-          className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          SGST + CGST
-        </button>
-      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[200px_200px_1fr_auto_auto]">
+        {/* Start Date */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-500 uppercase">Start Date</label>
+          <input
+            type="date"
+            max={today}
+            value={filters.startdate}
+            onChange={(e) => onChange("startdate", e.target.value)}
+            className={clsx(
+              "h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none bg-white",
+              "focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500",
+              "dark:bg-dark-900 dark:border-dark-500 dark:text-dark-100"
+            )}
+          />
+        </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_1.4fr_auto_auto]">
-        {/* Start Date — max = today */}
-        <input
-          type="text"
-          value={filters.startdate}
-          onChange={(e) => onChange("startdate", e.target.value)}
-          onFocus={(e) => {
-            e.target.type = "date";
-            e.target.max = today;
-          }}
-          onBlur={(e) => {
-            if (!e.target.value) e.target.type = "text";
-          }}
-          placeholder="Start Date"
-          className={clsx(
-            "h-10 w-full rounded border border-blue-500 px-3 text-sm outline-none",
-            "focus:ring-2 focus:ring-blue-500/40",
-          )}
-        />
+        {/* End Date */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-500 uppercase">End Date</label>
+          <input
+            type="date"
+            max={today}
+            value={filters.enddate}
+            onChange={(e) => onChange("enddate", e.target.value)}
+            className={clsx(
+              "h-10 w-full rounded border border-gray-300 px-3 text-sm outline-none bg-white",
+              "focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500",
+              "dark:bg-dark-900 dark:border-dark-500 dark:text-dark-100"
+            )}
+          />
+        </div>
 
-        {/* End Date — max = today */}
-        <input
-          type="text"
-          value={filters.enddate}
-          onChange={(e) => onChange("enddate", e.target.value)}
-          onFocus={(e) => {
-            e.target.type = "date";
-            e.target.max = today;
-          }}
-          onBlur={(e) => {
-            if (!e.target.value) e.target.type = "text";
-          }}
-          placeholder="End Date"
-          className={clsx(
-            "h-10 w-full rounded border border-blue-500 px-3 text-sm outline-none",
-            "focus:ring-2 focus:ring-blue-500/40",
-          )}
-        />
+        {/* Customer Select */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-500 uppercase">Customer</label>
+          <Select
+            options={customerOptions}
+            isClearable
+            isSearchable
+            placeholder="Search Customer..."
+            styles={selectStyles}
+            value={customerOptions.find((opt) => opt.value === filters.customerid) || null}
+            onChange={(opt) => onChange("customerid", opt ? opt.value : "")}
+            className="react-select-container"
+            classNamePrefix="react-select"
+          />
+        </div>
 
-        {/* Customer dropdown — populated from API */}
-        <select
-          value={filters.customerid}
-          onChange={(e) => onChange("customerid", e.target.value)}
-          className={clsx(
-            "h-10 w-full rounded border border-gray-300 px-3 text-sm text-gray-700",
-            "focus:border-blue-500 focus:outline-none",
-          )}
-        >
-          <option value="">Select Customer</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-
-        <button
-          onClick={onSearch}
-          className="h-10 rounded bg-gray-100 px-4 text-sm font-medium text-gray-800 hover:bg-gray-200"
-        >
-          Search
-        </button>
-        <button
-          onClick={handleExport}
-          className="h-10 rounded bg-gray-100 px-4 text-sm font-medium text-gray-800 hover:bg-gray-200"
-        >
-          Export
-        </button>
+        <div className="flex flex-col gap-1 justify-end">
+          <button
+            onClick={onSearch}
+            className="h-10 rounded bg-blue-600 px-6 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            Search
+          </button>
+        </div>
+        <div className="flex flex-col gap-1 justify-end">
+          <button
+            onClick={handleExport}
+            className="h-10 rounded border border-blue-600 bg-white px-6 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors dark:bg-dark-900 dark:hover:bg-dark-800"
+          >
+            Export
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 
 export function Toolbar({ table }) {
   const navigate = useNavigate();
-  
+
   const {
     docType,
     setDocType,
@@ -125,7 +125,7 @@ export function Toolbar({ table }) {
             </Button>
             <Button
               onClick={handleResetFilters}
-              variant="outline"
+              variant="outlined"
               className="flex-1"
             >
               Reset
@@ -146,8 +146,8 @@ export function Toolbar({ table }) {
                 {searchField === "All"
                   ? "All Fields"
                   : searchField === "Code"
-                  ? "Document No."
-                  : searchField}{" "}
+                    ? "Document No."
+                    : searchField}{" "}
                 = {searchValue}
               </span>
             </>

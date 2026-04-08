@@ -12,6 +12,7 @@ import { EllipsisHorizontalIcon } from "@heroicons/react/20/solid";
 import { useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import axios from "utils/axios";
+import Select from "react-select";
 
 // Local Imports
 import { Button, Input } from "components/ui";
@@ -19,6 +20,27 @@ import { TableConfig } from "./TableConfig";
 import { useBreakpointsContext } from "app/contexts/breakpoint/context";
 
 // ----------------------------------------------------------------------
+
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: "36px",
+    minWidth: "100px",
+    borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+    boxShadow: state.isFocused ? "0 0 0 2px rgba(59, 130, 246, 0.5)" : "none",
+    "&:hover": {
+      borderColor: "#3b82f6",
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+};
 
 export function Toolbar({ table }) {
   const { isXs } = useBreakpointsContext();
@@ -250,18 +272,16 @@ const fetchCustomerTypes = async () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Customer Type
             </label>
-            <select
-              value={filters.ctype || ""}
-              onChange={(e) => handleFilterChange("ctype", e.target.value)}
-              className="h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:border-dark-500 dark:bg-dark-700 dark:text-gray-100"
-            >
-              <option value="">Select Customer Type</option>
-              {customerTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.name}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={customerTypes.find(type => type.id === filters.ctype) ? { value: filters.ctype, label: customerTypes.find(type => type.id === filters.ctype).name } : null}
+              onChange={(selectedOption) => handleFilterChange("ctype", selectedOption ? selectedOption.value : "")}
+              options={customerTypes.map(type => ({ value: type.id, label: type.name }))}
+              placeholder="Select Customer Type"
+              isClearable
+              styles={customSelectStyles}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+            />
           </div>
 
           {/* Specific Purpose */}
@@ -269,20 +289,16 @@ const fetchCustomerTypes = async () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Specific Purpose
             </label>
-            <select
-              value={filters.specificpurpose || ""}
-              onChange={(e) =>
-                handleFilterChange("specificpurpose", e.target.value)
-              }
-              className="h-9 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 dark:border-dark-500 dark:bg-dark-700 dark:text-gray-100"
-            >
-              <option value="">Select Specific Purpose</option>
-              {specificPurposes.map((purpose) => (
-                <option key={purpose.id} value={purpose.id}>
-                  {purpose.name}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={specificPurposes.find(purpose => purpose.id === filters.specificpurpose) ? { value: filters.specificpurpose, label: specificPurposes.find(purpose => purpose.id === filters.specificpurpose).name } : null}
+              onChange={(selectedOption) => handleFilterChange("specificpurpose", selectedOption ? selectedOption.value : "")}
+              options={specificPurposes.map(purpose => ({ value: purpose.id, label: purpose.name }))}
+              placeholder="Select Specific Purpose"
+              isClearable
+              styles={customSelectStyles}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+            />
           </div>
         </div>
       </div>

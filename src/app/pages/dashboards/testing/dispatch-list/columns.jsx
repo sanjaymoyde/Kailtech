@@ -3,10 +3,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 
 // Local Imports
 import { RowActions } from "./RowActions";
-import {
-  SelectCell,
-  SelectHeader,
-} from "components/shared/table/SelectCheckbox";
+
 
 const columnHelper = createColumnHelper();
 
@@ -18,12 +15,7 @@ const formatDate = (val) => {
 };
 
 export const columns = [
-  // ── Checkbox ──────────────────────────────────────────────────────────────
-  columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
+
 
   // ── Serial / UI ID ────────────────────────────────────────────────────────
   columnHelper.accessor((_row, index) => index + 1, {

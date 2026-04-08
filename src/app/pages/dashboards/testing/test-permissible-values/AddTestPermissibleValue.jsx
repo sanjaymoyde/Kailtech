@@ -462,14 +462,18 @@ export default function AddTestPermissibleValue() {
         }
       });
 
-      await axios.post("/testing/add-permissible-value", formDataToSend);
+      const response = await axios.post("/testing/add-permissible-value", formDataToSend);
+      const result = response.data;
+      const newId = result?.data?.id || result?.id;
 
       toast.success("Test Permissible Value created successfully ✅", {
         duration: 2000,
       });
 
       setTimeout(() => {
-        navigate("/dashboards/testing/test-permissible-values");
+        navigate("/dashboards/testing/test-permissible-values", { 
+          state: { updatedId: newId } 
+        });
       }, 1500);
 
     } catch (err) {

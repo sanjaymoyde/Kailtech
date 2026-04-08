@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import axios from 'utils/axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export default function AddDiscipline() {
   const navigate = useNavigate();

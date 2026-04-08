@@ -16,17 +16,18 @@ import {
 import clsx from "clsx";
 import { useState, useEffect, useCallback } from "react";
 import axios from "utils/axios";
+import Select from "react-select";
 
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
 import { TableSortIcon } from "components/shared/table/TableSortIcon";
 import { Page } from "components/shared/Page";
-import { useLockScrollbar, useDidUpdate, useLocalStorage } from "hooks";
+import { useLockScrollbar, useDidUpdate, useLocalStorage, useDebounceValue } from "hooks";
 import { fuzzyFilter } from "utils/react-table/fuzzyFilter";
 import { useSkipper } from "utils/react-table/useSkipper";
 import { Toolbar } from "./Toolbar";
 import { columns } from "./columns.jsx";
 import { PaginationSection } from "components/shared/table/PaginationSection";
-import { SelectedRowsActions } from "./SelectedRowsActions";
+import { SelectedRowsActions } from "components/shared/table/SelectedRowsActions";
 import { useThemeContext } from "app/contexts/theme/context";
 import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
@@ -41,6 +42,41 @@ const selectCls =
   "rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 " +
   "px-3 py-2 text-sm text-gray-700 dark:text-gray-300 outline-none min-w-[180px] " +
   "focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition";
+
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: "42px",
+    minWidth: "180px",
+    borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+    boxShadow: state.isFocused ? "0 0 0 2px rgba(59, 130, 246, 0.5)" : "none",
+    "&:hover": {
+      borderColor: "#3b82f6",
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 50,
+  }),
+};
+
+const customSelectStylesDepartment = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: "42px",
+    minWidth: "400px",
+    borderColor: state.isFocused ? "#3b82f6" : "#d1d5db",
+    boxShadow: state.isFocused ? "0 0 0 2px rgba(59, 130, 246, 0.5)" : "none",
+    "&:hover": {
+      borderColor: "#3b82f6",
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 50,
+    minWidth: "450px",
+  }),
+};
 
 export default function AcceptSample() {
   const { cardSkin } = useThemeContext();
@@ -58,6 +94,12 @@ export default function AcceptSample() {
   const [specificpurpose, setSpecificpurpose] = useState("");
   const [department,      setDepartment]      = useState("");
   const [status,          setStatus]          = useState("Pending"); // PHP default: "Pending"
+  const [startDate,       setStartDate]       = useState(""); // ?startdate
+  const [endDate,         setEndDate]         = useState(""); // ?enddate
+
+  const [globalFilter, setGlobalFilter] = useState("");
+  // Debounce global filter to avoid excessive API calls
+  const [debouncedSearch] = useDebounceValue(globalFilter, 500);
 
   // ── Fetch dropdowns ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -103,6 +145,9 @@ export default function AcceptSample() {
       if (specificpurpose) params.append("specificpurpose", specificpurpose);
       if (department)      params.append("department",      department);
       if (status)          params.append("status",          status);
+      if (startDate)       params.append("startdate",       startDate);
+      if (endDate)         params.append("enddate",         endDate);
+      if (debouncedSearch) params.append("search",          debouncedSearch);
 
       const response = await axios.get(
         `/actionitem/get-hod-request?${params.toString()}`
@@ -121,7 +166,7 @@ export default function AcceptSample() {
     } finally {
       setLoading(false);
     }
-  }, [ctype, specificpurpose, department, status]);
+  }, [ctype, specificpurpose, department, status, startDate, endDate, debouncedSearch]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -130,7 +175,7 @@ export default function AcceptSample() {
     enableFullScreen: false,
     enableRowDense:   false,
   });
-  const [globalFilter, setGlobalFilter] = useState("");
+
   const [sorting,      setSorting]      = useState([{ id: "id", desc: true }]);
 
   const [columnVisibility, setColumnVisibility] = useLocalStorage(
@@ -200,7 +245,9 @@ export default function AcceptSample() {
     );
   }
 
-  if (loading) {
+  // ── Loading state ─────────────────────────────────────────────────────────
+  // Subtle loading: Only show full-page spinner on initial load (when no data exists)
+  if (loading && products.length === 0) {
     return (
       <Page title="HOD Review">
         <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">
@@ -208,7 +255,7 @@ export default function AcceptSample() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
           </svg>
-          Loading...
+          <span className="text-sm tracking-wide">Loading report data…</span>
         </div>
       </Page>
     );
@@ -236,12 +283,16 @@ export default function AcceptSample() {
               {permissions.includes(389) && (
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Customer type:</label>
-                  <select className={selectCls} value={ctype} onChange={(e) => setCtype(e.target.value)}>
-                    <option value="">Select Customer Type</option>
-                    {customerTypes.map((ct) => (
-                      <option key={ct.id} value={ct.id}>{ct.name}</option>
-                    ))}
-                  </select>
+                  <Select
+                    value={customerTypes.find(ct => ct.id === ctype) ? { value: ctype, label: customerTypes.find(ct => ct.id === ctype).name } : null}
+                    onChange={(selectedOption) => setCtype(selectedOption ? selectedOption.value : "")}
+                    options={customerTypes.map(ct => ({ value: ct.id, label: ct.name }))}
+                    placeholder="Select Customer Type"
+                    isClearable
+                    styles={customSelectStyles}
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                  />
                 </div>
               )}
 
@@ -249,24 +300,44 @@ export default function AcceptSample() {
               {permissions.includes(390) && (
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Specific Purpose:</label>
-                  <select className={selectCls} value={specificpurpose} onChange={(e) => setSpecificpurpose(e.target.value)}>
-                    <option value="">Select Specific purpose</option>
-                    {specificPurposes.map((sp) => (
-                      <option key={sp.id} value={sp.id}>{sp.name}</option>
-                    ))}
-                  </select>
+                  <Select
+                    value={specificPurposes.find(sp => sp.id === specificpurpose) ? { value: specificpurpose, label: specificPurposes.find(sp => sp.id === specificpurpose).name } : null}
+                    onChange={(selectedOption) => setSpecificpurpose(selectedOption ? selectedOption.value : "")}
+                    options={specificPurposes.map(sp => ({ value: sp.id, label: sp.name }))}
+                    placeholder="Select Specific purpose"
+                    isClearable
+                    styles={customSelectStyles}
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                  />
                 </div>
               )}
 
               {/* Department — PHP: labs where status=1 */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Department:</label>
-                <select className={selectCls} value={department} onChange={(e) => setDepartment(e.target.value)}>
-                  <option value="">Select</option>
-                  {departments.map((dep) => (
-                    <option key={dep.id} value={dep.id}>{dep.name}</option>
-                  ))}
-                </select>
+                <Select
+                  value={departments.find(dep => dep.id === department) ? { value: department, label: departments.find(dep => dep.id === department).name } : null}
+                  onChange={(selectedOption) => setDepartment(selectedOption ? selectedOption.value : "")}
+                  options={departments.map(dep => ({ value: dep.id, label: dep.name }))}
+                  placeholder="Select"
+                  isClearable
+                  styles={customSelectStylesDepartment}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                />
+              </div>
+ 
+              {/* Start Date */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Start Date:</label>
+                <input type="date" className={selectCls} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
+
+              {/* End Date */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">End Date:</label>
+                <input type="date" className={selectCls} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
 
               {/* Status — PHP: <option value="Pending">Pending Approval</option><option value="Approved">Approved</option> */}
@@ -280,14 +351,30 @@ export default function AcceptSample() {
 
               {/* Clear */}
               <button
-                onClick={() => { setCtype(""); setSpecificpurpose(""); setDepartment(""); setStatus("Pending"); }}
+                onClick={() => { 
+                  setCtype(""); 
+                  setSpecificpurpose(""); 
+                  setDepartment(""); 
+                  setStatus("Pending"); 
+                  setStartDate("");
+                  setEndDate("");
+                  setGlobalFilter("");
+                }}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
               >
                 Clear Filters
               </button>
             </div>
 
-            <Card className={clsx("relative flex grow flex-col", tableSettings.enableFullScreen && "overflow-hidden")}>
+            <Card className={clsx("relative flex grow flex-col overflow-hidden", tableSettings.enableFullScreen && "overflow-hidden")}>
+              {/* Subtle Progress Bar for re-fetching */}
+              {loading && products.length > 0 && (
+                <div className="absolute top-0 left-0 z-10 w-full">
+                  <div className="h-0.5 w-full overflow-hidden bg-blue-100 dark:bg-blue-900/30">
+                    <div className="h-full w-1/3 animate-progress bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.5)]" />
+                  </div>
+                </div>
+              )}
               <div className="table-wrapper min-w-full grow overflow-x-auto">
                 <Table
                   hoverable
@@ -327,7 +414,10 @@ export default function AcceptSample() {
                       </Tr>
                     ))}
                   </THead>
-                  <TBody>
+                  <TBody className={clsx(
+                    "transition-opacity duration-300",
+                    loading && products.length > 0 ? "opacity-50 grayscale-[20%]" : "opacity-100"
+                  )}>
                     {table.getRowModel().rows.length === 0 ? (
                       <Tr>
                         <Td colSpan={99} className="py-12 text-center text-sm text-gray-400">No items found.</Td>
@@ -370,7 +460,7 @@ export default function AcceptSample() {
                 </Table>
               </div>
 
-              <SelectedRowsActions table={table} />
+              <SelectedRowsActions table={table} title="Review By HOD" showDelete={false} />
               {table.getCoreRowModel().rows.length > 0 && (
                 <div className={clsx(
                   "px-4 pb-4 sm:px-5 sm:pt-4",

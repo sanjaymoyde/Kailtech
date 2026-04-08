@@ -3,12 +3,13 @@ import { Button } from 'components/ui';
 import { useNavigate, useSearchParams } from 'react-router';
 import axios from 'utils/axios';
 import toast, { Toaster } from 'react-hot-toast';
+import { DatePicker } from 'components/shared/form/Datepicker';
 
 const AddMasterDocument = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const resumeDocId = searchParams.get('resumeId'); // Get resume document ID from URL
-  
+
   const [formData, setFormData] = useState({
     documentType: '',
     category: '',
@@ -36,7 +37,7 @@ const AddMasterDocument = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  
+
   // Dropdown data states
   const [documentTypes, setDocumentTypes] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -48,7 +49,7 @@ const AddMasterDocument = () => {
   // Fetch all dropdown data on component mount
   useEffect(() => {
     fetchDropdownData();
-    
+
     // If resumeId is present, fetch the document data
     if (resumeDocId) {
       fetchResumeDocument(resumeDocId);
@@ -59,10 +60,10 @@ const AddMasterDocument = () => {
     try {
       setLoading(true);
       const response = await axios.get(`/master/resume-document/${docId}`);
-      
+
       if (response.data.status === true || response.data.status === 'true') {
         const doc = response.data.data.document;
-        
+
         // Helper function to format date from YYYY-MM-DD to DD/MM/YYYY
         const formatDate = (dateStr) => {
           if (!dateStr || dateStr === '0000-00-00' || dateStr === '0000-00-00 00:00:00') return '';
@@ -115,7 +116,7 @@ const AddMasterDocument = () => {
   const fetchDropdownData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all dropdown data in parallel
       const [
         documentTypesRes,
@@ -169,17 +170,52 @@ const AddMasterDocument = () => {
     }
   };
 
+  const isValidDate = (dateStr) => {
+    if (!dateStr) return true; // Let the "required" check handle empty values
+    const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+    const match = dateStr.match(regex);
+    if (!match) return false;
+
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const year = parseInt(match[3], 10);
+
+    if (month < 1 || month > 12) return false;
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    if (day < 1 || day > daysInMonth) return false;
+
+    return true;
+  };
+
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.documentType) newErrors.documentType = 'This field is required';
     if (!formData.category) newErrors.category = 'This field is required';
     if (!formData.orientation) newErrors.orientation = 'This field is required';
     if (!formData.name) newErrors.name = 'This field is required';
     if (!formData.documentNo) newErrors.documentNo = 'This field is required';
     if (!formData.department) newErrors.department = 'This field is required';
-    if (!formData.effectiveDate) newErrors.effectiveDate = 'This field is required';
-    if (!formData.reviewBefore) newErrors.reviewBefore = 'This field is required';
+
+    // Date Validations
+    if (!formData.issueDate) {
+      newErrors.issueDate = 'This field is required';
+    } else if (!isValidDate(formData.issueDate)) {
+      newErrors.issueDate = 'Please enter a valid date (DD/MM/YYYY)';
+    }
+
+    if (!formData.effectiveDate) {
+      newErrors.effectiveDate = 'This field is required';
+    } else if (!isValidDate(formData.effectiveDate)) {
+      newErrors.effectiveDate = 'Please enter a valid date (DD/MM/YYYY)';
+    }
+
+    if (!formData.reviewBefore) {
+      newErrors.reviewBefore = 'This field is required';
+    } else if (!isValidDate(formData.reviewBefore)) {
+      newErrors.reviewBefore = 'Please enter a valid date (DD/MM/YYYY)';
+    }
+
     if (!formData.deadlineInDays) newErrors.deadlineInDays = 'This field is required';
     if (!formData.reviewedBy) newErrors.reviewedBy = 'This field is required';
     if (!formData.approvedBy) newErrors.approvedBy = 'This field is required';
@@ -225,7 +261,7 @@ const AddMasterDocument = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error('Please fill all required fields');
       return;
@@ -268,7 +304,7 @@ const AddMasterDocument = () => {
         const documentId = response.data.document_id;
         toast.success(`Document submitted successfully! Document ID: ${documentId}`);
         console.log('Document path:', response.data.docpath);
-        
+
         // PHP Logic: If training is required, redirect to training module
         if (formData.isTrainingRequired === 'Yes') {
           setTimeout(() => {
@@ -294,7 +330,7 @@ const AddMasterDocument = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    
+
     // PHP Logic: status = -1 for Save (Draft)
     try {
       setLoading(true);
@@ -330,7 +366,7 @@ const AddMasterDocument = () => {
       if (response.data.status === true || response.data.status === 'true') {
         toast.success('Document saved as draft successfully!');
         console.log('Document path:', response.data.docpath);
-        
+
         // Navigate to saved documents list
         setTimeout(() => {
           navigate("/dashboards/master-data/document-master?type=saved");
@@ -349,7 +385,7 @@ const AddMasterDocument = () => {
 
   const handlePreview = async (e) => {
     e.preventDefault();
-    
+
     // PHP Logic: Generate preview without changing status
     try {
       setLoading(true);
@@ -385,9 +421,9 @@ const AddMasterDocument = () => {
       if (response.data.status === true || response.data.status === 'true') {
         const documentId = response.data.document_id;
         const previewUrl = response.data.preview_url;
-        
+
         toast.success('Preview generated successfully!');
-        
+
         // Open preview in new tab
         window.open(previewUrl || `/textmasterdoument.php?docID=${documentId}`, '_blank');
       } else {
@@ -420,10 +456,10 @@ const AddMasterDocument = () => {
           <h1 className="text-2xl font-bold text-gray-900">
             {resumeDocId ? 'Resume Master Document' : 'Add Master Document'}
           </h1>
-          <Button 
+          <Button
             className="flex items-center gap-2"
             color="primary"
-            variant="outline"
+            variant="outlined"
             onClick={() => navigate("/dashboards/master-data/document-master")}
           >
             &lt;&lt; Back
@@ -439,15 +475,14 @@ const AddMasterDocument = () => {
                 Document Type: <span className="text-red-600">*</span>
               </label>
               {errors.documentType && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.documentType}</div>
               )}
               <select
                 name="documentType"
                 value={formData.documentType}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.documentType ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.documentType ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
               >
                 <option value="">Select</option>
                 {documentTypes.map((type) => (
@@ -464,15 +499,14 @@ const AddMasterDocument = () => {
                 Category: <span className="text-red-600">*</span>
               </label>
               {errors.category && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.category}</div>
               )}
               <select
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.category ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.category ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
               >
                 <option value="">Select</option>
                 {categories.map((cat) => (
@@ -489,15 +523,14 @@ const AddMasterDocument = () => {
                 Orientation: <span className="text-red-600">*</span>
               </label>
               {errors.orientation && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.orientation}</div>
               )}
               <select
                 name="orientation"
                 value={formData.orientation}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.orientation ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.orientation ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
               >
                 <option value="">Select</option>
                 <option value="vertical">Vertical</option>
@@ -534,16 +567,15 @@ const AddMasterDocument = () => {
                 Name: <span className="text-red-600">*</span>
               </label>
               {errors.name && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.name}</div>
               )}
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.name ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.name ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'
+                  }`}
               />
             </div>
 
@@ -553,16 +585,15 @@ const AddMasterDocument = () => {
                 Document No./Procedure No: <span className="text-red-600">*</span>
               </label>
               {errors.documentNo && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.documentNo}</div>
               )}
               <input
                 type="text"
                 name="documentNo"
                 value={formData.documentNo}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.documentNo ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.documentNo ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'
+                  }`}
               />
             </div>
 
@@ -586,15 +617,14 @@ const AddMasterDocument = () => {
                 Department: <span className="text-red-600">*</span>
               </label>
               {errors.department && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.department}</div>
               )}
               <select
                 name="department"
                 value={formData.department}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.department ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.department ? 'border-red-500' : 'border-gray-300'
+                  }`}
               >
                 <option value="">Select</option>
                 {departments.map((dept) => (
@@ -628,13 +658,23 @@ const AddMasterDocument = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Issue Date:
               </label>
-              <input
-                type="text"
-                name="issueDate"
+              {errors.issueDate && (
+                <div className="text-red-600 text-xs mb-1">{errors.issueDate}</div>
+              )}
+              <DatePicker
+                options={{
+                  dateFormat: "d/m/Y",
+                  allowInput: true
+                }}
                 value={formData.issueDate}
-                onChange={handleInputChange}
+                onChange={(selectedDates, dateStr) => {
+                  setFormData(prev => ({ ...prev, issueDate: dateStr }));
+                  if (errors.issueDate) {
+                    setErrors(prev => ({ ...prev, issueDate: '' }));
+                  }
+                }}
                 placeholder="DD/MM/YYYY"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`w-full ${errors.issueDate ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
               />
             </div>
 
@@ -644,17 +684,22 @@ const AddMasterDocument = () => {
                 Effective Date: <span className="text-red-600">*</span>
               </label>
               {errors.effectiveDate && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.effectiveDate}</div>
               )}
-              <input
-                type="text"
-                name="effectiveDate"
+              <DatePicker
+                options={{
+                  dateFormat: "d/m/Y",
+                  allowInput: true
+                }}
                 value={formData.effectiveDate}
-                onChange={handleInputChange}
+                onChange={(selectedDates, dateStr) => {
+                  setFormData(prev => ({ ...prev, effectiveDate: dateStr }));
+                  if (errors.effectiveDate) {
+                    setErrors(prev => ({ ...prev, effectiveDate: '' }));
+                  }
+                }}
                 placeholder="DD/MM/YYYY"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.effectiveDate ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'
-                }`}
+                className={`w-full ${errors.effectiveDate ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'}`}
               />
             </div>
 
@@ -664,17 +709,22 @@ const AddMasterDocument = () => {
                 Review Before: <span className="text-red-600">*</span>
               </label>
               {errors.reviewBefore && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.reviewBefore}</div>
               )}
-              <input
-                type="text"
-                name="reviewBefore"
+              <DatePicker
+                options={{
+                  dateFormat: "d/m/Y",
+                  allowInput: true
+                }}
                 value={formData.reviewBefore}
-                onChange={handleInputChange}
+                onChange={(selectedDates, dateStr) => {
+                  setFormData(prev => ({ ...prev, reviewBefore: dateStr }));
+                  if (errors.reviewBefore) {
+                    setErrors(prev => ({ ...prev, reviewBefore: '' }));
+                  }
+                }}
                 placeholder="DD/MM/YYYY"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.reviewBefore ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'
-                }`}
+                className={`w-full ${errors.reviewBefore ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'}`}
               />
             </div>
           </div>
@@ -753,16 +803,15 @@ const AddMasterDocument = () => {
                 Dead line(in days): <span className="text-red-600">*</span>
               </label>
               {errors.deadlineInDays && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.deadlineInDays}</div>
               )}
               <input
                 type="number"
                 name="deadlineInDays"
                 value={formData.deadlineInDays}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.deadlineInDays ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.deadlineInDays ? 'border-red-500 bg-yellow-50' : 'border-gray-300 bg-yellow-50'
+                  }`}
               />
             </div>
 
@@ -772,15 +821,14 @@ const AddMasterDocument = () => {
                 Reviewed by: <span className="text-red-600">*</span>
               </label>
               {errors.reviewedBy && (
-                <div className="text-red-600 text-xs mb-1">This field is required x</div>
+                <div className="text-red-600 text-xs mb-1">{errors.reviewedBy}</div>
               )}
               <select
                 name="reviewedBy"
                 value={formData.reviewedBy}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.reviewedBy ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.reviewedBy ? 'border-red-500' : 'border-gray-300'
+                  }`}
               >
                 <option value="">Select</option>
                 {reviewers.map((reviewer) => (
@@ -803,9 +851,8 @@ const AddMasterDocument = () => {
                 name="approvedBy"
                 value={formData.approvedBy}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                  errors.approvedBy ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.approvedBy ? 'border-red-500' : 'border-gray-300'
+                  }`}
               >
                 <option value="">Select</option>
                 {approvers.map((approver) => (
@@ -883,9 +930,8 @@ const AddMasterDocument = () => {
               type="button"
               onClick={handleSubmit}
               disabled={loading}
-              className={`px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition ${
-                loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               {loading ? 'Submitting...' : 'Submit'}
             </button>
@@ -893,9 +939,8 @@ const AddMasterDocument = () => {
               type="button"
               onClick={handlePreview}
               disabled={loading}
-              className={`px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition ${
-                loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               {loading ? 'Generating...' : 'Preview'}
             </button>
@@ -903,9 +948,8 @@ const AddMasterDocument = () => {
               type="button"
               onClick={handleSave}
               disabled={loading}
-              className={`px-6 py-2 bg-cyan-500 hover:bg-cyan-600 text-white font-medium rounded-md transition ${
-                loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`px-6 py-2 bg-cyan-500 hover:bg-cyan-600 text-white font-medium rounded-md transition ${loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               {loading ? 'Saving...' : 'Save'}
             </button>

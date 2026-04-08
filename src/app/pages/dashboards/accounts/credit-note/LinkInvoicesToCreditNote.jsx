@@ -7,31 +7,47 @@ import axios from "utils/axios";
 // Local Imports
 import { Page } from "components/shared/Page";
 
+// ─── Page-level full spinner ──────────────────────────────────────────────────
+function PageSpinner() {
+  return (
+    <div className="flex h-[60vh] items-center justify-center gap-3 text-gray-500">
+      <svg className="h-7 w-7 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 000 8v4a8 8 0 01-8-8z" />
+      </svg>
+      Loading...
+    </div>
+  );
+}
+
 // ----------------------------------------------------------------------
 
 export default function LinkInvoicesToCreditNote() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [creditNote, setCreditNote] = useState(null);
+  const [creditNoteData, setCreditNoteData] = useState(null);
   const [invoices, setInvoices] = useState([]);
-  const [amounts, setAmounts] = useState({});   // invoiceid -> amount
-  const [tdsMap, setTdsMap] = useState({});      // invoiceid -> tds
+  const [amounts, setAmounts] = useState({});   // invoice_id -> amount
+  const [tdsMap, setTdsMap] = useState({});      // invoice_id -> tds
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      axios.get(`/credit-notes/${id}`),
-      axios.get(`/credit-notes/${id}/linkable-invoices`),
-    ])
-      .then(([cnRes, invRes]) => {
-        setCreditNote(cnRes.data?.data ?? cnRes.data);
-        const invList = Array.isArray(invRes.data) ? invRes.data : invRes.data?.data || [];
+    axios
+      .get(`/accounts/get-credit-notdata/${id}`)
+      .then((res) => {
+        const d = res.data;
+        setCreditNoteData(d);
+        const invList = d.invoices || [];
         setInvoices(invList);
-        // init amount/tds maps to empty
+
+        // Init amount/tds maps to empty
         const a = {}, t = {};
-        invList.forEach((inv) => { a[inv.id] = ""; t[inv.id] = ""; });
+        invList.forEach((inv) => {
+          a[inv.invoice_id] = inv.received_amount || "";
+          t[inv.invoice_id] = inv.tds || "";
+        });
         setAmounts(a);
         setTdsMap(t);
       })
@@ -39,33 +55,60 @@ export default function LinkInvoicesToCreditNote() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // mirrors sumamount() — recalc settle for a row
+  // calc settle for a row
   const getSettle = (invId) => {
     const a = parseFloat(amounts[invId] || 0);
     const t = parseFloat(tdsMap[invId] || 0);
     return (a + t).toFixed(2);
   };
 
-  // totals — mirrors calculatetotalamount()
-  const totalAmount = invoices.reduce((s, inv) => s + parseFloat(amounts[inv.id] || 0), 0);
-  const totalTds = invoices.reduce((s, inv) => s + parseFloat(tdsMap[inv.id] || 0), 0);
-  const totalSettle = invoices.reduce((s, inv) => s + parseFloat(getSettle(inv.id)), 0);
+  // totals
+  const totalAmount = invoices.reduce((s, inv) => s + parseFloat(amounts[inv.invoice_id] || 0), 0);
+  const totalTds = invoices.reduce((s, inv) => s + parseFloat(tdsMap[inv.invoice_id] || 0), 0);
+  const totalSettle = invoices.reduce((s, inv) => s + parseFloat(getSettle(inv.invoice_id)), 0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const cnTotal = parseFloat(creditNoteData?.total_remaining || 0);
+
+    // 1. Enforce amount equality across the form
+    if (Math.abs(totalSettle - cnTotal) > 0.01) {
+      toast.error(`Allocated total (${totalSettle.toFixed(2)}) must exactly match Credit Note Amount (${cnTotal.toFixed(2)}).`);
+      return;
+    }
+
+    // 2. Enforce 0 TDS
+    if (Math.abs(totalTds) > 0) {
+      toast.error("Total TDS must be precisely 0 across all invoices.");
+      return;
+    }
+
+    // 3. Prevent Over-Allocation inside Rows
+    for (const inv of invoices) {
+      const settled = parseFloat(getSettle(inv.invoice_id));
+      const remaining = parseFloat(inv.remaining_amount || 0);
+      if (settled > remaining) {
+        toast.error(`Settle amount (${settled}) for ${inv.invoice_no} exceeds its remaining balance (${remaining}).`);
+        return;
+      }
+    }
+
     const payload = {
-      paymenttype: "Received",
-      invoices: invoices.map((inv) => ({
-        invoiceid: inv.id,
-        amount: amounts[inv.id] || 0,
-        tds: tdsMap[inv.id] || 0,
-        amounttosettle: getSettle(inv.id),
-      })),
+      id: id,
+      invoiceid: invoices.map((inv) => inv.invoice_id),
+      amount: invoices.map((inv) => parseFloat(amounts[inv.invoice_id] || 0)),
+      invoicetds: invoices.map((inv) => parseFloat(tdsMap[inv.invoice_id] || 0)),
+      amounttosettle: invoices.map((inv) => parseFloat(getSettle(inv.invoice_id) || 0)),
+      totalamount: parseFloat(totalAmount),
+      totaltds: parseFloat(totalTds),
+      totalsettledvalue: parseFloat(totalSettle),
+      paymenttype: "Received"
     };
 
     try {
       setSubmitting(true);
-      await axios.post(`/credit-notes/${id}/link-invoices`, payload);
+      await axios.post(`/accounts/link-credit-note`, payload);
       toast.success("Credit note linked successfully.");
       navigate("/dashboards/accounts/credit-note");
     } catch (err) {
@@ -79,11 +122,11 @@ export default function LinkInvoicesToCreditNote() {
   if (loading)
     return (
       <Page title="Link Credit Note">
-        <div className="p-6 text-sm text-gray-500">Loading...</div>
+        <PageSpinner />
       </Page>
     );
 
-  const cn = creditNote;
+  const cn = creditNoteData;
 
   return (
     <Page title="Link Credit Note">
@@ -105,7 +148,7 @@ export default function LinkInvoicesToCreditNote() {
           <div className="rounded border border-gray-200 bg-white dark:border-dark-600 dark:bg-dark-800">
             <div className="divide-y divide-gray-100 dark:divide-dark-600">
 
-              <InfoRow label="Customer Name" value={cn?.customername} />
+              <InfoRow label="Customer Name" value={cn?.customer_name} />
               <InfoRow
                 label="Credit Note Date"
                 value={
@@ -120,13 +163,13 @@ export default function LinkInvoicesToCreditNote() {
                 <ReadonlyField
                   label="Total Credit Note Amount"
                   id="paymentamount"
-                  value={cn?.finaltotal ?? 0}
+                  value={cn?.total_remaining ?? 0}
                 />
                 <ReadonlyField label="Total TDS" id="tds" value={totalTds.toFixed(2)} />
                 <ReadonlyField
                   label="Total Amount"
                   id="totalinvoiceamount"
-                  value={cn?.finaltotal ?? 0}
+                  value={cn?.total_remaining ?? 0}
                 />
               </div>
 
@@ -146,17 +189,20 @@ export default function LinkInvoicesToCreditNote() {
                     <tbody>
                       {invoices.map((inv) => (
                         <tr
-                          key={inv.id}
+                          key={inv.invoice_id}
                           className="border-t border-gray-100 dark:border-dark-600"
                         >
-                          <td className="p-2">{inv.invoiceno}</td>
-                          <td className="p-2">{inv.remaining}</td>
+                          <td className="p-2">{inv.invoice_no}</td>
+                          <td className="p-2">{inv.remaining_amount}</td>
                           <td className="p-2">
                             <input
                               type="number"
-                              value={amounts[inv.id]}
+                              min="0"
+                              max={inv.remaining_amount}
+                              step="0.01"
+                              value={amounts[inv.invoice_id]}
                               onChange={(e) =>
-                                setAmounts((prev) => ({ ...prev, [inv.id]: e.target.value }))
+                                setAmounts((prev) => ({ ...prev, [inv.invoice_id]: e.target.value }))
                               }
                               className="w-28 rounded border border-gray-300 px-2 py-1 text-sm dark:border-dark-500 dark:bg-dark-700"
                             />
@@ -164,9 +210,12 @@ export default function LinkInvoicesToCreditNote() {
                           <td className="p-2">
                             <input
                               type="number"
-                              value={tdsMap[inv.id]}
+                              min="0"
+                              max="0"
+                              step="0.01"
+                              value={tdsMap[inv.invoice_id]}
                               onChange={(e) =>
-                                setTdsMap((prev) => ({ ...prev, [inv.id]: e.target.value }))
+                                setTdsMap((prev) => ({ ...prev, [inv.invoice_id]: e.target.value }))
                               }
                               className="w-28 rounded border border-gray-300 px-2 py-1 text-sm dark:border-dark-500 dark:bg-dark-700"
                             />
@@ -175,7 +224,7 @@ export default function LinkInvoicesToCreditNote() {
                             <input
                               type="number"
                               readOnly
-                              value={getSettle(inv.id)}
+                              value={getSettle(inv.invoice_id)}
                               className="w-28 rounded border border-gray-300 bg-gray-50 px-2 py-1 text-sm dark:border-dark-500 dark:bg-dark-700"
                             />
                           </td>
@@ -186,7 +235,7 @@ export default function LinkInvoicesToCreditNote() {
                       <tr className="border-t-2 border-gray-300 font-semibold dark:border-dark-400">
                         <td className="p-2">Total</td>
                         <td className="p-2">
-                          {invoices.reduce((s, inv) => s + parseFloat(inv.remaining || 0), 0)}
+                          {invoices.reduce((s, inv) => s + parseFloat(inv.remaining_amount || 0), 0).toFixed(2)}
                         </td>
                         <td className="p-2">
                           <input

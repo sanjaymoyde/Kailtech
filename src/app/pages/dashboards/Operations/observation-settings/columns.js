@@ -2,20 +2,12 @@
 import { createColumnHelper } from "@tanstack/react-table";
 
 // Local Imports
-import { RowActions } from "./RowActions";
-import {
-  SelectCell,
-  SelectHeader,
-} from "components/shared/table/SelectCheckbox";
+//import { RowActions } from "./RowActions";
+
 
 const columnHelper = createColumnHelper();
 
 export const columns = [
-  columnHelper.display({
-    id: "select",
-    header: SelectHeader,
-    cell: SelectCell,
-  }),
 
   // ✅ Serial Number
   columnHelper.accessor((_row, index) => index + 1, {
@@ -37,7 +29,7 @@ export const columns = [
     cell: (info) => info.getValue(),
   }),
 
-    columnHelper.accessor("description", {
+  columnHelper.accessor("description", {
     id: "description",
     header: "Description",
     cell: (info) => info.getValue(),
@@ -45,9 +37,9 @@ export const columns = [
 
 
   // ✅ Actions
-  columnHelper.display({
-    id: "actions",
-    header: "Actions",
-    cell: RowActions,
-  }),
+  // columnHelper.display({
+  //   id: "actions",
+  //   header: "Actions",
+  //   cell: RowActions,
+  // }),
 ];

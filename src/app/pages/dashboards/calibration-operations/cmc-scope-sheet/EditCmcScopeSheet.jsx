@@ -411,7 +411,7 @@ export default function EditCmcScopeSheet() {
             </label>
             <div className="flex-1">
               <Input
-                type="text"
+                type="number"
                 placeholder="e.g., 1, 50, 100"
                 value={formData.minfrequency}
                 onChange={(e) => handleInputChange('minfrequency', e.target.value)}
@@ -427,7 +427,7 @@ export default function EditCmcScopeSheet() {
             </label>
             <div className="flex-1">
               <Input
-                type="text"
+                type="number"
                 placeholder="e.g., 10000, 5000, 40"
                 value={formData.maxfrequency}
                 onChange={(e) => handleInputChange('maxfrequency', e.target.value)}
@@ -464,7 +464,8 @@ export default function EditCmcScopeSheet() {
             </label>
             <div className="flex-1">
               <Input
-                type="text"
+                type="number"
+                step="any"
                 placeholder="e.g., 0.01, 0.1"
                 value={formData.leastcount}
                 onChange={(e) => handleInputChange('leastcount', e.target.value)}

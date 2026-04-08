@@ -6,6 +6,11 @@ import { useLocation } from "react-router";
 import { useBreakpointsContext } from "app/contexts/breakpoint/context";
 import { useSidebarContext } from "app/contexts/sidebar/context";
 import { navigation } from "app/navigation";
+import {
+  generateDashboardsConfig,
+  getStoredPermissions,
+} from "app/navigation/dashboards";
+import { useLabsContext } from "app/contexts/labs/context";
 import { useDidUpdate } from "hooks";
 import { isRouteActive } from "utils/isRouteActive";
 import { MainPanel } from "./MainPanel";
@@ -17,11 +22,26 @@ export function Sidebar() {
   const { pathname } = useLocation();
   const { name, lgAndDown } = useBreakpointsContext();
   const { isExpanded, close } = useSidebarContext();
+  const { labs } = useLabsContext();
+
+  const dynamicNavigation = useMemo(() => {
+    const permissions = getStoredPermissions();
+    const dashboardsIndex = navigation.findIndex(
+      (item) => item.id === "dashboards",
+    );
+
+    if (dashboardsIndex === -1) return navigation;
+
+    const updatedDashboards = generateDashboardsConfig(labs, permissions);
+    const newNavigation = [...navigation];
+    newNavigation[dashboardsIndex] = updatedDashboards;
+
+    return newNavigation;
+  }, [labs]);
 
   const initialSegment = useMemo(
-    () => navigation.find((item) => isRouteActive(item.path, pathname)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    () => dynamicNavigation.find((item) => isRouteActive(item.path, pathname)),
+    [dynamicNavigation, pathname],
   );
 
   const [activeSegmentPath, setActiveSegmentPath] = useState(
@@ -29,18 +49,18 @@ export function Sidebar() {
   );
 
   const currentSegment = useMemo(() => {
-    return navigation.find((item) => item.path === activeSegmentPath);
-  }, [activeSegmentPath]);
+    return dynamicNavigation.find((item) => item.path === activeSegmentPath);
+  }, [activeSegmentPath, dynamicNavigation]);
 
   useDidUpdate(() => {
-    const activePath = navigation.find((item) =>
+    const activePath = dynamicNavigation.find((item) =>
       isRouteActive(item.path, pathname),
     )?.path;
 
     if (!isRouteActive(activeSegmentPath, pathname)) {
       setActiveSegmentPath(activePath);
     }
-  }, [pathname]);
+  }, [activeSegmentPath, dynamicNavigation, pathname]);
 
   useDidUpdate(() => {
     if (lgAndDown && isExpanded) close();
@@ -49,7 +69,7 @@ export function Sidebar() {
   return (
     <>
       <MainPanel
-        nav={navigation}
+        nav={dynamicNavigation}
         activeSegment={activeSegmentPath}
         setActiveSegment={setActiveSegmentPath}
       />

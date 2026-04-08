@@ -43,9 +43,12 @@ const formatDate = (dateStr) => {
 };
 
 export const columns = [
+  // ── S.No ──────────────────────────────────────────────────────────
   columnHelper.display({
     id: "s_no",
     header: "ID",
+    enableColumnFilter: false,
+    enableSorting: false,
     cell: (info) => (
       <span className="dark:text-dark-400 text-xs text-gray-500">
         {info.row.index + 1}
@@ -53,7 +56,7 @@ export const columns = [
     ),
   }),
 
-  // PHP: approved_on if set else invoicedate
+  // ── Date (PHP: approved_on if set else invoicedate) ───────────────
   columnHelper.accessor(
     (row) =>
       row.approved_on && row.approved_on !== "0000-00-00 00:00:00"
@@ -70,6 +73,7 @@ export const columns = [
     },
   ),
 
+  // ── Invoice No ────────────────────────────────────────────────────
   columnHelper.accessor("invoiceno", {
     id: "invoiceno",
     header: "Invoice No",
@@ -80,7 +84,7 @@ export const columns = [
     ),
   }),
 
-  // PHP: inwardid (text-wrap width-200)
+  // ── Inward Entry No (PHP: text-wrap width-200) ────────────────────
   columnHelper.accessor("inwardid", {
     id: "inwardid",
     header: "Inward Entry No",
@@ -91,7 +95,7 @@ export const columns = [
     ),
   }),
 
-  // PHP: customers.name as cname
+  // ── Customer (PHP: customers.name as cname) ───────────────────────
   columnHelper.accessor("cname", {
     id: "cname",
     header: "Customer",
@@ -102,7 +106,7 @@ export const columns = [
     ),
   }),
 
-  // PHP: invoices.customername (billing customer)
+  // ── Billing Customer (PHP: invoices.customername) ─────────────────
   // PHP row highlight: cname.trim() != customername.trim() → pink background
   columnHelper.accessor("customername", {
     id: "customername",
@@ -125,6 +129,7 @@ export const columns = [
     },
   }),
 
+  // ── PO Number ─────────────────────────────────────────────────────
   columnHelper.accessor("ponumber", {
     id: "ponumber",
     header: "Po Number",
@@ -135,7 +140,7 @@ export const columns = [
     ),
   }),
 
-  // PHP: subtotal
+  // ── Item Total (PHP: subtotal) ────────────────────────────────────
   columnHelper.accessor("subtotal", {
     id: "subtotal",
     header: "Item Total",
@@ -147,7 +152,7 @@ export const columns = [
     ),
   }),
 
-  // PHP: finaltotal
+  // ── Amount (PHP: finaltotal) ──────────────────────────────────────
   columnHelper.accessor("finaltotal", {
     id: "finaltotal",
     header: "Amount",
@@ -159,10 +164,18 @@ export const columns = [
     ),
   }),
 
-  // PHP: $statusarray[$row['status']]
+  // ── Status (PHP: $statusarray[$row['status']]) ────────────────────
+  // PHP: columns[8] → <select> Pending/Approved/Einvoice — exact match
   columnHelper.accessor("status", {
     id: "status",
     header: "Status",
+    // PHP: exact match like '0', '1', '2'
+    filterFn: (row, columnId, filterValue) => {
+      if (filterValue === "" || filterValue === undefined) return true;
+      return String(row.getValue(columnId)) === String(filterValue);
+    },
+    // ✅ signal to index.jsx → render <select> not text input
+    meta: { filterType: "select" },
     cell: (info) => {
       const s = STATUS_MAP[info.getValue()] ?? {
         label: "Unknown",
@@ -178,6 +191,7 @@ export const columns = [
     },
   }),
 
+  // ── Remaining ─────────────────────────────────────────────────────
   columnHelper.accessor("remaining", {
     id: "remaining",
     header: "Remaining",
@@ -190,9 +204,12 @@ export const columns = [
     ),
   }),
 
+  // ── Actions ───────────────────────────────────────────────────────
   columnHelper.display({
     id: "actions",
     header: "Action",
+    enableColumnFilter: false,
+    enableSorting: false,
     cell: RowActions,
   }),
 ];

@@ -30,8 +30,8 @@ export default function CloneInstrument() {
     typeofsupport: [],
     typeofmaster: [],
     description: "",
-    discipline: "",
-    groups: "",
+    discipline: [],
+    groups: [],
     remark: "",
     range: "",
     leastcount: "",
@@ -87,6 +87,9 @@ export default function CloneInstrument() {
   const [priceLists, setPriceLists] = useState([]);
   const [sopOptions, setSopOptions] = useState([]);
   const [standardOptions, setStandardOptions] = useState([]);
+  const [disciplineOptions, setDisciplineOptions] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [groupOptions, setGroupOptions] = useState([]);
   const [subcategoryOne, setSubcategoryOne] = useState([]);
   const [subcategoryTwo, setSubcategoryTwo] = useState([]);
   const [formateOptions, setFormateOptions] = useState([]);
@@ -152,6 +155,7 @@ export default function CloneInstrument() {
           unitTypeRes,
           unitRes,
           modeRes,
+          disciplineRes,
         ] = await Promise.all([
           axios.get("/calibrationoperations/calibration-method-list"),
           axios.get("/calibrationoperations/calibration-standard-list"),
@@ -163,6 +167,7 @@ export default function CloneInstrument() {
           axios.get("/master/unit-type-list"),
           axios.get("/master/units-list"),
           axios.get("/master/mode-list"),
+          axios.get("/calibrationoperations/get-disciplines"),
         ]);
 
         const safeArray = (data) => (Array.isArray(data) ? data : []);
@@ -179,6 +184,14 @@ export default function CloneInstrument() {
             value: item.id.toString(),
           }))
         );
+        if (disciplineRes?.data?.data) {
+          setDisciplineOptions(
+            safeArray(disciplineRes.data.data).map((item) => ({
+              label: item.name || item.discipline_name,
+              value: (item.id || item.discipline_id || item.name)?.toString(),
+            }))
+          );
+        }
         setSubcategoryOne(
           safeArray(subcategoryoneRes.data.data).map((item) => ({
             label: item.name,
@@ -248,6 +261,13 @@ export default function CloneInstrument() {
 
         // Find matching format
         const savedSuffix = safeString(instrumentData.instrument.suffix);
+        const toArray = (value) =>
+          value != null && String(value).trim() !== ""
+            ? String(value)
+                .split(",")
+                .map((v) => v.trim())
+                .filter(Boolean)
+            : [];
         const matchingFormat = formattedOptions.find(
           (opt) => opt.value === savedSuffix
         );
@@ -261,8 +281,8 @@ export default function CloneInstrument() {
           typeofsupport: safeArrayData(instrumentData.instrument.typeofsupport),
           typeofmaster: safeArrayData(instrumentData.instrument.typeofmaster),
           description: safeString(instrumentData.instrument.description),
-          discipline: safeString(instrumentData.instrument.discipline),
-          groups: safeString(instrumentData.instrument.groups),
+          discipline: toArray(instrumentData.instrument.discipline),
+          groups: toArray(instrumentData.instrument.groups),
           remark: safeString(instrumentData.instrument.remark),
           range: safeString(instrumentData.instrument.range),
           leastcount: safeString(instrumentData.instrument.leastcount),
@@ -389,32 +409,32 @@ export default function CloneInstrument() {
         const clonedPriceLists =
           priceMatrix.length > 0
             ? priceMatrix.map((price) => ({
-                // Remove id to create new entry
-                packagename: safeString(price.packagename),
-                packagedesc: safeString(price.packagedesc),
-                accreditation: safeString(price.accreditation),
-                location: safeString(price.location),
-                currency:
-                  currencyOptions.find(
-                    (opt) => opt.value === safeString(price.currency)
-                  ) || null,
-                rate: safeString(price.rate),
-                daysrequired: safeString(price.daysrequired),
-                matrices:
-                  Array.isArray(price.matrix) && price.matrix.length > 0
-                    ? price.matrix.map((matrix, matrixIndex) => ({
-                        // Remove id to create new entry
-                        matrixno: matrixIndex + 1,
-                        unittype: safeString(matrix.unittype),
-                        unit: safeString(matrix.unit),
-                        mode: safeString(matrix.mode),
-                        instrangemin: safeString(matrix.instrangemin),
-                        instrangemax: safeString(matrix.instrangemax),
-                        tolerance: safeString(matrix.tolerance),
-                        tolerancetype: safeString(matrix.tolerancetype),
-                      }))
-                    : [],
-              }))
+              // Remove id to create new entry
+              packagename: safeString(price.packagename),
+              packagedesc: safeString(price.packagedesc),
+              accreditation: safeString(price.accreditation),
+              location: safeString(price.location),
+              currency:
+                currencyOptions.find(
+                  (opt) => opt.value === safeString(price.currency)
+                ) || null,
+              rate: safeString(price.rate),
+              daysrequired: safeString(price.daysrequired),
+              matrices:
+                Array.isArray(price.matrix) && price.matrix.length > 0
+                  ? price.matrix.map((matrix, matrixIndex) => ({
+                    // Remove id to create new entry
+                    matrixno: matrixIndex + 1,
+                    unittype: safeString(matrix.unittype),
+                    unit: safeString(matrix.unit),
+                    mode: safeString(matrix.mode),
+                    instrangemin: safeString(matrix.instrangemin),
+                    instrangemax: safeString(matrix.instrangemax),
+                    tolerance: safeString(matrix.tolerance),
+                    tolerancetype: safeString(matrix.tolerancetype),
+                  }))
+                  : [],
+            }))
             : [];
 
         setPriceLists(clonedPriceLists);
@@ -429,7 +449,7 @@ export default function CloneInstrument() {
     };
 
     fetchAllData();
-  }, [id]);
+  }, [id, currencyOptions]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -532,7 +552,7 @@ export default function CloneInstrument() {
       if (
         newMatrices.length > 0 &&
         JSON.stringify(newMatrices[newMatrices.length - 1]) ===
-          JSON.stringify(newMatrix)
+        JSON.stringify(newMatrix)
       ) {
         return prev;
       }
@@ -578,12 +598,18 @@ export default function CloneInstrument() {
     const newErrors = {};
 
     Object.keys(requiredFields).forEach((field) => {
-      if (field === "sop") {
-        if (!formData[field] || formData[field].length === 0) {
+      const value = formData[field];
+      const isArray = Array.isArray(value);
+      const isEmptyArray = isArray && value.length === 0;
+      const isEmptyString =
+        typeof value === "string" && value.toString().trim() === "";
+
+      if (field === "sop" || field === "discipline" || field === "groups") {
+        if (isEmptyArray || value == null) {
           newErrors[field] = true;
         }
       } else {
-        if (!formData[field] || formData[field].toString().trim() === "") {
+        if (isEmptyArray || isEmptyString || value == null) {
           newErrors[field] = true;
         }
       }
@@ -634,6 +660,12 @@ export default function CloneInstrument() {
     try {
       const payload = {
         ...formData,
+        discipline: Array.isArray(formData.discipline)
+          ? formData.discipline.join(",")
+          : formData.discipline || "",
+        groups: Array.isArray(formData.groups)
+          ? formData.groups.join(",")
+          : formData.groups || "",
         suffix: Array.isArray(formData.suffix)
           ? formData.suffix[0] || ""
           : formData.suffix || "",
@@ -759,19 +791,17 @@ export default function CloneInstrument() {
         {[1, 2, 3, 4].map((step) => (
           <div key={step} className="flex items-center">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                currentStep >= step
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${currentStep >= step
                   ? "bg-blue-600 text-white"
                   : "bg-gray-300 text-gray-600"
-              }`}
+                }`}
             >
               {step}
             </div>
             {step < 4 && (
               <div
-                className={`h-1 w-16 ${
-                  currentStep > step ? "bg-blue-600" : "bg-gray-300"
-                }`}
+                className={`h-1 w-16 ${currentStep > step ? "bg-blue-600" : "bg-gray-300"
+                  }`}
               />
             )}
           </div>
@@ -823,7 +853,7 @@ export default function CloneInstrument() {
             {currentStep === 4 && "Step 4: Certificate Settings"}
           </h2>
           <Button
-            variant="outline"
+            variant="outlined"
             className="bg-blue-600 text-white hover:bg-blue-700"
             onClick={() =>
               navigate("/dashboards/calibration-operations/instrument-list")
@@ -847,6 +877,8 @@ export default function CloneInstrument() {
               handleMultiSelectChange={handleMultiSelectChange}
               sopOptions={sopOptions}
               standardOptions={standardOptions}
+              disciplineOptions={disciplineOptions}
+              groupOptions={groupOptions}
             />
 
             <ValidationFields

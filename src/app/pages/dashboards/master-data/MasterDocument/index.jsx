@@ -22,7 +22,7 @@ import { useSkipper } from "utils/react-table/useSkipper";
 import { Toolbar } from "./Toolbar";
 import { columns } from "./columns";
 import { PaginationSection } from "components/shared/table/PaginationSection";
-import { SelectedRowsActions } from "./SelectedRowsActions";
+import { SelectedRowsActions } from "components/shared/table/SelectedRowsActions";
 import { useThemeContext } from "app/contexts/theme/context";
 import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
 
@@ -426,7 +426,7 @@ export default function ViewMasterDocument() {
                   </TBody>
                 </Table>
               </div>
-              <SelectedRowsActions table={table} />
+              <SelectedRowsActions table={table} title="Master Document" showDelete={true} />
               {table.getCoreRowModel().rows.length > 0 && (
                 <div
                   className={clsx(

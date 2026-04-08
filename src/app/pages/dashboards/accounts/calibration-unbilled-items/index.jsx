@@ -2,8 +2,8 @@
 // Route: /dashboards/accounts/calibration-unbilled-items
 // PHP logic port:
 //   1. inwardentry fetch (date/customer/bd filter)
-//   2. har inward ke liye crfinstrument{date} table se items
-//   3. invoice null/empty/0 AND bookingrefno not in lrncancelrequest → unbilled
+//   2. fetch items from crfinstrument{date} table for each inward
+//   3. unbilled if invoice is null/empty/0 AND bookingrefno is not in lrncancelrequest
 // Backend API: GET /accounts/calibration-unbilled-item?startdate=&enddate=&customerid=&bd=
 
 import {
@@ -17,9 +17,11 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import clsx from "clsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router";
 import axios from "utils/axios";
 import { toast } from "sonner";
+import { parseUserPermissions } from "utils/permissions";
 
 // Local Imports
 import { Table, Card, THead, TBody, Th, Tr, Td } from "components/ui";
@@ -70,6 +72,17 @@ function PageSpinner({ title = "Loading..." }) {
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function CalibrationUnbilledItems() {
   const { cardSkin } = useThemeContext();
+  const navigate = useNavigate();
+
+  // Redirect if permission 146 is missing (Page access restriction from PHP)
+  useMemo(() => {
+    if (typeof window === "undefined") return [];
+    const perms = parseUserPermissions(localStorage.getItem("userPermissions"));
+    if (perms.length > 0 && !perms.includes(146)) {
+      setTimeout(() => navigate("/"), 0);
+    }
+    return perms;
+  }, [navigate]);
 
   const [items, setItems] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -99,7 +112,7 @@ export default function CalibrationUnbilledItems() {
         setCustomers(custRes.data.data ?? custRes.data ?? []);
         setBdList(bdRes.data.data ?? bdRes.data ?? []);
       } catch {
-        toast.error("Filter options load nahi ho sake");
+        toast.error("Failed to load filter options");
       } finally {
         setDropdownLoading(false);
       }
@@ -112,7 +125,7 @@ export default function CalibrationUnbilledItems() {
   //      filter: invoice null/0/'' AND bookingrefno not in lrncancelrequest
   const fetchItems = async (f = filters) => {
     if (!f.startdate || !f.enddate) {
-      toast.error("Start Date aur End Date dono required hain");
+      toast.error("Start Date and End Date are both required");
       return;
     }
     try {
@@ -131,10 +144,10 @@ export default function CalibrationUnbilledItems() {
       setItems(list);
       setSearched(true);
       if (list.length === 0)
-        toast.info("Koi unbilled calibration item nahi mila");
+        toast.info("No unbilled calibration item found");
     } catch (err) {
       console.error(err);
-      toast.error("Data fetch karne mein error aaya");
+      toast.error("Error while fetching data");
     } finally {
       setLoading(false);
     }
@@ -268,20 +281,20 @@ export default function CalibrationUnbilledItems() {
                 <div className="flex flex-col items-center justify-center gap-2 py-16">
                   <span className="text-4xl">🔍</span>
                   <p className="dark:text-dark-300 font-medium text-gray-600">
-                    Filters select karein aur Search karein
+                    Select filters and Search
                   </p>
                   <p className="dark:text-dark-500 text-sm text-gray-400">
-                    Start Date aur End Date required hain
+                    Start Date and End Date are required
                   </p>
                 </div>
               ) : items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-16">
                   <span className="text-4xl">📋</span>
                   <p className="dark:text-dark-300 font-medium text-gray-600">
-                    Koi unbilled calibration item nahi mila
+                    No unbilled calibration item found
                   </p>
                   <p className="dark:text-dark-500 text-sm text-gray-400">
-                    Filters adjust karke dobara try karein
+                    Adjust filters and try again
                   </p>
                 </div>
               ) : (

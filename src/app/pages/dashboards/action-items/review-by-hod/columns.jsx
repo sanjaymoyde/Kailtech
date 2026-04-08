@@ -28,7 +28,7 @@ export const columns = [
   }),
 
   // PHP: $n[] = $row['pname']
-  columnHelper.accessor("product", {
+  columnHelper.accessor("pname", {
     id: "product",
     header: "Product",
     cell: (info) => (
@@ -39,7 +39,7 @@ export const columns = [
   }),
 
   // PHP: $n[] = $row['packagename']
-  columnHelper.accessor("package", {
+  columnHelper.accessor("packagename", {
     id: "package",
     header: "Package",
     cell: (info) => (
@@ -83,7 +83,7 @@ export const columns = [
   }),
 
   // PHP: $n[] = $row['total']
-  columnHelper.accessor("price", {
+  columnHelper.accessor("total", {
     id: "price",
     header: "Price",
     cell: (info) => (
@@ -94,7 +94,7 @@ export const columns = [
   }),
 
   // PHP: $n[] = $obj->selectfieldwhere("labs", "name", "id='" . $row['department'] . "'")
-  columnHelper.accessor("department", {
+  columnHelper.accessor("department_name", {
     id: "department",
     header: "Department",
     cell: (info) => (
@@ -105,8 +105,7 @@ export const columns = [
   }),
 
   // PHP: if(in_array(389, $permissions)) $n[] = customertypes name
-  // Shown only when API returns customer_type (backend filters by permission)
-  columnHelper.accessor("customer_type", {
+  columnHelper.accessor("ctype_name", {
     id: "customer_type",
     header: "Customer Type",
     cell: (info) =>
@@ -118,7 +117,7 @@ export const columns = [
   }),
 
   // PHP: if(in_array(390, $permissions)) $n[] = specificpurposes name
-  columnHelper.accessor("specific_purpose", {
+  columnHelper.accessor("specificpurpose_name", {
     id: "specific_purpose",
     header: "Specific Purpose",
     cell: (info) =>

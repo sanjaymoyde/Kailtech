@@ -239,6 +239,17 @@ function EnvironmentalFields({
           <p className="mt-1 text-sm text-red-600">This field is required</p>
         )}
       </div>
+
+      {/* Remark Field */}
+      <div>
+        <Input
+          label="Remark"
+          name="remark"
+          placeholder="Enter Remark"
+          value={formData.remark}
+          onChange={handleInputChange}
+        />
+      </div>
     </>
   );
 }

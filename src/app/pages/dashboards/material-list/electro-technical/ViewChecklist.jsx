@@ -3,17 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'utils/axios';
 import Select from 'react-select';
+import { toast } from 'sonner';
 
 function ViewChecklist() {
   const navigate = useNavigate();
   const { id } = useParams(); // Get the ID from URL params (96 in your case)
-  
+
   const [siteChecklistData, setSiteChecklistData] = useState([]);
   const [generalChecklistData, setGeneralChecklistData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [generalSearchTerm, setGeneralSearchTerm] = useState('');
-  
+
   // Column-specific search states for Site Checklist
   const [siteSearchFilters, setSiteSearchFilters] = useState({
     sno: '',
@@ -25,7 +26,7 @@ function ViewChecklist() {
     acceptanceLimit: '',
     action: ''
   });
-  
+
   // Column-specific search states for General Checklist
   const [generalSearchFilters, setGeneralSearchFilters] = useState({
     sno: '',
@@ -65,32 +66,68 @@ function ViewChecklist() {
     fetchGeneralChecklist();
   }, [fetchSiteChecklist, fetchGeneralChecklist]);
 
-  const handleDeleteSiteChecklist = async (checklistId) => {
-    if (window.confirm('Are you sure you want to delete this site checklist item?')) {
-      try {
-        await axios.delete(`/material/delete-site-checklist/${checklistId}`);
-        // Refresh the data after deletion
-        fetchSiteChecklist();
-        alert('Site checklist item deleted successfully');
-      } catch (error) {
-        console.error('Error deleting site checklist:', error);
-        alert('Failed to delete site checklist item');
-      }
-    }
+  const handleDeleteSiteChecklist = (checklistId) => {
+    toast((t) => (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium">Are you sure you want to delete this site checklist item?</p>
+        <div className="flex gap-2">
+          <Button
+            className="h-8 bg-red-500 hover:bg-red-600 text-white text-xs px-3 rounded"
+            onClick={async () => {
+              toast.dismiss(t);
+              try {
+                await axios.delete(`/material/delete-site-checklist/${checklistId}`);
+                fetchSiteChecklist();
+                toast.success('Site checklist item deleted successfully ✅');
+              } catch (error) {
+                console.error('Error deleting site checklist:', error);
+                toast.error('Failed to delete site checklist item ❌');
+              }
+            }}
+          >
+            Delete
+          </Button>
+          <Button
+            className="h-8 border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 text-xs px-3 rounded"
+            onClick={() => toast.dismiss(t)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
-  const handleDeleteGeneralChecklist = async (checklistId) => {
-    if (window.confirm('Are you sure you want to delete this general checklist item?')) {
-      try {
-        await axios.delete(`/material/delete-general-checklist/${checklistId}`);
-        // Refresh the data after deletion
-        fetchGeneralChecklist();
-        alert('General checklist item deleted successfully');
-      } catch (error) {
-        console.error('Error deleting general checklist:', error);
-        alert('Failed to delete general checklist item');
-      }
-    }
+  const handleDeleteGeneralChecklist = (checklistId) => {
+    toast((t) => (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium">Are you sure you want to delete this general checklist item?</p>
+        <div className="flex gap-2">
+          <Button
+            className="h-8 bg-red-500 hover:bg-red-600 text-white text-xs px-3 rounded"
+            onClick={async () => {
+              toast.dismiss(t);
+              try {
+                await axios.delete(`/material/delete-general-checklist/${checklistId}`);
+                fetchGeneralChecklist();
+                toast.success('General checklist item deleted successfully ✅');
+              } catch (error) {
+                console.error('Error deleting general checklist:', error);
+                toast.error('Failed to delete general checklist item ❌');
+              }
+            }}
+          >
+            Delete
+          </Button>
+          <Button
+            className="h-8 border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 text-xs px-3 rounded"
+            onClick={() => toast.dismiss(t)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleBackToList = () => {
@@ -108,11 +145,11 @@ function ViewChecklist() {
 
   // Filter data based on column-specific search
   const filteredSiteData = siteChecklistData.filter(item => {
-    const matchesGlobalSearch = searchTerm === '' || 
-      Object.values(item).some(val => 
+    const matchesGlobalSearch = searchTerm === '' ||
+      Object.values(item).some(val =>
         val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
       );
-    
+
     const matchesColumnFilters = (
       (siteSearchFilters.discipline === '' || item.discipline_name?.toLowerCase().includes(siteSearchFilters.discipline.toLowerCase())) &&
       (siteSearchFilters.equipment === '' || item.instrument?.toLowerCase().includes(siteSearchFilters.equipment.toLowerCase())) &&
@@ -121,41 +158,41 @@ function ViewChecklist() {
       (siteSearchFilters.checkPoint === '' || item.checkpoint?.toString().includes(siteSearchFilters.checkPoint)) &&
       (siteSearchFilters.acceptanceLimit === '' || item.acceptancelimit?.toString().includes(siteSearchFilters.acceptanceLimit))
     );
-    
+
     return matchesGlobalSearch && matchesColumnFilters;
   });
 
   const filteredGeneralData = generalChecklistData.filter(item => {
-    const matchesGlobalSearch = generalSearchTerm === '' || 
-      Object.values(item).some(val => 
+    const matchesGlobalSearch = generalSearchTerm === '' ||
+      Object.values(item).some(val =>
         val?.toString().toLowerCase().includes(generalSearchTerm.toLowerCase())
       );
-    
+
     const matchesColumnFilters = (
       (generalSearchFilters.accessories === '' || item.accessoriesname?.toLowerCase().includes(generalSearchFilters.accessories.toLowerCase())) &&
       (generalSearchFilters.quantity === '' || item.quantity?.toString().includes(generalSearchFilters.quantity)) &&
       (generalSearchFilters.condition === '' || item.condition?.toLowerCase().includes(generalSearchFilters.condition.toLowerCase())) &&
       (generalSearchFilters.remarks === '' || item.remark?.toLowerCase().includes(generalSearchFilters.remarks.toLowerCase()))
     );
-    
+
     return matchesGlobalSearch && matchesColumnFilters;
   });
 
   return (
-    <div className="bg-white">    
+    <div className="bg-white">
       {/* Main Content */}
       <div className="p-4">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-xl font-semibold text-gray-700">Site Checklist</h1>
           <div className="flex space-x-2">
-            <Button 
+            <Button
               className="bg-indigo-500 hover:bg-fuchsia-500 text-white px-4 py-2 rounded"
               onClick={handleBackToList}
             >
               &lt;&lt; Back To Master&apos;s List
             </Button>
-            <Button 
+            <Button
               className="text-white px-4 py-2 rounded bg-indigo-500 hover:bg-fuchsia-500"
               onClick={() => navigate("/dashboards/material-list/electro-technical/add-new-master-matrix")}
             >
@@ -168,8 +205,8 @@ function ViewChecklist() {
         <div className="mb-4">
           <div className="flex items-center justify-end">
             <span className="mr-2">Search:</span>
-            <Input 
-              type="text" 
+            <Input
+              type="text"
               className="border border-gray-300 px-2 py-1 rounded w-48"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -225,43 +262,43 @@ function ViewChecklist() {
               {/* Column Search Row */}
               <tr className="bg-white border-t-2 border-gray-400">
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search S No" 
+                  <Input
+                    type="text"
+                    placeholder="Search S No"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={siteSearchFilters.sno}
-                    onChange={(e) => setSiteSearchFilters({...siteSearchFilters, sno: e.target.value})}
+                    onChange={(e) => setSiteSearchFilters({ ...siteSearchFilters, sno: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Discip" 
+                  <Input
+                    type="text"
+                    placeholder="Search Discip"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={siteSearchFilters.discipline}
-                    onChange={(e) => setSiteSearchFilters({...siteSearchFilters, discipline: e.target.value})}
+                    onChange={(e) => setSiteSearchFilters({ ...siteSearchFilters, discipline: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Equipi" 
+                  <Input
+                    type="text"
+                    placeholder="Search Equipi"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={siteSearchFilters.equipment}
-                    onChange={(e) => setSiteSearchFilters({...siteSearchFilters, equipment: e.target.value})}
+                    onChange={(e) => setSiteSearchFilters({ ...siteSearchFilters, equipment: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Gener" 
+                  <Input
+                    type="text"
+                    placeholder="Search Gener"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={siteSearchFilters.generalCheck}
-                    onChange={(e) => setSiteSearchFilters({...siteSearchFilters, generalCheck: e.target.value})}
+                    onChange={(e) => setSiteSearchFilters({ ...siteSearchFilters, generalCheck: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Select 
+                  <Select
                     options={unitOptions}
                     placeholder="Hectopascal(hPa)"
                     isClearable
@@ -295,34 +332,34 @@ function ViewChecklist() {
                         padding: '0 4px',
                       }),
                     }}
-                    onChange={(selected) => setSiteSearchFilters({...siteSearchFilters, unit: selected?.label || ''})}
+                    onChange={(selected) => setSiteSearchFilters({ ...siteSearchFilters, unit: selected?.label || '' })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Check" 
+                  <Input
+                    type="text"
+                    placeholder="Search Check"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={siteSearchFilters.checkPoint}
-                    onChange={(e) => setSiteSearchFilters({...siteSearchFilters, checkPoint: e.target.value})}
+                    onChange={(e) => setSiteSearchFilters({ ...siteSearchFilters, checkPoint: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Accep" 
+                  <Input
+                    type="text"
+                    placeholder="Search Accep"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={siteSearchFilters.acceptanceLimit}
-                    onChange={(e) => setSiteSearchFilters({...siteSearchFilters, acceptanceLimit: e.target.value})}
+                    onChange={(e) => setSiteSearchFilters({ ...siteSearchFilters, acceptanceLimit: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Action" 
+                  <Input
+                    type="text"
+                    placeholder="Search Action"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={siteSearchFilters.action}
-                    onChange={(e) => setSiteSearchFilters({...siteSearchFilters, action: e.target.value})}
+                    onChange={(e) => setSiteSearchFilters({ ...siteSearchFilters, action: e.target.value })}
                   />
                 </td>
               </tr>
@@ -353,7 +390,7 @@ function ViewChecklist() {
         {/* General Checklist Section */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-700">General Checklist</h2>
-          <Button 
+          <Button
             className="bg-indigo-500 hover:bg-fuchsia-500 text-white px-4 py-2 rounded"
             onClick={() => navigate("/dashboards/material-list/electro-technical/add-new-general-checklist-matrix")}
           >
@@ -365,8 +402,8 @@ function ViewChecklist() {
         <div className="mb-4">
           <div className="flex items-center justify-end">
             <span className="mr-2">Search:</span>
-            <Input 
-              type="text" 
+            <Input
+              type="text"
               className="border border-gray-300 px-2 py-1 rounded w-48"
               value={generalSearchTerm}
               onChange={(e) => setGeneralSearchTerm(e.target.value)}
@@ -418,57 +455,57 @@ function ViewChecklist() {
               {/* Column Search Row */}
               <tr className="bg-white border-t-2 border-gray-400">
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search S No" 
+                  <Input
+                    type="text"
+                    placeholder="Search S No"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={generalSearchFilters.sno}
-                    onChange={(e) => setGeneralSearchFilters({...generalSearchFilters, sno: e.target.value})}
+                    onChange={(e) => setGeneralSearchFilters({ ...generalSearchFilters, sno: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Gener" 
+                  <Input
+                    type="text"
+                    placeholder="Search Gener"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={generalSearchFilters.accessories}
-                    onChange={(e) => setGeneralSearchFilters({...generalSearchFilters, accessories: e.target.value})}
+                    onChange={(e) => setGeneralSearchFilters({ ...generalSearchFilters, accessories: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Quant" 
+                  <Input
+                    type="text"
+                    placeholder="Search Quant"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={generalSearchFilters.quantity}
-                    onChange={(e) => setGeneralSearchFilters({...generalSearchFilters, quantity: e.target.value})}
+                    onChange={(e) => setGeneralSearchFilters({ ...generalSearchFilters, quantity: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Gener" 
+                  <Input
+                    type="text"
+                    placeholder="Search Gener"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={generalSearchFilters.condition}
-                    onChange={(e) => setGeneralSearchFilters({...generalSearchFilters, condition: e.target.value})}
+                    onChange={(e) => setGeneralSearchFilters({ ...generalSearchFilters, condition: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2 border-r border-gray-300">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Remar" 
+                  <Input
+                    type="text"
+                    placeholder="Search Remar"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={generalSearchFilters.remarks}
-                    onChange={(e) => setGeneralSearchFilters({...generalSearchFilters, remarks: e.target.value})}
+                    onChange={(e) => setGeneralSearchFilters({ ...generalSearchFilters, remarks: e.target.value })}
                   />
                 </td>
                 <td className="px-3 py-2">
-                  <Input 
-                    type="text" 
-                    placeholder="Search Action" 
+                  <Input
+                    type="text"
+                    placeholder="Search Action"
                     className="w-full border border-gray-300 px-2 py-1 text-xs rounded"
                     value={generalSearchFilters.action}
-                    onChange={(e) => setGeneralSearchFilters({...generalSearchFilters, action: e.target.value})}
+                    onChange={(e) => setGeneralSearchFilters({ ...generalSearchFilters, action: e.target.value })}
                   />
                 </td>
               </tr>

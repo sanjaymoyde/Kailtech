@@ -32,6 +32,14 @@ function fmtDate(d) {
   } catch { return d; }
 }
 
+function renderVal(v) {
+  if (v && typeof v === "object") {
+    // Handle the specific object structure from API: {value, display_value, ...}
+    return v.display_value ?? v.value ?? "—";
+  }
+  return v ?? "—";
+}
+
 // PHP: $sflag → "background:#008d4c!important;color:#ffffff;text-align:center"
 function parseComplianceStyle(styleStr) {
   if (!styleStr) return {};
@@ -57,7 +65,7 @@ function InfoRow({ label, value }) {
       <td className="w-1/4 border-r border-gray-200 p-2 text-xs font-semibold whitespace-nowrap text-gray-600 dark:border-gray-700 dark:text-gray-400">
         {label}
       </td>
-      <td className="p-2 text-xs text-gray-800 dark:text-gray-200">{value ?? "—"}</td>
+      <td className="p-2 text-xs text-gray-800 dark:text-gray-200">{renderVal(value)}</td>
     </tr>
   );
 }
@@ -217,7 +225,6 @@ export default function ReviewByQaDetail() {
     allotted_items              = [],
     counts                      = {},
     permissions:   permsObj     = {},
-    available_actions           = [],
     meta                        = {},
   } = report;
 
@@ -250,12 +257,8 @@ export default function ReviewByQaDetail() {
   // PHP: if(perm 180||181) && $reportstatus<9 → Actions column
   const showActionsColumn = (canHod || canQa) && reportStatus < 9;
 
-  const showRetest = (row) =>
-    showActionsColumn && (
-      row.can_retest === true ||
-      permsObj?.can_view_actions === true ||
-      available_actions.some((a) => (typeof a === "object" ? a.id : a) === row.id)
-    );
+  // PHP: every row gets the button when permissions + reportstatus < 9 are satisfied
+  const showRetest = () => showActionsColumn;
 
   // PHP: $reportstatus==8 && in_array(181) && isset($hid) && !empty($hid)
   const showQaApprove = reportStatus === 8 && canQa && !!effectiveHid;
@@ -430,9 +433,9 @@ export default function ReviewByQaDetail() {
                     ) : (
                       test_results.map((row, idx) => {
                         const cellStyle     = parseComplianceStyle(row.compliance_style);
-                        const displayResult = row.result?.display_value ?? row.result?.value ?? row.result ?? "—";
-                        const unitDisplay   = row.unit?.description     ?? row.unit?.name    ?? row.unit   ?? "—";
-                        const methodName    = row.method?.name          ?? row.method        ?? "—";
+                        const displayResult = renderVal(row.result);
+                        const unitDisplay   = row.unit?.description     ?? row.unit?.name    ?? renderVal(row.unit);
+                        const methodName    = row.method?.name          ?? renderVal(row.method);
                         return (
                           <tr key={row.id ?? idx} className="border-b border-gray-100 last:border-0 dark:border-gray-700">
                             <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{row.sno ?? idx + 1}</td>
@@ -441,7 +444,7 @@ export default function ReviewByQaDetail() {
                             <td className="px-3 py-2 text-center" style={cellStyle}>{displayResult}</td>
                             <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{methodName}</td>
                             {hasSpecs && (
-                              <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{row.specification ?? "—"}</td>
+                              <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(row.specification)}</td>
                             )}
                             {showActionsColumn && (
                               <td className="no-print px-3 py-2 text-center">
@@ -539,13 +542,13 @@ export default function ReviewByQaDetail() {
                       <tbody>
                         {allotted_items.filter((q) => (q.qleft ?? 0) > 0).map((item, i) => (
                           <tr key={item.id ?? i} className="border-b border-gray-100 last:border-0 dark:border-gray-700">
-                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.id}</td>
-                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.quantity_name}</td>
-                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.alloted}</td>
-                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.qleft}</td>
-                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{item.department_name}</td>
-                            <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{item.remnant ?? "—"}</td>
-                            <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{item.remark ?? "—"}</td>
+                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.id)}</td>
+                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.quantity_name)}</td>
+                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.alloted)}</td>
+                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.qleft)}</td>
+                            <td className="px-3 py-2 text-center text-gray-700 dark:text-gray-300">{renderVal(item.department_name)}</td>
+                            <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{renderVal(item.remnant)}</td>
+                            <td className="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{renderVal(item.remark)}</td>
                           </tr>
                         ))}
                       </tbody>

@@ -18,20 +18,20 @@ const inputCls =
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AllotSampleForm() {
-  const { id }   = useParams();           // trfproduct id from URL
+  const { id } = useParams();           // trfproduct id from URL
   const navigate = useNavigate();
 
-  const [pageData,    setPageData]    = useState(null);   // full API response
-  const [loading,     setLoading]     = useState(true);
-  const [submitting,  setSubmitting]  = useState(false);
-  const [error,       setError]       = useState(null);
+  const [pageData, setPageData] = useState(null);   // full API response
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   // Form state
-  const [department,  setDepartment]  = useState("");
-  const [person,      setPerson]      = useState("");
+  const [department, setDepartment] = useState("");
+  const [person, setPerson] = useState("");
 
   // Per-row inputs: { [receivedItemId]: { biscode, alloted } }
-  const [rowInputs,   setRowInputs]   = useState({});
+  const [rowInputs, setRowInputs] = useState({});
 
   // Persons filtered by selected lab
   // PHP: fetchpeople.php → admin where FIND_IN_SET(id, labs.users)
@@ -44,7 +44,7 @@ export default function AllotSampleForm() {
       try {
         setLoading(true);
         const res = await axios.get(`/actionitem/get-allot-data/${id}`);
-        const d   = res.data;
+        const d = res.data;
         setPageData(d);
         // Default: show all persons until lab selected
         setFilteredPersons(d.persons ?? []);
@@ -71,20 +71,30 @@ export default function AllotSampleForm() {
   const handleDepartmentChange = async (val) => {
     setDepartment(val);
     setPerson("");
+
     if (!val) {
       setFilteredPersons(pageData?.persons ?? []);
       return;
     }
+
     try {
-      const res = await axios.get(`/actionitem/get-allot-data/${id}?department=${val}`);
-      setFilteredPersons(res.data?.persons ?? pageData?.persons ?? []);
-    } catch {
-      setFilteredPersons(pageData?.persons ?? []);
+      // Backend: Fetch persons for the selected lab
+      const res = await axios.get(`/actionitem/get-persons/${val}`);
+      const persons = res.data?.data ?? [];
+      setFilteredPersons(Array.isArray(persons) ? persons : []);
+    } catch (err) {
+      console.error("Error fetching persons:", err);
+      setFilteredPersons([]);
     }
   };
 
   // ── Row input change ──────────────────────────────────────────────────────
   const handleRowInput = (itemId, field, value) => {
+    // Sirf negative block karo, max clamp nahi — error message dikhega
+    if (field === "alloted") {
+      const num = parseFloat(value);
+      if (!isNaN(num) && num < 0) value = "0";
+    }
     setRowInputs((prev) => ({
       ...prev,
       [itemId]: { ...prev[itemId], [field]: value },
@@ -95,13 +105,13 @@ export default function AllotSampleForm() {
   const handleSubmit = async () => {
     // Validation
     if (!department) { toast.error("Please select a Lab ❌"); return; }
-    if (!person)     { toast.error("Please select a Person ❌"); return; }
+    if (!person) { toast.error("Please select a Person ❌"); return; }
 
     const items = pageData?.received_items ?? [];
     if (items.length === 0) { toast.error("Nothing to allot ❌"); return; }
 
     // Build arrays — PHP: qid[], biscode[], alloted[]
-    const qidArr     = [];
+    const qidArr = [];
     const biscodeArr = [];
     const allotedArr = [];
 
@@ -130,10 +140,10 @@ export default function AllotSampleForm() {
       await axios.post("/actionitem/allot-items", {
         department: Number(department),
         trfproduct: Number(id),
-        person:     Number(person),
-        qid:        qidArr,
-        biscode:    biscodeArr,
-        alloted:    allotedArr,
+        person: Number(person),
+        qid: qidArr,
+        biscode: biscodeArr,
+        alloted: allotedArr,
       });
       toast.success("Item Alloted Successfully ✅");
       navigate("/dashboards/action-items/allot-sample");
@@ -259,11 +269,10 @@ export default function AllotSampleForm() {
                   {allotableItems.map((item, idx) => (
                     <tr
                       key={item.id}
-                      className={`border-b border-gray-100 dark:border-gray-800 ${
-                        idx % 2 === 0
+                      className={`border-b border-gray-100 dark:border-gray-800 ${idx % 2 === 0
                           ? "bg-white dark:bg-gray-900"
                           : "bg-gray-50/50 dark:bg-gray-800/30"
-                      }`}
+                        }`}
                     >
                       <td className="px-5 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">
                         {item.id}
@@ -276,7 +285,7 @@ export default function AllotSampleForm() {
                       </td>
                       <td className="px-5 py-3">
                         <span className={`font-semibold ${item.qleft > 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
-                          {item.qleft}
+                          {item.qleft < 0 ? 0 : item.qleft}
                         </span>
                       </td>
                       {/* BIS Code input */}
@@ -290,17 +299,27 @@ export default function AllotSampleForm() {
                         />
                       </td>
                       {/* Allot input — max = qleft */}
+                      {/* Allot input — max = qleft */}
                       <td className="px-5 py-3">
                         <input
                           type="number"
-                          className={inputCls}
+                          className={`${inputCls} ${parseFloat(rowInputs[item.id]?.alloted) > Math.max(0, item.qleft)
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                              : ""
+                            }`}
                           placeholder="alloted quantity"
                           min="0.01"
-                          max={item.qleft}
+                          max={Math.max(0, item.qleft)}
                           step="0.01"
                           value={rowInputs[item.id]?.alloted ?? ""}
                           onChange={(e) => handleRowInput(item.id, "alloted", e.target.value)}
                         />
+                        {/* Validation message — PHP: max[qleft] */}
+                        {parseFloat(rowInputs[item.id]?.alloted) > Math.max(0, item.qleft) && (
+                          <p className="mt-1 text-xs text-red-500">
+                            Please enter a number less than or equal to {Math.max(0, item.qleft)}
+                          </p>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -328,9 +347,8 @@ export default function AllotSampleForm() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className={`flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-blue-700 ${
-                  submitting ? "cursor-not-allowed opacity-60" : ""
-                }`}
+                className={`flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow transition hover:bg-blue-700 ${submitting ? "cursor-not-allowed opacity-60" : ""
+                  }`}
               >
                 {submitting ? (
                   <>

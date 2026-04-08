@@ -1,8 +1,3 @@
-
-
-
-
-
 // Import Dependencies
 import {
   Menu,
@@ -115,7 +110,7 @@ export function SelectedRowsActions({ table }) {
                         )}
                       >
                         <ArrowUpTrayIcon className="size-4.5" />
-                        <span>Export CVS</span>
+                        <span>Export CSV</span>
                       </button>
                     )}
                   </MenuItem>
